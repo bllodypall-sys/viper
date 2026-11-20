@@ -488,6 +488,17 @@ main{padding-block:12px 40px}
         </form>
         <div id="evo-goals-list" class="evo-history"><p class="note">Todavía no tienes objetivos.</p></div>
       </div>
+      <div class="season-card" id="viper-coach-card">
+        <h2>VIPER Coach · Entrenador IA</h2>
+        <p class="note">Analiza tus entrenamientos, medidas y objetivos guardados para darte recomendaciones personalizadas.</p>
+        <form id="viper-coach-form" class="stack">
+          <label class="lbl" for="viper-coach-question">¿Qué quieres consultar?</label>
+          <textarea id="viper-coach-question" rows="3" maxlength="500" placeholder="Ej. Analiza mi progreso y dime cómo mejorar mi pecho esta semana." style="width:100%;min-height:88px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:10px;font:inherit;resize:vertical"></textarea>
+          <button class="btn primary" id="viper-coach-submit" type="submit">Consultar a VIPER Coach</button>
+        </form>
+        <div id="viper-coach-result" class="evo-entry" role="status" aria-live="polite" hidden style="white-space:pre-wrap;line-height:1.6"></div>
+        <p class="note" id="viper-coach-data" hidden></p>
+      </div>
       <div class="season-card">
         <h2>Registrar entrenamiento</h2>
         <form id="evo-workout-form" class="stack">
@@ -1542,6 +1553,28 @@ function renderEvolucion(){
   $('evo-photo-history').innerHTML=EVO.photos.map(function(p){return p.signedUrl?'<div class="evo-photo-card"><img src="'+esc(p.signedUrl)+'" alt="Foto de progreso '+esc(p.pose)+'"><small>'+evoDateLabel(p.photo_date)+' · '+esc(p.pose)+'</small></div>':'';}).join('')||'<p class="note">Aún no hay fotos de progreso.</p>';
   renderMonthlyComparison();renderPhotoCompare();renderEvoGoals();
 }
+async function consultarViperCoach(e){
+ e.preventDefault();
+ var question=$('viper-coach-question').value.trim();
+ var button=$('viper-coach-submit'),result=$('viper-coach-result'),meta=$('viper-coach-data');
+ button.disabled=true;button.textContent='Analizando tu progreso…';
+ result.hidden=false;result.textContent='VIPER Coach está revisando tus datos. Esto puede tardar unos segundos.';
+ meta.hidden=true;meta.textContent='';
+ try{
+  var response=await sb.functions.invoke('viper-ai-coach',{body:{question:question}});
+  if(response.error)throw response.error;
+  if(!response.data||response.data.error)throw new Error(response.data&&response.data.error?response.data.error:'No se recibió una respuesta del entrenador.');
+  result.textContent=response.data.answer||'El entrenador no devolvió una respuesta.';
+  var used=response.data.data_used||{};
+  meta.textContent='Análisis basado en '+(used.workouts||0)+' entrenamientos, '+(used.measurements||0)+' mediciones y '+(used.goals||0)+' objetivos.';
+  meta.hidden=false;
+ }catch(err){
+  result.textContent='No se pudo consultar al entrenador: '+errMsg(err);
+  meta.hidden=true;
+ }finally{
+  button.disabled=false;button.textContent='Consultar a VIPER Coach';
+ }
+}
 async function guardarEvoEntrenamiento(e){
   e.preventDefault();
   var name=$('evo-exercise').value.trim(), count=Number($('evo-sets-input').value), reps=Number($('evo-reps').value), weight=Number($('evo-weight').value);
@@ -1612,6 +1645,7 @@ async function guardarEvoFoto(e){
   $('v-evolucion').addEventListener('keydown',function(e){
     if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('evo-muscle-part')){e.preventDefault();EVO.muscle=e.target.dataset.muscle;renderEvolucion();}
   });
+  $('viper-coach-form').addEventListener('submit',consultarViperCoach);
   $('evo-workout-form').addEventListener('submit',guardarEvoEntrenamiento);
   $('evo-measure-form').addEventListener('submit',guardarEvoMedidas);
   $('evo-photo-form').addEventListener('submit',guardarEvoFoto);
