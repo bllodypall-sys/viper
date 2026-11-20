@@ -1210,6 +1210,7 @@ function renderPerfil(){
   if (P.avatar_path){ var av = sb.storage.from('avatars').getPublicUrl(P.avatar_path).data.publicUrl; $('avatar-img').src = av; $('avatar-img').hidden = false; $('avatar-fallback').hidden = true; }
   else { $('avatar-img').hidden = true; $('avatar-fallback').hidden = false; }
   renderLevels();
+  cargarUsuariosBloqueados();
 }
 function socialUrl(value, host){
   if(!value) return null;
