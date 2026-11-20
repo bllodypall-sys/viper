@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
 Determina si se ve comida real y reconocible. No aceptes fotos de personas, gimnasios, envases vacíos, capturas de pantalla ni imágenes sin alimentos visibles. Estima macros y calorías solo a partir de lo visible; si no puedes reconocer comida, contains_food=false. confidence entre 0 y 1. No inventes precisión: notes debe indicar que son estimaciones visuales. `;
 
     const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${encodeURIComponent(geminiKey)}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${encodeURIComponent(geminiKey)}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -152,7 +152,7 @@ Determina si se ve comida real y reconocible. No aceptes fotos de personas, gimn
       confidence,
       ai_notes: String(parsed.notes || "Valores nutricionales estimados visualmente").slice(0, 1000),
       image_sha256: hash,
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-3.5-flash-lite",
       analyzed_at: new Date().toISOString(),
     };
 
