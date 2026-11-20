@@ -177,9 +177,9 @@ form.stack{display:grid;gap:8px}
 .pl-line{fill:none;stroke:var(--edge);stroke-width:1.5}
 .pl-hole{fill:var(--bg);stroke:var(--edge);stroke-width:1.5}
 
-.nav{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
-.nav button{min-height:60px;border:0;background:none;color:var(--muted);font:700 1rem var(--display);text-transform:uppercase;letter-spacing:.08em;cursor:pointer;border-top:3px solid transparent}
-.nav button[aria-current="page"]{color:var(--fg);border-top-color:var(--fg)}
+.nav{position:sticky;top:12px;z-index:4;display:grid;gap:6px;align-content:start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;height:max-content}
+.nav button{display:flex;align-items:center;gap:12px;text-align:left;min-height:48px;padding:0 12px;border:0;border-left:3px solid transparent;border-radius:7px;background:none;color:var(--muted);font:700 1rem var(--display);text-transform:uppercase;letter-spacing:.08em;cursor:pointer}
+.nav button[aria-current="page"]{color:var(--fg);border-left-color:var(--fg);background:var(--bg)}
 
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:10;max-width:min(92vw,420px);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;text-align:center}
 #toast.err{background:var(--danger);color:#fff}
@@ -396,6 +396,11 @@ function pantalla(n){
 /* ---------- Datos ---------- */
 async function loadProfile(){
   var r = await sb.from('profiles').select('username,xp_total,racha,ultimo_gym,avatar_path').eq('id', user.id).single();
+  if (r.error && /avatar_path|column.*does not exist/i.test(r.error.message || '')){
+    r = await sb.from('profiles').select('username,xp_total,racha,ultimo_gym').eq('id', user.id).single();
+    if (r.error) throw r.error;
+    r.data.avatar_path = null;
+  }
   if (r.error) throw r.error;
   P = r.data;
 }
@@ -844,7 +849,7 @@ function eventos(){
   $('avatar-input').addEventListener('change', async function(e){
     var file=e.target.files && e.target.files[0]; e.target.value=''; if(!file) return;
     if(!/^image\//.test(file.type) || file.size>8*1024*1024){ toast('Elige una imagen de hasta 8 MB.',true); return; }
-    try { var blob=await comprimir(file); var path=user.id+'/avatar.jpg';
+    try { var blob=await comprimir(file); var path=user.id+'/avatar-'+Date.now()+'.jpg';
       var up=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg',upsert:true}); if(up.error) throw up.error;
       var r=await sb.from('profiles').update({avatar_path:path}).eq('id',user.id); if(r.error) throw r.error;
       P.avatar_path=path; renderPerfil(); toast('Foto de perfil actualizada');
