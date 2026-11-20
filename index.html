@@ -125,6 +125,15 @@ main{min-width:0;padding-block:12px 40px}
 .top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-block:14px 6px}
 .logo{font:800 1.8rem/1 var(--display);text-transform:uppercase;letter-spacing:.04em}
 .who{color:var(--muted);font-size:.9rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notify-head{position:relative;display:flex;align-items:center;gap:10px}
+.notify-bell{position:relative;width:42px;height:42px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);font-size:1.2rem;cursor:pointer}
+.notify-count{position:absolute;top:-6px;right:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:20px;background:#35d07f;color:#07120c;font:800 .72rem/19px var(--body);text-align:center}
+.notify-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.notify-list{display:grid;gap:9px}
+.notify-item{display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;align-items:start;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;text-align:left;color:var(--fg);width:100%;cursor:pointer}
+.notify-item.unread{border-color:#35d07f;background:color-mix(in srgb,var(--surface) 90%,#35d07f 10%)}
+.notify-symbol{width:40px;height:40px;display:grid;place-items:center;border-radius:10px;background:var(--bg);font-size:1.2rem}
+.notify-copy{min-width:0;display:grid;gap:3px}.notify-copy small{color:var(--muted)}.notify-copy p{overflow-wrap:anywhere}
 main{padding-block:12px 110px}
 .view{display:grid;gap:14px;min-width:0}
 .sec-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;margin-top:6px}
@@ -322,7 +331,7 @@ main{padding-block:12px 40px}
 <div id="app" hidden>
   <header class="top">
     <div style="display:flex;align-items:center;gap:12px"><button class="nav-toggle" id="nav-toggle" type="button" aria-label="Abrir menú" aria-expanded="true">☰</button><span class="logo">Viper</span></div>
-    <span class="who" id="who"></span>
+    <div class="notify-head"><button type="button" class="notify-bell" id="notify-bell" aria-label="Abrir notificaciones" title="Notificaciones">♧<span class="notify-count" id="notify-count" hidden>0</span></button><span class="who" id="who"></span></div>
   </header>
   <div class="app-layout">
   <nav class="nav" id="sidebar" aria-label="Secciones">
@@ -332,6 +341,7 @@ main{padding-block:12px 40px}
     <button type="button" data-nav="temporada"><span class="nav-icon">⚡</span><span class="nav-label">Temporada</span></button>
     <button type="button" data-nav="ranking"><span class="nav-icon">🏆</span><span class="nav-label">Ranking</span></button>
     <button type="button" data-nav="amigos"><span class="nav-icon">♧</span><span class="nav-label">Amigos</span></button>
+    <button type="button" data-nav="notificaciones"><span class="nav-icon">🔔</span><span class="nav-label">Notificaciones</span><span class="notify-count nav-notify-count" id="nav-notify-count" hidden>0</span></button>
     <button type="button" data-nav="perfil"><span class="nav-icon">◉</span><span class="nav-label">Perfil</span></button>
   </nav>
   <main>
@@ -651,6 +661,11 @@ main{padding-block:12px 40px}
       <details class="public-menu"><summary class="btn sm">⋮ Más opciones</summary><div class="public-menu-items"><button class="btn sm" id="public-block" type="button">Bloquear usuario</button><button class="btn sm" id="public-report" type="button">Reportar usuario</button></div></details>
       <div class="season-card"><h2>Redes sociales</h2><div id="public-socials" class="social-links"><p class="note">Este usuario aún no agregó sus redes.</p></div></div>
       <p class="note">Los datos privados y las fotos de check-in no se muestran aquí.</p>
+    </section>
+    <section id="v-notificaciones" class="view" aria-label="Notificaciones" hidden>
+      <div class="sec-head"><h2>Notificaciones</h2><span id="notify-subtitle">Tu actividad en VIPER</span></div>
+      <div class="notify-toolbar"><p class="note">Novedades de tus amigos, comidas y entrenamientos.</p><button class="btn sm" type="button" id="notify-read-all">Marcar todas como leídas</button></div>
+      <div id="notify-list" class="notify-list"><p class="note">Cargando notificaciones…</p></div>
     </section>
   </main>
   </div>
@@ -1287,6 +1302,36 @@ async function reportarPerfilPublico(){
     toast('Reporte enviado. Gracias por ayudarnos a mantener VIPER seguro.');
   }catch(e){toast(errMsg(e),true);}
 }
+var NOTIFICATIONS = [], notificationChannel = null;
+function notificationIcon(type){return ({meal_reminder:'🥗',workout_reminder:'🏋️',friend_workout:'💪',friend_xp:'⚡',friend_level:'🏆',meal_update:'🍎',system:'🔔'})[type]||'🔔';}
+function renderNotifications(){
+  var unread=NOTIFICATIONS.filter(function(n){return !n.read_at;}).length;
+  ['notify-count','nav-notify-count'].forEach(function(id){var el=$(id);if(!el)return;el.textContent=unread>99?'99+':String(unread);el.hidden=unread===0;});
+  var box=$('notify-list');if(!box)return;
+  if(!NOTIFICATIONS.length){box.innerHTML='<div class="season-card"><p><b>Todo al día</b></p><p class="note">Cuando haya novedades, aparecerán aquí.</p></div>';return;}
+  box.innerHTML=NOTIFICATIONS.map(function(n){var date=new Date(n.created_at).toLocaleString('es-PE',{dateStyle:'short',timeStyle:'short'});return '<button type="button" class="notify-item'+(n.read_at?'':' unread')+'" data-notify-id="'+esc(n.id)+'"><span class="notify-symbol">'+notificationIcon(n.notification_type)+'</span><span class="notify-copy"><b>'+esc(n.title)+'</b><p>'+esc(n.body)+'</p><small>'+date+(n.read_at?'':' · Nueva')+'</small></span></button>';}).join('');
+}
+async function loadNotifications(){
+  if(!user)return;
+  var r=await sb.from('viper_notifications').select('id,actor_user_id,notification_type,title,body,action_url,created_at,read_at').eq('recipient_user_id',user.id).order('created_at',{ascending:false}).limit(60);
+  if(r.error)throw r.error;NOTIFICATIONS=r.data||[];renderNotifications();
+}
+async function markNotificationRead(id){
+  var n=NOTIFICATIONS.find(function(x){return x.id===id;});if(!n||n.read_at)return;
+  var now=new Date().toISOString();var r=await sb.from('viper_notifications').update({read_at:now}).eq('id',id).eq('recipient_user_id',user.id).is('read_at',null);
+  if(r.error)throw r.error;n.read_at=now;renderNotifications();
+}
+async function markAllNotificationsRead(){
+  var now=new Date().toISOString();var r=await sb.from('viper_notifications').update({read_at:now}).eq('recipient_user_id',user.id).is('read_at',null);
+  if(r.error)throw r.error;NOTIFICATIONS.forEach(function(n){if(!n.read_at)n.read_at=now;});renderNotifications();
+}
+function subscribeNotifications(){
+  if(notificationChannel)sb.removeChannel(notificationChannel);
+  notificationChannel=sb.channel('viper-notifications-'+user.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'viper_notifications',filter:'recipient_user_id=eq.'+user.id},function(payload){
+    if(payload.new){NOTIFICATIONS.unshift(payload.new);NOTIFICATIONS=NOTIFICATIONS.slice(0,60);renderNotifications();if(document.hidden===false)toast('Nueva notificación: '+payload.new.title);}
+  }).subscribe();
+}
+
 function renderAll(){
   $('who').textContent = P.username;
   renderRank();
@@ -1297,7 +1342,7 @@ function renderAll(){
 /* ---------- Navegación ---------- */
 function ir(v){
   if (v === 'boxeo'){ location.href = 'boxeo.html'; return; }
-  ['hoy', 'evolucion', 'temporada', 'ranking', 'amigos', 'perfil', 'public-profile'].forEach(function(n){
+  ['hoy', 'evolucion', 'temporada', 'ranking', 'amigos', 'perfil', 'public-profile', 'notificaciones'].forEach(function(n){
     $('v-' + n).hidden = n !== v;
     var b = document.querySelector('[data-nav="' + n + '"]');
     if (b){
@@ -1311,6 +1356,7 @@ function ir(v){
   if (v === 'ranking') cargarRanking();
   if (v === 'amigos') cargarAmigos();
   if (v === 'perfil') renderPerfil();
+  if (v === 'notificaciones') loadNotifications().catch(function(e){toast(errMsg(e),true);});
 }
 
 /* ---------- Chat privado entre amigos ---------- */
@@ -1363,6 +1409,8 @@ async function start(){
     await Promise.all([loadProfile(), loadToday()]);
     await signPhoto();
     renderAll();
+    await loadNotifications();
+    subscribeNotifications();
     ir('hoy');
     var sharedProfile=new URLSearchParams(location.search).get('profile');
     if(sharedProfile) await abrirPerfilPublico(sharedProfile);
@@ -1421,6 +1469,9 @@ function eventos(){
     }
   });
   $('salir').addEventListener('click', async function(){ await sb.auth.signOut(); });
+  $('notify-bell').addEventListener('click',function(){ir('notificaciones');});
+  $('notify-read-all').addEventListener('click',function(){markAllNotificationsRead().catch(function(e){toast(errMsg(e),true);});});
+  $('notify-list').addEventListener('click',function(e){var b=e.target.closest('[data-notify-id]');if(!b)return;markNotificationRead(b.dataset.notifyId).catch(function(err){toast(errMsg(err),true);});});
   $('nav-toggle').addEventListener('click', function(){
     if (window.matchMedia('(max-width:700px)').matches){ $('app').classList.toggle('sidebar-open'); $('nav-toggle').setAttribute('aria-expanded', $('app').classList.contains('sidebar-open') ? 'true' : 'false'); }
     else { $('app').classList.toggle('nav-collapsed'); }
@@ -1857,6 +1908,8 @@ async function boot(){
   sb.auth.onAuthStateChange(function(ev, session){
     if (ev === 'SIGNED_OUT'){
       if(chatChannel) sb.removeChannel(chatChannel);
+      if(notificationChannel) sb.removeChannel(notificationChannel);
+      notificationChannel=null; NOTIFICATIONS=[];
       chatChannel=null; chatFriend=null; user = null; P = null; T = null; iniciado = false;
       pantalla('login');
     } else if (ev === 'SIGNED_IN' && session && session.user && !iniciado){
