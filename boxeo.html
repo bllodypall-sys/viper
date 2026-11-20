@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111517">
+<title>VIPER · Boxeo</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{color-scheme:dark;--bg:#111517;--surface:#1A1F22;--fg:#ECEFEA;--muted:#97A1A5;--line:#2B3337;--green:#39E75F;--display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;--body:"Barlow",system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 var(--body);padding:env(safe-area-inset-top) 16px calc(24px + env(safe-area-inset-bottom))}
+main{max-width:620px;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;padding:18px 0}.logo{font:800 2rem var(--display);letter-spacing:.05em}.logo span{color:var(--green)}a{color:var(--green);text-decoration:none}.eyebrow{font-size:.78rem;color:var(--muted);letter-spacing:.15em;text-transform:uppercase}h1{font:800 clamp(2.5rem,10vw,4rem)/.95 var(--display);margin:4px 0 8px;text-transform:uppercase}h2{font:700 1.35rem var(--display);text-transform:uppercase;letter-spacing:.07em;margin:0 0 10px}.muted{color:var(--muted);font-size:.9rem}.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.tile{background:#20282a;border:1px solid var(--line);border-radius:9px;padding:12px;min-height:90px}.tile b{display:block;color:var(--green);font:700 1.2rem var(--display);text-transform:uppercase}.tile small{color:var(--muted)}label{display:block;color:var(--muted);font-size:.86rem;margin:10px 0 5px}input,select{width:100%;min-height:44px;border-radius:8px;border:1px solid var(--line);background:#101416;color:var(--fg);padding:8px 10px;font:inherit}.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.checks{display:grid;gap:9px}.checks label{display:flex;align-items:center;gap:10px;margin:0;color:var(--fg)}input[type=checkbox]{width:20px;height:20px;accent-color:var(--green)}.timer{text-align:center;padding:18px 8px}.phase{font-size:.8rem;color:var(--green);font-weight:700;letter-spacing:.18em;text-transform:uppercase}.clock{font:800 clamp(4rem,19vw,6.5rem)/1 var(--display);font-variant-numeric:tabular-nums;margin:10px 0}.round{color:var(--muted);font-weight:600}.actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}.btn{border:1px solid var(--line);background:transparent;color:var(--fg);padding:11px 16px;border-radius:8px;font:600 .95rem var(--body);cursor:pointer}.btn.primary{background:var(--green);border-color:var(--green);color:#071009}.btn:disabled{opacity:.4}.history{display:grid;gap:8px}.entry{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:9px 0}.entry:last-child{border:0}.empty{color:var(--muted);font-size:.9rem}.safe{font-size:.82rem;color:var(--muted)}@media(max-width:420px){.fields{grid-template-columns:1fr 1fr}.fields>div:last-child{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<main>
+<header class="top"><a class="logo" href="index.html">VIPER<span>.</span></a><a href="index.html">← Volver al GYM</a></header>
+<p class="eyebrow">Entrenamiento · Módulo 02</p><h1>Modo boxeo</h1><p class="muted">Prepara tu sesión, controla los rounds y guarda tu progreso.</p>
+<section class="grid">
+<div class="tile"><b>01 · Calentamiento</b><small>Movilidad, cuerda y sombra</small></div>
+<div class="tile"><b>02 · Saco</b><small>Potencia y resistencia</small></div>
+<div class="tile"><b>03 · Técnica</b><small>Guardia, pasos y combinaciones</small></div>
+<div class="tile"><b>04 · Sparring</b><small>Rounds y descansos registrados</small></div>
+</section>
+<section class="card">
+<h2>Calentamiento</h2><p class="muted">Marca lo que completes antes de comenzar.</p>
+<div class="checks" id="warm">
+<label><input type="checkbox"> Movilidad articular · 3 min</label>
+<label><input type="checkbox"> Cuerda suave · 3 min</label>
+<label><input type="checkbox"> Sombra ligera · 2 min</label>
+<label><input type="checkbox"> Activación y desplazamientos · 2 min</label>
+</div>
+</section>
+<section class="card">
+<h2>Configura tus rounds</h2>
+<div class="fields">
+<div><label for="kind">Entrenamiento</label><select id="kind"><option>Saco</option><option>Técnica</option><option>Sparring</option></select></div>
+<div><label for="roundMin">Minutos por round</label><input id="roundMin" type="number" min="1" max="10" value="3"></div>
+<div><label for="rounds">Número de rounds</label><input id="rounds" type="number" min="1" max="20" value="3"></div>
+<div><label for="restSec">Descanso (segundos)</label><input id="restSec" type="number" min="15" max="300" step="15" value="60"></div>
+<div><label for="warmMin">Calentamiento (min)</label><input id="warmMin" type="number" min="0" max="30" value="5"></div>
+</div>
+<div class="timer" aria-live="polite">
+<div class="phase" id="phase">Listo para comenzar</div><div class="clock" id="clock">03:00</div><div class="round" id="roundLabel">Round 1 de 3</div>
+<div class="actions"><button class="btn primary" id="start">Comenzar</button><button class="btn" id="pause" disabled>Pausar</button><button class="btn" id="reset">Reiniciar</button><button class="btn" id="finish">Finalizar y guardar</button></div>
+</div>
+<p class="safe">Usa el temporizador como apoyo. En sparring, entrena con supervisión, equipo de protección y acuerdos claros.</p>
+</section>
+<section class="card"><h2>Historial de sesiones</h2><div class="history" id="history"><p class="empty">Todavía no hay sesiones guardadas en este dispositivo.</p></div><div class="actions"><button class="btn" id="clear">Borrar historial</button></div></section>
+</main>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const storeKey='viper_boxeo_history_v1';
+let phase='idle',remaining=180,roundNow=1,interval=null,startedAt=null,elapsed=0,completedRounds=0;
+const readHistory=()=>{try{return JSON.parse(localStorage.getItem(storeKey)||'[]')}catch(e){return []}};
+function config(){return {kind:$('kind').value,roundMin:clamp($('roundMin').value,1,10,3),rounds:clamp($('rounds').value,1,20,3),restSec:clamp($('restSec').value,15,300,60),warmMin:clamp($('warmMin').value,0,30,5)}}
+function clamp(v,min,max,fallback){const n=parseInt(v,10);return Number.isFinite(n)?Math.min(max,Math.max(min,n)):fallback}
+function fmt(s){s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function render(){ $('clock').textContent=fmt(remaining);$('roundLabel').textContent=phase==='warm'?'Preparación':('Round '+roundNow+' de '+config().rounds);$('phase').textContent=({idle:'Listo para comenzar',warm:'Calentamiento',work:config().kind+' · EN CURSO',rest:'DESCANSO',done:'SESIÓN COMPLETADA'})[phase];$('start').disabled=phase==='done';$('pause').disabled=phase==='idle'||phase==='done';}
+function beep(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.08;o.start();o.stop(c.currentTime+.22);o.onended=()=>c.close()}catch(e){}}
+function setPhase(next){phase=next;const c=config();if(next==='warm')remaining=c.warmMin*60;else if(next==='work')remaining=c.roundMin*60;else if(next==='rest')remaining=c.restSec;else if(next==='done')remaining=0;beep();render()}
+function tick(){if(remaining>0){remaining--;elapsed++;render();return}if(phase==='warm'){setPhase('work')}else if(phase==='work'){completedRounds++;if(roundNow<c.rounds){setPhase('rest')}else{setPhase('done');saveSession()}}else if(phase==='rest'){roundNow++;setPhase('work')}}
+function start(){if(phase==='idle'){const c=config();roundNow=1;completedRounds=0;elapsed=0;startedAt=new Date().toISOString();setPhase(c.warmMin>0?'warm':'work')}if(phase==='done')return;if(!interval)interval=setInterval(tick,1000)}
+function pause(){if(interval){clearInterval(interval);interval=null;$('pause').textContent='Continuar'}else{start();$('pause').textContent='Pausar'}}
+function reset(){if(interval)clearInterval(interval);interval=null;phase='idle';const c=config();remaining=c.warmMin?c.warmMin*60:c.roundMin*60;roundNow=1;completedRounds=0;elapsed=0;startedAt=null;$('pause').textContent='Pausar';render()}
+function saveSession(){const c=config(),arr=readHistory();arr.unshift({date:new Date().toISOString(),kind:c.kind,rounds:completedRounds,planned:c.rounds,roundMin:c.roundMin,restSec:c.restSec,elapsed});localStorage.setItem(storeKey,JSON.stringify(arr.slice(0,50)));renderHistory()}
+function finish(){if(phase==='idle'||phase==='done')return;if(interval)clearInterval(interval);interval=null;if(phase==='work')completedRounds=Math.min(config().rounds,completedRounds+1);phase='done';remaining=0;render();if(elapsed>0)saveSession()}
+function renderHistory(){const a=readHistory();$('history').innerHTML=a.length?a.map(x=>'<div class="entry"><span><b>'+escapeHtml(x.kind)+'</b><br><small class="muted">'+new Date(x.date).toLocaleString('es-PE')+'</small></span><span><b>'+x.rounds+'/'+x.planned+' rounds</b><br><small class="muted">'+Math.floor(x.elapsed/60)+' min registrados</small></span></div>').join(''):'<p class="empty">Todavía no hay sesiones guardadas en este dispositivo.</p>'}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('start').addEventListener('click',start);$('pause').addEventListener('click',pause);$('reset').addEventListener('click',reset);$('finish').addEventListener('click',finish);
+['kind','roundMin','rounds','restSec','warmMin'].forEach(id=>$(id).addEventListener('change',()=>{if(phase==='idle')reset()}));
+$('clear').addEventListener('click',()=>{if(confirm('¿Borrar el historial guardado en este dispositivo?')){localStorage.removeItem(storeKey);renderHistory()}});
+reset();renderHistory();
+})();
+</script>
+</body></html>
