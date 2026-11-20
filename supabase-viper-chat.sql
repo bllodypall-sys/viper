@@ -62,6 +62,11 @@ with check (
   )
 );
 
+drop policy if exists "avatars_public_read" on storage.objects;
+create policy "avatars_public_read" on storage.objects
+for select to public
+using (bucket_id='avatars');
+
 drop policy if exists "avatars_owner_upload" on storage.objects;
 create policy "avatars_owner_upload" on storage.objects
 for insert to authenticated
