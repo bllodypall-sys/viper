@@ -1379,7 +1379,7 @@ async function feedVideoDuration(file){
   return new Promise(function(resolve,reject){
     var url=URL.createObjectURL(file), video=document.createElement('video');
     video.preload='metadata';
-    video.onloadedmetadata=function(){var d=video.duration;URL.revokeObjectURL(url);resolve(d);};
+    video.onloadedmetadata=function(){var d=video.duration;URL.revokeObjectURL(url);if(!Number.isFinite(d)||d<=0)reject(new Error('La duración del video no es válida.'));else resolve(d);};
     video.onerror=function(){URL.revokeObjectURL(url);reject(new Error('No se pudo leer el video.'));};
     video.src=url;
   });
@@ -1428,25 +1428,30 @@ async function publishFeed(e){
   if(file){
     if(file.size>100*1024*1024){error.textContent='El archivo supera el límite de 100 MB.';return;}
     if(file.type.startsWith('video/')){
-      try{var duration=await feedVideoDuration(file);if(duration>60.05){error.textContent='El video debe durar 60 segundos o menos.';return;}}
+      if(!['video/mp4','video/webm'].includes(file.type)){error.textContent='Solo se permiten videos MP4 o WEBM.';return;}
+      try{var duration=await feedVideoDuration(file);if(duration>60){error.textContent='El video debe durar 60 segundos o menos.';return;}}
       catch(err){error.textContent=err.message;return;}
     }else if(!['image/jpeg','image/png','image/webp'].includes(file.type)){error.textContent='Formato no permitido.';return;}
   }
   btn.disabled=true;btn.textContent='Publicando…';
+  var mediaPath=null,mediaType=null,uploadedPath=null;
   try{
-    var mediaPath=null,mediaType=null;
     if(file){
       var ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
       mediaPath=user.id+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
       var up=await sb.storage.from('viper-feed').upload(mediaPath,file,{contentType:file.type,upsert:false});
       if(up.error)throw up.error;
+      uploadedPath=mediaPath;
       mediaType=file.type.startsWith('video/')?'video':'image';
     }
     var saved=await sb.from('viper_posts').insert({user_id:user.id,caption:caption,media_path:mediaPath,media_type:mediaType});
     if(saved.error)throw saved.error;
     $('feed-caption').value='';$('feed-file').value='';$('feed-file-name').textContent='Video máximo 60 segundos · 100 MB';
     toast('¡Publicación compartida!');await loadFeed();
-  }catch(err){error.textContent=errMsg(err);}
+  }catch(err){
+    if(uploadedPath){var cleanup=await sb.storage.from('viper-feed').remove([uploadedPath]);if(cleanup.error)console.error('VIPER Feed: no se pudo limpiar el archivo huérfano',cleanup.error);}
+    error.textContent=errMsg(err);
+  }
   finally{btn.disabled=false;btn.textContent='Publicar';}
 }
 async function handleFeedClick(e){
@@ -1460,8 +1465,13 @@ async function handleFeedClick(e){
   }
   var del=e.target.closest('[data-feed-delete]');
   if(del&&confirm('¿Eliminar esta publicación?')){
+    var post=FEED_POSTS.find(function(x){return x.id===del.dataset.feedDelete;});
     var d=await sb.from('viper_posts').delete().eq('id',del.dataset.feedDelete).eq('user_id',user.id);
-    if(d.error)toast(errMsg(d.error),true);else{toast('Publicación eliminada');await loadFeed();}
+    if(d.error)toast(errMsg(d.error),true);else{
+      if(post&&post.media_path){var rm=await sb.storage.from('viper-feed').remove([post.media_path]);if(rm.error)toast('Publicación eliminada, pero no se pudo borrar el archivo multimedia.',true);}
+      else toast('Publicación eliminada');
+      await loadFeed();
+    }
   }
 }
 async function handleFeedSubmit(e){
