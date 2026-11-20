@@ -56,7 +56,8 @@ grant select, insert, delete on table public.viper_post_comments to authenticate
 
 drop policy if exists "viper_posts_public_read" on public.viper_posts;
 create policy "viper_posts_public_read" on public.viper_posts
-  for select to authenticated using (true);
+  for select to authenticated
+  using (not public.is_blocked_between(auth.uid(), user_id));
 drop policy if exists "viper_posts_owner_insert" on public.viper_posts;
 create policy "viper_posts_owner_insert" on public.viper_posts
   for insert to authenticated with check (auth.uid() = user_id);
@@ -69,20 +70,46 @@ create policy "viper_posts_owner_delete" on public.viper_posts
 
 drop policy if exists "viper_likes_read" on public.viper_post_likes;
 create policy "viper_likes_read" on public.viper_post_likes
-  for select to authenticated using (true);
+  for select to authenticated using (
+    exists (
+      select 1 from public.viper_posts p
+      where p.id = post_id
+        and not public.is_blocked_between(auth.uid(), p.user_id)
+    )
+  );
 drop policy if exists "viper_likes_insert_own" on public.viper_post_likes;
 create policy "viper_likes_insert_own" on public.viper_post_likes
-  for insert to authenticated with check (auth.uid() = user_id);
+  for insert to authenticated with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.viper_posts p
+      where p.id = post_id
+        and not public.is_blocked_between(auth.uid(), p.user_id)
+    )
+  );
 drop policy if exists "viper_likes_delete_own" on public.viper_post_likes;
 create policy "viper_likes_delete_own" on public.viper_post_likes
   for delete to authenticated using (auth.uid() = user_id);
 
 drop policy if exists "viper_comments_read" on public.viper_post_comments;
 create policy "viper_comments_read" on public.viper_post_comments
-  for select to authenticated using (true);
+  for select to authenticated using (
+    exists (
+      select 1 from public.viper_posts p
+      where p.id = post_id
+        and not public.is_blocked_between(auth.uid(), p.user_id)
+    )
+  );
 drop policy if exists "viper_comments_insert_own" on public.viper_post_comments;
 create policy "viper_comments_insert_own" on public.viper_post_comments
-  for insert to authenticated with check (auth.uid() = user_id);
+  for insert to authenticated with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.viper_posts p
+      where p.id = post_id
+        and not public.is_blocked_between(auth.uid(), p.user_id)
+    )
+  );
 drop policy if exists "viper_comments_delete_own" on public.viper_post_comments;
 create policy "viper_comments_delete_own" on public.viper_post_comments
   for delete to authenticated using (auth.uid() = user_id);
