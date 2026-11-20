@@ -134,6 +134,7 @@ main{min-width:0;padding-block:12px 40px}
 .notify-item.unread{border-color:#35d07f;background:color-mix(in srgb,var(--surface) 90%,#35d07f 10%)}
 .notify-symbol{width:40px;height:40px;display:grid;place-items:center;border-radius:10px;background:var(--bg);font-size:1.2rem}
 .notify-copy{min-width:0;display:grid;gap:3px}.notify-copy small{color:var(--muted)}.notify-copy p{overflow-wrap:anywhere}
+.nav button .nav-notify-count{position:static;margin-left:auto;flex:none}
 main{padding-block:12px 110px}
 .view{display:grid;gap:14px;min-width:0}
 .sec-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;margin-top:6px}
@@ -331,7 +332,7 @@ main{padding-block:12px 40px}
 <div id="app" hidden>
   <header class="top">
     <div style="display:flex;align-items:center;gap:12px"><button class="nav-toggle" id="nav-toggle" type="button" aria-label="Abrir menú" aria-expanded="true">☰</button><span class="logo">Viper</span></div>
-    <div class="notify-head"><button type="button" class="notify-bell" id="notify-bell" aria-label="Abrir notificaciones" title="Notificaciones">♧<span class="notify-count" id="notify-count" hidden>0</span></button><span class="who" id="who"></span></div>
+    <div class="notify-head"><button type="button" class="notify-bell" id="notify-bell" aria-label="Abrir notificaciones" title="Notificaciones">🔔<span class="notify-count" id="notify-count" hidden>0</span></button><span class="who" id="who"></span></div>
   </header>
   <div class="app-layout">
   <nav class="nav" id="sidebar" aria-label="Secciones">
