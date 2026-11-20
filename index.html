@@ -105,7 +105,7 @@ button.act{cursor:pointer}
 .btn:disabled{opacity:.45;cursor:default}
 .mini{border:0;background:none;color:var(--muted);font:inherit;font-size:.8rem;text-decoration:underline;padding:0;cursor:pointer}
 
-input[type=text]{min-height:44px;width:100%;min-width:0;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:0 12px;font:inherit}
+input[type=text],input[type=email],input[type=password]{min-height:44px;width:100%;min-width:0;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:0 12px;font:inherit}
 .addrow{display:flex;flex-wrap:wrap;gap:8px}
 .addrow input{flex:1;min-width:170px}
 label.lbl{font-size:.9rem;color:var(--muted)}
@@ -155,8 +155,17 @@ form.stack{display:grid;gap:8px}
   <p class="eyebrow">Gym · Rangos · Amigos</p>
   <h1 class="logo-big">Viper</h1>
   <p class="lead">Entrena, registra tu día y sube de rango. Compite con tus amigos.</p>
-  <button class="btn primary wide" id="entrar" type="button">Entrar con Google</button>
-  <p class="note" id="login-msg"></p>
+  <button class="btn wide" id="entrar" type="button">Continuar con Google</button>
+  <div class="sec-head"><h2 id="auth-title">Iniciar sesión</h2></div>
+  <form id="auth-form" class="stack">
+    <label class="lbl" for="auth-email">Correo electrónico</label>
+    <input id="auth-email" type="email" autocomplete="email" required placeholder="tu@correo.com">
+    <label class="lbl" for="auth-password">Contraseña</label>
+    <input id="auth-password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mínimo 8 caracteres">
+    <button class="btn primary wide" id="auth-submit" type="submit">Iniciar sesión</button>
+  </form>
+  <button class="mini" id="auth-toggle" type="button">¿No tienes cuenta? Regístrate</button>
+  <p class="note" id="login-msg" role="status" aria-live="polite"></p>
   <p class="note"><a href="privacidad.html">Privacidad</a> · <a href="terminos.html">Condiciones</a></p>
 </section>
 
@@ -312,7 +321,7 @@ function addDays(iso, n){
   return d.toISOString().slice(0, 10);
 }
 
-var sb = null, user = null, P = null, T = null, F = [], U = {}, iniciado = false, toastT = null;
+var sb = null, user = null, P = null, T = null, F = [], U = {}, iniciado = false, toastT = null, authMode = 'login';
 
 function toast(msg, err){
   var el = $('toast');
@@ -597,6 +606,49 @@ function eventos(){
     $('login-msg').textContent = '';
     var r = await sb.auth.signInWithOAuth({provider: 'google', options: {redirectTo: location.origin + location.pathname}});
     if (r.error) $('login-msg').textContent = errMsg(r.error);
+  });
+  $('auth-toggle').addEventListener('click', function(){
+    authMode = authMode === 'login' ? 'signup' : 'login';
+    $('auth-title').textContent = authMode === 'signup' ? 'Crear cuenta' : 'Iniciar sesión';
+    $('auth-submit').textContent = authMode === 'signup' ? 'Registrarme' : 'Iniciar sesión';
+    $('auth-password').autocomplete = authMode === 'signup' ? 'new-password' : 'current-password';
+    $('auth-toggle').textContent = authMode === 'signup' ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate';
+    $('login-msg').textContent = '';
+  });
+  $('auth-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var email = $('auth-email').value.trim().toLowerCase();
+    var password = $('auth-password').value;
+    var submit = $('auth-submit');
+    $('login-msg').textContent = '';
+    if (password.length < 8){
+      $('login-msg').textContent = 'La contraseña debe tener al menos 8 caracteres.';
+      return;
+    }
+    submit.disabled = true;
+    submit.textContent = authMode === 'signup' ? 'Creando cuenta…' : 'Ingresando…';
+    try {
+      var result;
+      if (authMode === 'signup'){
+        result = await sb.auth.signUp({
+          email: email,
+          password: password,
+          options: { emailRedirectTo: location.origin + location.pathname }
+        });
+        if (result.error) throw result.error;
+        $('login-msg').textContent = result.data.session
+          ? 'Cuenta creada. Entrando a VIPER…'
+          : 'Cuenta creada. Revisa tu correo y confirma tu dirección para poder iniciar sesión.';
+      } else {
+        result = await sb.auth.signInWithPassword({email: email, password: password});
+        if (result.error) throw result.error;
+      }
+    } catch (err) {
+      $('login-msg').textContent = errMsg(err);
+    } finally {
+      submit.disabled = false;
+      submit.textContent = authMode === 'signup' ? 'Registrarme' : 'Iniciar sesión';
+    }
   });
   $('salir').addEventListener('click', async function(){ await sb.auth.signOut(); });
   document.querySelectorAll('[data-nav]').forEach(function(b){
