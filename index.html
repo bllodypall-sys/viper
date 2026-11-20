@@ -140,6 +140,10 @@ button.act{cursor:pointer}
 .btn.sm{min-height:36px;padding:0 12px;font-size:.85rem}
 .btn.wide{width:100%}
 .btn:disabled{opacity:.45;cursor:default}
+.social-links{display:flex;flex-wrap:wrap;gap:8px}
+.social-links a{min-width:110px}
+.profile-link{border:0;background:none;color:inherit;padding:0;text-align:left;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer}
+.profile-link:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
 .mini{border:0;background:none;color:var(--muted);font:inherit;font-size:.8rem;text-decoration:underline;padding:0;cursor:pointer}
 
 input[type=text],input[type=email],input[type=password]{min-height:44px;width:100%;min-width:0;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:0 12px;font:inherit}
@@ -330,13 +334,36 @@ main{padding-block:12px 40px}
         <label class="lbl" for="p-user">Nombre de usuario (es público)</label>
         <input id="p-user" type="text" maxlength="20" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false">
         <p class="note">De 3 a 20 caracteres: letras minúsculas, números y guion bajo.</p>
-        <button class="btn primary" type="submit">Guardar nombre</button>
+        <h2>Mis redes sociales</h2>
+        <label class="lbl" for="p-instagram">Instagram · enlace del perfil</label>
+        <input id="p-instagram" type="url" placeholder="https://instagram.com/tuusuario">
+        <label class="lbl" for="p-tiktok">TikTok · enlace del perfil</label>
+        <input id="p-tiktok" type="url" placeholder="https://tiktok.com/@tuusuario">
+        <label class="lbl" for="p-facebook">Facebook · enlace del perfil</label>
+        <input id="p-facebook" type="url" placeholder="https://facebook.com/tuusuario">
+        <label class="lbl" for="p-x">X · enlace del perfil</label>
+        <input id="p-x" type="url" placeholder="https://x.com/tuusuario">
+        <p class="note">Los enlaces que agregues serán visibles para todos en tu perfil.</p>
+        <button class="btn primary" type="submit">Guardar perfil</button>
       </form>
       <button class="btn" id="salir" type="button">Cerrar sesión</button>
       <p class="note">Para instalarla: en iPhone, Compartir y Añadir a pantalla de inicio. En Android, menú y Instalar app.</p>
       <div class="sec-head"><h2>Niveles y XP necesarios</h2></div>
       <ol class="ranks" id="ranks"></ol>
       <p class="note"><a href="privacidad.html">Privacidad</a> · <a href="terminos.html">Condiciones</a></p>
+    </section>
+
+    <section id="v-public-profile" class="view" aria-label="Perfil de usuario" hidden>
+      <div class="sec-head"><h2>Perfil VIPER</h2><button class="btn sm" id="profile-back" type="button">Volver</button></div>
+      <div class="avatar-card">
+        <div class="avatar-ring" id="public-avatar-ring"><span class="avatar-fallback" id="public-avatar-fallback">V</span><img id="public-avatar-img" alt="Foto de perfil" hidden></div>
+        <h2 id="public-username">Atleta</h2>
+        <div class="avatar-level" id="public-rank">Novato · Nivel 1</div>
+        <p class="note" id="public-xp">0 XP</p>
+        <p class="note" id="public-streak">Racha: 0</p>
+      </div>
+      <div class="season-card"><h2>Redes sociales</h2><div id="public-socials" class="social-links"><p class="note">Este usuario aún no agregó sus redes.</p></div></div>
+      <p class="note">Los datos privados y las fotos de check-in no se muestran aquí.</p>
     </section>
   </main>
   </div>
@@ -424,11 +451,11 @@ function pantalla(n){
 
 /* ---------- Datos ---------- */
 async function loadProfile(){
-  var r = await sb.from('profiles').select('username,xp_total,racha,ultimo_gym,avatar_path').eq('id', user.id).single();
+  var r = await sb.from('profiles').select('username,xp_total,racha,ultimo_gym,avatar_path,instagram_url,tiktok_url,facebook_url,x_url').eq('id', user.id).single();
   if (r.error && /avatar_path|column.*does not exist/i.test(r.error.message || '')){
-    r = await sb.from('profiles').select('username,xp_total,racha,ultimo_gym').eq('id', user.id).single();
+    r = await sb.from('profiles').select('username,xp_total,racha,ultimo_gym,avatar_path').eq('id', user.id).single();
     if (r.error) throw r.error;
-    r.data.avatar_path = null;
+    r.data.instagram_url = null; r.data.tiktok_url = null; r.data.facebook_url = null; r.data.x_url = null;
   }
   if (r.error) throw r.error;
   P = r.data;
@@ -659,14 +686,14 @@ function renderAmigos(){
   var h = '';
   if (rec.length){
     h += '<h2>Solicitudes recibidas</h2><ul class="reqs">' + rec.map(function(f){
-      return '<li class="req"><b>' + nombre(f.solicitante) + '</b><span class="btns">' +
+      return '<li class="req"><b><button class="profile-link" type="button" data-profile="' + f.solicitante + '">' + nombre(f.solicitante) + '</button></b><span class="btns">' +
         '<button class="btn primary sm" type="button" data-act="aceptar" data-id="' + f.id + '">Aceptar</button>' +
         '<button class="btn sm" type="button" data-act="borrar" data-id="' + f.id + '">Rechazar</button></span></li>';
     }).join('') + '</ul>';
   }
   if (env.length){
     h += '<h2>Solicitudes enviadas</h2><ul class="reqs">' + env.map(function(f){
-      return '<li class="req"><b>' + nombre(f.destinatario) + '</b><span class="btns">' +
+      return '<li class="req"><b><button class="profile-link" type="button" data-profile="' + f.destinatario + '">' + nombre(f.destinatario) + '</button></b><span class="btns">' +
         '<button class="btn sm" type="button" data-act="borrar" data-id="' + f.id + '">Cancelar</button></span></li>';
     }).join('') + '</ul>';
   }
@@ -677,7 +704,7 @@ function renderAmigos(){
     .sort(function(a, b){ return b.xp_total - a.xp_total || a.username.localeCompare(b.username); });
   $('f-board').innerHTML = rows.length ? rows.map(function(r){
     var l = LV[idxOf(r.xp_total)];
-    return '<li class="req friend-chat"><span class="friend-meta"><b>' + esc(r.username) + '</b><br><small>' + l.label + ' · ' + fmt(r.xp_total) + ' XP · racha ' + r.racha_activa + '</small></span>' + (r.id !== me ? '<button class="btn primary sm" type="button" data-act="chat" data-user="' + r.id + '">Abrir chat</button>' : '<span class="note">Tú</span>') + '</li>';
+    return '<li class="req friend-chat"><span class="friend-meta"><b><button class="profile-link" type="button" data-profile="' + r.id + '">' + esc(r.username) + '</button></b><br><small>' + l.label + ' · ' + fmt(r.xp_total) + ' XP · racha ' + r.racha_activa + '</small></span>' + (r.id !== me ? '<button class="btn primary sm" type="button" data-act="chat" data-user="' + r.id + '">Abrir chat</button>' : '<span class="note">Tú</span>') + '</li>';
   }).join('') : '<li class="empty">Aún no hay amigos aceptados.</li>';
   $('f-vacio').hidden = ok.length > 0;
 }
@@ -699,6 +726,7 @@ function renderLevels(){
 function renderPerfil(){
   $('p-email').textContent = user.email || '';
   if (document.activeElement !== $('p-user')) $('p-user').value = P.username;
+  [['p-instagram','instagram_url'],['p-tiktok','tiktok_url'],['p-facebook','facebook_url'],['p-x','x_url']].forEach(function(pair){ if(document.activeElement !== $(pair[0])) $(pair[0]).value = P[pair[1]] || ''; });
   var li = LV[idxOf(P.xp_total)], color = RANKS[li.ri].plate;
   $('avatar-ring').style.setProperty('--avatar-color', color);
   $('avatar-level').textContent = li.label + ' · Nivel ' + (idxOf(P.xp_total) + 1);
@@ -706,6 +734,35 @@ function renderPerfil(){
   if (P.avatar_path){ var av = sb.storage.from('avatars').getPublicUrl(P.avatar_path).data.publicUrl; $('avatar-img').src = av; $('avatar-img').hidden = false; $('avatar-fallback').hidden = true; }
   else { $('avatar-img').hidden = true; $('avatar-fallback').hidden = false; }
   renderLevels();
+}
+function socialUrl(value, host){
+  if(!value) return null;
+  try { var u=new URL(value); if(u.protocol!=='https:' || !(u.hostname===host || u.hostname.endsWith('.'+host))) return null; return u.href; } catch(e){ return null; }
+}
+function socialButtons(p){
+  var defs=[['Instagram','instagram_url','instagram.com'],['TikTok','tiktok_url','tiktok.com'],['Facebook','facebook_url','facebook.com'],['X','x_url','x.com']];
+  return defs.map(function(d){ var url=socialUrl(p[d[1]],d[2]); return url?'<a class="btn sm" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+d[0]+'</a>':''; }).filter(Boolean).join('');
+}
+async function abrirPerfilPublico(id){
+  if(!id) return;
+  try{
+    var r=await sb.from('viper_public_profiles').select('id,username,xp_total,racha,avatar_path,instagram_url,tiktok_url,facebook_url,x_url').eq('id',id).maybeSingle();
+    if(r.error) throw r.error;
+    if(!r.data){ toast('No se pudo encontrar ese perfil.',true); return; }
+    var p=r.data, lv=LV[idxOf(p.xp_total||0)];
+    $('public-username').textContent=p.username||'Atleta';
+    $('public-rank').textContent=lv.label+' · Nivel '+(idxOf(p.xp_total||0)+1);
+    $('public-xp').textContent=fmt(p.xp_total||0)+' XP';
+    $('public-streak').textContent='Racha: '+(p.racha||0);
+    $('public-avatar-ring').style.setProperty('--avatar-color',RANKS[lv.ri].plate);
+    $('public-avatar-fallback').textContent=(p.username||'V').slice(0,1).toUpperCase();
+    if(p.avatar_path){
+      var av=sb.storage.from('avatars').getPublicUrl(p.avatar_path).data.publicUrl;
+      $('public-avatar-img').src=av; $('public-avatar-img').hidden=false; $('public-avatar-fallback').hidden=true;
+    }else{$('public-avatar-img').hidden=true;$('public-avatar-fallback').hidden=false;}
+    $('public-socials').innerHTML=socialButtons(p)||'<p class="note">Este usuario aún no agregó sus redes.</p>';
+    ir('public-profile');
+  }catch(e){toast(errMsg(e),true);}
 }
 function renderAll(){
   $('who').textContent = P.username;
@@ -717,7 +774,7 @@ function renderAll(){
 /* ---------- Navegación ---------- */
 function ir(v){
   if (v === 'boxeo'){ location.href = 'boxeo.html'; return; }
-  ['hoy', 'temporada', 'ranking', 'amigos', 'perfil'].forEach(function(n){
+  ['hoy', 'temporada', 'ranking', 'amigos', 'perfil', 'public-profile'].forEach(function(n){
     $('v-' + n).hidden = n !== v;
     var b = document.querySelector('[data-nav="' + n + '"]');
     if (b){
@@ -883,6 +940,11 @@ function eventos(){
       await cargarAmigos();
     } catch (err) { toast(errMsg(err), true); }
   });
+  document.addEventListener('click',function(e){
+    var p=e.target.closest('[data-profile]');
+    if(p){ abrirPerfilPublico(p.dataset.profile); }
+  });
+  $('profile-back').addEventListener('click',function(){ ir('ranking'); });
   $('v-amigos').addEventListener('click', async function(e){
     var b = e.target.closest('button[data-act]');
     if (!b) return;
@@ -941,14 +1003,23 @@ function eventos(){
     var u = $('p-user').value.trim().toLowerCase();
     if (!/^[a-z0-9_]{3,20}$/.test(u)){ toast('Usa de 3 a 20 letras minúsculas, números o guion bajo', true); return; }
     try {
-      var r = await sb.from('profiles').update({username: u}).eq('id', user.id);
+      var social = {
+        instagram_url: $('p-instagram').value.trim() || null,
+        tiktok_url: $('p-tiktok').value.trim() || null,
+        facebook_url: $('p-facebook').value.trim() || null,
+        x_url: $('p-x').value.trim() || null
+      };
+      var hosts = [['instagram_url','instagram.com'],['tiktok_url','tiktok.com'],['facebook_url','facebook.com'],['x_url','x.com']];
+      for(var si=0;si<hosts.length;si++){ if(social[hosts[si][0]] && !socialUrl(social[hosts[si][0]],hosts[si][1])){ toast('Revisa el enlace de '+hosts[si][0].replace('_url','')+'. Usa la dirección https correcta.',true); return; } }
+      var r = await sb.from('profiles').update(Object.assign({username: u},social)).eq('id', user.id);
       if (r.error){
         toast(r.error.code === '23505' ? 'Ese nombre ya lo usa otra persona' : errMsg(r.error), true);
         return;
       }
       P.username = u;
+      Object.assign(P,social);
       $('who').textContent = u;
-      toast('Nombre guardado');
+      toast('Perfil guardado');
     } catch (err) { toast(errMsg(err), true); }
   });
 }
