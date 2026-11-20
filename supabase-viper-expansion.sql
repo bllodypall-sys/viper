@@ -249,7 +249,7 @@ drop policy if exists post_comments_insert_own on public.post_comments;
 create policy post_comments_insert_own on public.post_comments for insert to authenticated with check (
   user_id=auth.uid() and exists (
     select 1 from public.posts p
-    where p.id=post_id and not public.is_blocked_between(auth.uid(),p.user_id)
+    where p.id=post_id and public.can_view_social_content(p.user_id)
   )
 );
 drop policy if exists post_comments_delete_own on public.post_comments;
