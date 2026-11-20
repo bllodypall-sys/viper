@@ -672,6 +672,7 @@ main{padding-block:12px 40px}
         <p class="note">Los enlaces que agregues serán visibles para todos en tu perfil.</p>
         <button class="btn primary" type="submit">Guardar perfil</button>
       </form>
+      <section class="season-card" aria-label="Usuarios bloqueados"><div class="sec-head"><h2>Usuarios bloqueados</h2><button class="btn sm" id="refresh-blocked" type="button">Actualizar</button></div><div id="blocked-users"><p class="note">Cargando lista...</p></div></section>
       <button class="btn" id="salir" type="button">Cerrar sesión</button>
       <p class="note">Para instalarla: en iPhone, Compartir y Añadir a pantalla de inicio. En Android, menú y Instalar app.</p>
       <div class="sec-head"><h2>Niveles y XP necesarios</h2></div>
@@ -1323,6 +1324,32 @@ async function bloquearPerfilPublico(){
     $('public-actions').innerHTML='<p class="note">Usuario bloqueado. No podrás interactuar con este perfil.</p>';
     toast('Usuario bloqueado');
     await cargarAmigos();
+  }catch(e){toast(errMsg(e),true);}
+}
+async function cargarUsuariosBloqueados(){
+  var box=$('blocked-users'); if(!box || !user) return;
+  box.innerHTML='<p class="note">Cargando usuarios bloqueados...</p>';
+  try{
+    var r=await sb.from('user_blocks').select('blocked_id,created_at').eq('blocker_id',user.id).order('created_at',{ascending:false});
+    if(r.error) throw r.error;
+    if(!r.data || !r.data.length){box.innerHTML='<p class="note">No has bloqueado a ningún usuario.</p>';return;}
+    var ids=r.data.map(function(x){return x.blocked_id;});
+    var p=await sb.from('profiles').select('id,username,avatar_path').in('id',ids);
+    if(p.error) throw p.error;
+    var byId={};(p.data||[]).forEach(function(x){byId[x.id]=x;});
+    box.innerHTML=r.data.map(function(x){
+      var profile=byId[x.blocked_id], name=profile&&profile.username?profile.username:'Usuario';
+      return '<div class="friend-row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0"><b>'+esc(name)+'</b><button class="btn sm" type="button" data-unblock-user="'+esc(x.blocked_id)+'">Desbloquear</button></div>';
+    }).join('');
+  }catch(e){box.innerHTML='<p class="note">No se pudo cargar la lista: '+esc(errMsg(e))+'</p>';}
+}
+async function desbloquearUsuario(id){
+  if(!id || !confirm('¿Quieres desbloquear a este usuario?')) return;
+  try{
+    var r=await sb.from('user_blocks').delete().eq('blocker_id',user.id).eq('blocked_id',id);
+    if(r.error) throw r.error;
+    toast('Usuario desbloqueado');
+    await cargarUsuariosBloqueados();
   }catch(e){toast(errMsg(e),true);}
 }
 async function reportarPerfilPublico(){
