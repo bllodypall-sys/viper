@@ -139,11 +139,20 @@ button.act{cursor:pointer}
 .fotobox{display:grid;gap:8px;justify-items:start}
 .fotobox:empty{display:none}
 .thumb{display:block;max-width:100%;max-height:220px;border-radius:8px;object-fit:cover}
-.meals{flex-wrap:wrap}
-.meals .t{min-width:150px}
-.mbtns{display:flex;gap:6px}
-.mb{width:44px;height:44px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;font:700 1.1rem var(--display);cursor:pointer}
-.mb[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.meal-list{display:grid;gap:9px}
+.meal-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:9px}
+.meal-card h3{margin:0;font:700 1.05rem var(--display);text-transform:uppercase;letter-spacing:.04em}
+.meal-card .meal-state{color:var(--muted);font-size:.84rem}
+.meal-card .meal-photo{grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.meal-card .meal-photo img{width:88px;height:72px;object-fit:cover;border-radius:7px}
+.meal-card .meal-nutrients{grid-column:1/-1;color:var(--muted);font-size:.82rem}
+.meal-card .meal-action{min-height:38px;padding:0 12px;font-size:.85rem}
+.meal-card.approved{border-color:#32965b}
+.meal-card.rejected{border-color:var(--danger)}
+.meal-card.pending{border-style:dashed}
+.meal-list-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.meal-list-head h3{margin:0;font:700 1.05rem var(--display);text-transform:uppercase}
+.meal-card .meal-xp{font:700 1.1rem var(--display);white-space:nowrap}
 .total{display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid var(--fg);padding-top:10px}
 .total b{font:800 2.2rem/1 var(--display);font-variant-numeric:tabular-nums}
 
@@ -279,16 +288,9 @@ main{padding-block:12px 40px}
           <span class="v" id="gymxp"></span>
         </div>
         <div class="fotobox" id="fotobox"></div>
-        <div class="act meals" role="group" aria-labelledby="mealt">
-          <span class="t" id="mealt">Comidas de la dieta<small>10 XP cada una, máximo 4 al día</small></span>
-          <span class="mbtns">
-            <button class="mb" type="button" data-m="0" aria-pressed="false" aria-label="Comida 1">1</button>
-            <button class="mb" type="button" data-m="1" aria-pressed="false" aria-label="Comida 2">2</button>
-            <button class="mb" type="button" data-m="2" aria-pressed="false" aria-label="Comida 3">3</button>
-            <button class="mb" type="button" data-m="3" aria-pressed="false" aria-label="Comida 4">4</button>
-          </span>
-          <span class="v" id="mealxp"></span>
-        </div>
+        <div class="meal-list-head"><h3>Comidas de la dieta</h3><span class="note">10 XP por comida validada · máximo 4</span></div>
+        <div id="meal-list" class="meal-list"></div>
+        <p class="note">Sube una foto clara de cada comida. La IA estimará los nutrientes; las cantidades son aproximadas.</p>
         <button class="act" id="prot" type="button" aria-pressed="false">
           <span class="chk" aria-hidden="true"></span>
           <span class="t">Proteína en polvo</span>
@@ -490,13 +492,21 @@ async function loadToday(){
   if (r.error) throw r.error;
   var h = r.data.find(function(x){ return x.dia === hoy; }) || null;
   var a = r.data.find(function(x){ return x.dia === ayer; }) || null;
-  var n = h ? h.comidas : 0;
+  var mr = await sb.from('meal_entries').select('id,meal_slot,status,food_name,calories,protein_g,carbs_g,fat_g,confidence,ai_notes,photo_path,source').eq('meal_date', hoy).order('meal_slot');
+  if (mr.error) throw mr.error;
+  var mealRows = mr.data || [];
+  for (var mi=0; mi<mealRows.length; mi++){
+    if (mealRows[mi].photo_path){
+      var signedMeal = await sb.storage.from('meal-photos').createSignedUrl(mealRows[mi].photo_path, 3600);
+      mealRows[mi].signedUrl = signedMeal.data ? signedMeal.data.signedUrl : null;
+    }
+  }
   T = {
     hoy: hoy,
     rachaAyer: a ? a.gym_racha : 0,
     saved: h,
     fotoPath: h ? h.foto_path : null,
-    meals: [0,1,2,3].map(function(i){ return i < n; }),
+    mealEntries: mealRows,
     prot: h ? !!h.proteina : false,
     blob: null, blobUrl: null, signed: null
   };
@@ -508,7 +518,7 @@ async function signPhoto(){
 }
 
 /* ---------- Pantalla Hoy ---------- */
-function mealsN(){ return T.meals.filter(Boolean).length; }
+function mealsN(){ return (T.mealEntries || []).filter(function(m){ return m.status === 'approved'; }).length; }
 function previewXP(){
   var gym = !!(T.fotoPath || T.blob);
   var racha = gym ? T.rachaAyer + 1 : 0;
@@ -538,6 +548,50 @@ function renderRank(){
   $('fill').style.width = (nx ? (t - cur.x) / (nx.x - cur.x) * 100 : 100).toFixed(1) + '%';
   $('faltan').textContent = nx ? 'Faltan ' + fmt(nx.x - t) + ' XP para ' + nx.label : 'Rango máximo alcanzado';
 }
+function renderMeals(){
+  var list = $('meal-list');
+  if (!list || !T) return;
+  var labels = ['Desayuno','Almuerzo','Cena','Adicional'];
+  var bySlot = {};
+  (T.mealEntries || []).forEach(function(m){ bySlot[m.meal_slot] = m; });
+  list.innerHTML = [1,2,3,4].map(function(slot){
+    var m = bySlot[slot];
+    var state = m ? m.status : 'empty';
+    var title = labels[slot-1];
+    var stateText = !m ? 'Aún no registrada' :
+      m.status === 'approved' ? (m.source === 'legacy' ? 'Registro anterior conservado' : 'Validada por IA') :
+      m.status === 'pending' ? 'En revisión' : 'No validada · puedes volver a intentarlo';
+    var photo = m && m.signedUrl ? '<img src="'+esc(m.signedUrl)+'" alt="Foto de '+esc(title)+'">' : '';
+    var nutrients = m && m.status === 'approved' ?
+      '<div class="meal-nutrients">'+esc(m.food_name || 'Comida')+' · '+Math.round(Number(m.calories)||0)+' kcal · Proteína '+Math.round(Number(m.protein_g)||0)+' g · Carbohidratos '+Math.round(Number(m.carbs_g)||0)+' g · Grasas '+Math.round(Number(m.fat_g)||0)+' g <small>(estimado)</small></div>' : '';
+    var action = (!m || m.status === 'rejected') ?
+      '<label class="btn meal-action" for="meal-file-'+slot+'">'+(m ? 'Volver a intentar' : 'Subir foto')+'</label><input class="vh meal-file" id="meal-file-'+slot+'" data-slot="'+slot+'" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">' :
+      '<span class="meal-xp">'+(m.status === 'approved' ? '+10 XP' : '…')+'</span>';
+    return '<article class="meal-card '+state+'"><div><h3>'+title+'</h3><p class="meal-state">'+stateText+'</p></div>'+action+(photo ? '<div class="meal-photo">'+photo+'</div>' : '')+nutrients+'</article>';
+  }).join('');
+}
+async function analizarComida(slot, file){
+  if (!file || !/^image\\/(jpeg|png|webp)$/.test(file.type) || file.size > 8*1024*1024){
+    toast('Elige una foto JPG, PNG o WEBP de hasta 8 MB.', true); return;
+  }
+  try {
+    toast('Preparando foto para analizar…');
+    var blob = await comprimir(file);
+    var ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
+    var path = user.id+'/'+T.hoy+'/'+slot+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.'+ext;
+    var up = await sb.storage.from('meal-photos').upload(path, blob, {contentType: blob.type || 'image/jpeg', upsert: false});
+    if (up.error) throw up.error;
+    toast('VIPER está analizando tu comida…');
+    var result = await sb.functions.invoke('analyze-meal', {body:{slot:slot, photoPath:path}});
+    if (result.error) throw result.error;
+    if (result.data && result.data.error) throw new Error(result.data.error);
+    await loadToday();
+    renderHoy();
+    toast(result.data && result.data.approved ? '¡Comida validada! +10 XP al guardar el día.' : 'La IA no pudo validar esta foto. Puedes intentarlo otra vez.');
+  } catch (e) {
+    toast(errMsg(e), true);
+  }
+}
 function renderHoy(){
   var p = previewXP();
   var bonusSi = Math.min(T.rachaAyer + 1, 10) * 5;
@@ -546,10 +600,8 @@ function renderHoy(){
   $('gymxp').textContent = '+' + (50 + bonusSi);
   $('gymsub').textContent = '50 base + ' + bonusSi + ' de racha (día ' + (T.rachaAyer + 1) + ')';
   $('fotobox').innerHTML = fotoHTML();
-  document.querySelectorAll('.mb').forEach(function(b){
-    b.setAttribute('aria-pressed', T.meals[+b.dataset.m] ? 'true' : 'false');
-  });
-  $('mealxp').textContent = '+' + (mealsN() * 10);
+  renderMeals();
+  $('mealxp').textContent = '+' + (mealsN() * 10) + ' XP';
   $('prot').setAttribute('aria-pressed', T.prot ? 'true' : 'false');
   $('hoyxp').textContent = fmt(p.xp);
   var d = dirty();
@@ -1028,9 +1080,15 @@ function eventos(){
     b.addEventListener('click', function(){ ir(b.dataset.nav); });
   });
   $('v-hoy').addEventListener('click', function(e){
-    var m = e.target.closest('.mb');
-    if (m){ var k = +m.dataset.m; T.meals[k] = !T.meals[k]; renderHoy(); return; }
     if (e.target.closest('#prot')){ T.prot = !T.prot; renderHoy(); }
+  });
+  $('meal-list').addEventListener('change', async function(e){
+    var input = e.target.closest('.meal-file');
+    if (!input) return;
+    var file = input.files && input.files[0];
+    var slot = Number(input.dataset.slot);
+    input.value = '';
+    await analizarComida(slot, file);
   });
   $('foto-in').addEventListener('change', async function(e){
     var f = e.target.files && e.target.files[0];
