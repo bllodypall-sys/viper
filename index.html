@@ -518,7 +518,7 @@ async function signPhoto(){
 }
 
 /* ---------- Pantalla Hoy ---------- */
-function mealsN(){ return (T.mealEntries || []).filter(function(m){ return m.status === 'approved'; }).length; }
+function mealsN(){ return (T.mealEntries || []).filter(function(m){ return m.source === 'ai' && m.status === 'approved'; }).length; }
 function previewXP(){
   var gym = !!(T.fotoPath || T.blob);
   var racha = gym ? T.rachaAyer + 1 : 0;
@@ -553,7 +553,7 @@ function renderMeals(){
   if (!list || !T) return;
   var labels = ['Desayuno','Almuerzo','Cena','Adicional'];
   var bySlot = {};
-  (T.mealEntries || []).forEach(function(m){ bySlot[m.meal_slot] = m; });
+  (T.mealEntries || []).forEach(function(m){ if (m.source === 'ai') bySlot[m.meal_slot] = m; });
   list.innerHTML = [1,2,3,4].map(function(slot){
     var m = bySlot[slot];
     var state = m ? m.status : 'empty';
