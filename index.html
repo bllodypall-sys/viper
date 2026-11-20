@@ -1395,7 +1395,7 @@ async function loadFeed(){
   var results=await Promise.all([
     sb.from('profiles').select('id,username,avatar_path').in('id',ids),
     sb.from('viper_post_likes').select('post_id,user_id').in('post_id',postIds),
-    sb.from('viper_post_comments').select('id,post_id,user_id,body,created_at').in('post_id',postIds).order('created_at',{ascending:true}).limit(250)
+    sb.from('viper_post_comments').select('id,post_id,user_id,body,created_at').in('post_id',postIds).order('created_at',{ascending:false}).limit(250)
   ]);
   results.forEach(function(x){if(x.error)throw x.error;});
   var profiles={};(results[0].data||[]).forEach(function(x){profiles[x.id]=x;});
@@ -1417,7 +1417,7 @@ async function loadFeed(){
         : '<img class="feed-media" loading="lazy" src="'+esc(url)+'" alt="Publicación de '+esc(username)+'">';
     }
     var mine=post.user_id===user.id,liked=likes.some(function(x){return x.post_id===post.id&&x.user_id===user.id;});
-    var postComments=comments.filter(function(x){return x.post_id===post.id;});
+    var postComments=comments.filter(function(x){return x.post_id===post.id;}).sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at);});
     return '<article class="feed-card" data-feed-post="'+post.id+'"><div class="feed-card-head">'+(avatar?'<img class="feed-avatar" src="'+esc(avatar)+'" alt="">':'<span class="feed-avatar feed-avatar-fallback">'+esc(username.slice(0,1).toUpperCase())+'</span>')+'<div><div class="feed-author">'+esc(username)+'</div><div class="feed-date">'+feedDate(post.created_at)+'</div></div>'+(mine?'<button class="feed-delete" type="button" data-feed-delete="'+post.id+'">Eliminar</button>':'')+'</div>'+(post.caption?'<p class="feed-caption">'+esc(post.caption)+'</p>':'')+media+'<div class="feed-actions"><button type="button" data-feed-like="'+post.id+'" aria-pressed="'+(liked?'true':'false')+'">'+(liked?'♥':'♡')+' Me gusta ('+likes.filter(function(x){return x.post_id===post.id;}).length+')</button><span class="note">'+postComments.length+' comentarios</span></div><div class="feed-comments">'+postComments.map(function(c){return '<div class="feed-comment"><b>'+esc(commentProfiles[c.user_id]||'Atleta')+':</b> '+esc(c.body)+'</div>';}).join('')+'</div><form class="feed-comment-form" data-feed-comment="'+post.id+'"><input name="body" maxlength="1000" placeholder="Escribe un comentario…" required><button class="btn sm" type="submit">Enviar</button></form></article>';
   }).join('');
 }
