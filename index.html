@@ -181,6 +181,20 @@ button.act{cursor:pointer}
 .evo-muscle-part:hover,.evo-muscle-part:focus{fill:#8eea3d;filter:drop-shadow(0 0 5px #8eea3d)}
 .evo-muscle-part.active{fill:#a5ff52;filter:drop-shadow(0 0 7px #8eea3d)}
 .evo-anatomy-hint{margin:8px 0 0}.evo-anatomy-hint b{color:var(--fg)}
+.evo-month-bar{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:150px;padding:12px}
+.evo-month-item{display:grid;gap:6px;text-align:center;color:var(--muted);font-size:.8rem}
+.evo-month-bars{height:105px;display:flex;align-items:end;justify-content:center;gap:9px;border-bottom:1px solid var(--line)}
+.evo-month-bars i{width:28%;min-height:2px;background:#52645b;border-radius:5px 5px 0 0}
+.evo-month-bars i.current{background:#a5ff52}
+.evo-month-legend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;color:var(--muted);font-size:.78rem;margin-top:8px}
+.evo-month-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;background:#a5ff52;margin-right:4px}
+.evo-month-legend i.old{background:#52645b}
+.evo-photo-compare{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.evo-photo-compare h3{margin:0 0 6px;font:700 1rem var(--display)}
+.evo-photo-compare-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.evo-photo-compare-item{min-width:0;text-align:center}
+.evo-photo-compare-item img{width:100%;aspect-ratio:3/4;object-fit:contain;background:var(--bg);border:1px solid var(--line);border-radius:8px}
+.evo-photo-compare-item small{display:block;color:var(--muted);margin-top:5px}
 @media(max-width:420px){.evo-anatomy{padding:8px}.evo-anatomy-views{gap:2px}.evo-anatomy-panel svg{max-height:320px}}
 
 .evo-entry{padding:11px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
@@ -414,6 +428,22 @@ main{padding-block:12px 40px}
         <div class="evo-chart-wrap"><h3>Volumen por entrenamiento</h3><div id="evo-volume-chart" class="evo-chart"></div></div>
       </div>
       <div class="season-card evo-chart-card">
+        <h2>Comparación mensual</h2>
+        <p class="note">Compara fuerza, volumen y peso corporal entre dos meses.</p>
+        <div class="grid-two">
+          <div><label class="lbl" for="evo-month-a">Mes reciente</label><select id="evo-month-a"></select></div>
+          <div><label class="lbl" for="evo-month-b">Comparar con</label><select id="evo-month-b"></select></div>
+        </div>
+        <div class="grid-two">
+          <div class="evo-stat"><span>Volumen del mes</span><b id="evo-month-volume">0 kg</b></div>
+          <div class="evo-stat"><span>Variación de volumen</span><b id="evo-month-volume-diff">—</b></div>
+          <div class="evo-stat"><span>Récord de peso</span><b id="evo-month-pr">0 kg</b></div>
+          <div class="evo-stat"><span>Sesiones</span><b id="evo-month-sessions">0</b></div>
+        </div>
+        <div class="evo-chart-wrap"><h3>Comparación de volumen y fuerza</h3><div id="evo-month-chart" class="evo-chart"></div></div>
+        <p class="note" id="evo-month-measure-note"></p>
+      </div>
+      <div class="season-card evo-chart-card">
         <h2>Evolución corporal</h2>
         <div class="evo-chart-wrap"><h3>Peso corporal</h3><div id="evo-body-chart" class="evo-chart"></div></div>
       </div>
@@ -468,6 +498,15 @@ main{padding-block:12px 40px}
           <input id="evo-photo" type="file" accept="image/jpeg,image/png,image/webp" required>
           <button class="btn primary" type="submit">Guardar foto privada</button>
         </form>
+        <div class="evo-photo-compare">
+          <h3>Comparador físico</h3>
+          <p class="note">Selecciona dos fotos para observar tu evolución lado a lado.</p>
+          <div class="grid-two">
+            <div><label class="lbl" for="evo-photo-a">Foto inicial</label><select id="evo-photo-a"></select></div>
+            <div><label class="lbl" for="evo-photo-b">Foto reciente</label><select id="evo-photo-b"></select></div>
+          </div>
+          <div id="evo-photo-compare-result" class="evo-photo-compare-grid"></div>
+        </div>
         <div id="evo-photo-history" class="evo-photo-grid"></div>
       </div>
       <div class="season-card">
