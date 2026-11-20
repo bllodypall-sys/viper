@@ -1468,7 +1468,7 @@ async function handleFeedClick(e){
     var post=FEED_POSTS.find(function(x){return x.id===del.dataset.feedDelete;});
     var d=await sb.from('viper_posts').delete().eq('id',del.dataset.feedDelete).eq('user_id',user.id);
     if(d.error)toast(errMsg(d.error),true);else{
-      if(post&&post.media_path){var rm=await sb.storage.from('viper-feed').remove([post.media_path]);if(rm.error)toast('Publicación eliminada, pero no se pudo borrar el archivo multimedia.',true);}
+      if(post&&post.media_path){var rm=await sb.storage.from('viper-feed').remove([post.media_path]);if(rm.error)toast('Publicación eliminada, pero no se pudo borrar el archivo multimedia.',true);else toast('Publicación eliminada');}
       else toast('Publicación eliminada');
       await loadFeed();
     }
