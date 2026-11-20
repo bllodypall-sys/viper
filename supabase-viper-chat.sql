@@ -62,10 +62,13 @@ with check (
   )
 );
 
+-- Permisos explícitos de tabla y secuencia para el cliente autenticado.
+grant select, insert on public.messages to authenticated;
+grant usage, select on sequence public.messages_id_seq to authenticated;
+
+-- El bucket avatars es público: no necesita una política SELECT en storage.objects.
+-- Evitamos permitir el listado de todos los archivos del bucket.
 drop policy if exists "avatars_public_read" on storage.objects;
-create policy "avatars_public_read" on storage.objects
-for select to public
-using (bucket_id='avatars');
 
 drop policy if exists "avatars_owner_upload" on storage.objects;
 create policy "avatars_owner_upload" on storage.objects
