@@ -307,6 +307,19 @@ main{padding-block:12px 40px}
   main{padding-bottom:36px}
 }
 @media(prefers-reduced-motion:reduce){.nav{transition:none}}
+
+/* VIPER Feed */
+.feed-composer,.feed-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0}
+.feed-composer textarea{width:100%;min-height:78px;resize:vertical;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit}
+.feed-compose-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.feed-list{display:grid;gap:14px}.feed-card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.feed-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;background:var(--bg);border:2px solid #8bdc28}
+.feed-avatar-fallback{display:grid;place-items:center;font-weight:800}.feed-author{font-weight:700}.feed-date{font-size:.78rem;color:var(--muted)}
+.feed-caption{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0}.feed-media{display:block;width:100%;max-height:560px;object-fit:contain;border-radius:12px;background:#000;margin-top:10px}
+.feed-actions{display:flex;align-items:center;gap:12px;border-top:1px solid var(--line);padding-top:10px;margin-top:12px;flex-wrap:wrap}
+.feed-actions button,.feed-delete{border:0;background:none;color:var(--fg);font:inherit;cursor:pointer}.feed-actions button[aria-pressed=true]{color:#8bdc28;font-weight:700}
+.feed-comment-form{display:flex;gap:8px;margin-top:10px}.feed-comment-form input{flex:1;min-width:0;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:9px;padding:10px}
+.feed-comment{font-size:.9rem;padding:7px 0;border-bottom:1px solid var(--line)}.feed-empty{padding:20px;text-align:center;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -342,10 +355,27 @@ main{padding-block:12px 40px}
     <button type="button" data-nav="temporada"><span class="nav-icon">⚡</span><span class="nav-label">Temporada</span></button>
     <button type="button" data-nav="ranking"><span class="nav-icon">🏆</span><span class="nav-label">Ranking</span></button>
     <button type="button" data-nav="amigos"><span class="nav-icon">♧</span><span class="nav-label">Amigos</span></button>
+    <button type="button" data-nav="feed"><span class="nav-icon">▶</span><span class="nav-label">VIPER Feed</span></button>
     <button type="button" data-nav="notificaciones"><span class="nav-icon">🔔</span><span class="nav-label">Notificaciones</span><span class="notify-count nav-notify-count" id="nav-notify-count" hidden>0</span></button>
     <button type="button" data-nav="perfil"><span class="nav-icon">◉</span><span class="nav-label">Perfil</span></button>
   </nav>
   <main>
+    <section id="v-feed" class="view" aria-label="VIPER Feed" hidden>
+      <div class="sec-head"><h2>VIPER FEED</h2><span class="note">Comunidad fitness</span></div>
+      <form id="feed-composer" class="feed-composer">
+        <label class="lbl" for="feed-caption">Comparte tu progreso</label>
+        <textarea id="feed-caption" rows="3" maxlength="2000" placeholder="¿Qué entrenamiento hiciste hoy?"></textarea>
+        <div class="feed-compose-actions">
+          <label class="btn sm" for="feed-file">＋ Foto o video</label>
+          <input id="feed-file" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" hidden>
+          <span id="feed-file-name" class="note">Video máximo 60 segundos · 100 MB</span>
+          <button class="btn primary sm" id="feed-publish" type="submit">Publicar</button>
+        </div>
+        <p id="feed-error" class="note" role="status" aria-live="polite"></p>
+      </form>
+      <div class="sec-head"><h3>Publicaciones recientes</h3><button class="btn sm" id="feed-refresh" type="button">Actualizar</button></div>
+      <div id="feed-list" class="feed-list"><p class="note">Cargando publicaciones…</p></div>
+    </section>
     <section id="v-hoy" class="view" aria-label="Hoy">
       <div class="status" id="status">
         <div id="plate"></div>
@@ -1341,9 +1371,109 @@ function renderAll(){
 }
 
 /* ---------- Navegación ---------- */
+
+// ---------- VIPER Feed ----------
+var FEED_POSTS=[];
+function feedDate(value){return new Date(value).toLocaleString('es-PE',{dateStyle:'medium',timeStyle:'short'});}
+async function feedVideoDuration(file){
+  return new Promise(function(resolve,reject){
+    var url=URL.createObjectURL(file), video=document.createElement('video');
+    video.preload='metadata';
+    video.onloadedmetadata=function(){var d=video.duration;URL.revokeObjectURL(url);resolve(d);};
+    video.onerror=function(){URL.revokeObjectURL(url);reject(new Error('No se pudo leer el video.'));};
+    video.src=url;
+  });
+}
+async function loadFeed(){
+  $('feed-list').innerHTML='<p class="note">Cargando publicaciones…</p>';
+  var p=await sb.from('viper_posts').select('id,user_id,caption,media_path,media_type,created_at').order('created_at',{ascending:false}).limit(50);
+  if(p.error) throw p.error;
+  FEED_POSTS=p.data||[];
+  if(!FEED_POSTS.length){$('feed-list').innerHTML='<div class="feed-empty">Aún no hay publicaciones. ¡Sé el primero en compartir tu entrenamiento!</div>';return;}
+  var ids=[...new Set(FEED_POSTS.map(function(x){return x.user_id;}))];
+  var postIds=FEED_POSTS.map(function(x){return x.id;});
+  var results=await Promise.all([
+    sb.from('profiles').select('id,username,avatar_path').in('id',ids),
+    sb.from('viper_post_likes').select('post_id,user_id').in('post_id',postIds),
+    sb.from('viper_post_comments').select('id,post_id,user_id,body,created_at').in('post_id',postIds).order('created_at',{ascending:true}).limit(250)
+  ]);
+  results.forEach(function(x){if(x.error)throw x.error;});
+  var profiles={};(results[0].data||[]).forEach(function(x){profiles[x.id]=x;});
+  var likes=results[1].data||[],comments=results[2].data||[];
+  var commentIds=[...new Set(comments.map(function(x){return x.user_id;}))];
+  var commentProfiles={};
+  if(commentIds.length){
+    var cp=await sb.from('profiles').select('id,username').in('id',commentIds);
+    if(!cp.error)(cp.data||[]).forEach(function(x){commentProfiles[x.id]=x.username;});
+  }
+  $('feed-list').innerHTML=FEED_POSTS.map(function(post){
+    var profile=profiles[post.user_id]||{},username=profile.username||'Atleta';
+    var avatar=profile.avatar_path?sb.storage.from('avatars').getPublicUrl(profile.avatar_path).data.publicUrl:'';
+    var media='';
+    if(post.media_path){
+      var url=sb.storage.from('viper-feed').getPublicUrl(post.media_path).data.publicUrl;
+      media=post.media_type==='video'
+        ? '<video class="feed-media" controls playsinline preload="metadata" src="'+esc(url)+'"></video>'
+        : '<img class="feed-media" loading="lazy" src="'+esc(url)+'" alt="Publicación de '+esc(username)+'">';
+    }
+    var mine=post.user_id===user.id,liked=likes.some(function(x){return x.post_id===post.id&&x.user_id===user.id;});
+    var postComments=comments.filter(function(x){return x.post_id===post.id;});
+    return '<article class="feed-card" data-feed-post="'+post.id+'"><div class="feed-card-head">'+(avatar?'<img class="feed-avatar" src="'+esc(avatar)+'" alt="">':'<span class="feed-avatar feed-avatar-fallback">'+esc(username.slice(0,1).toUpperCase())+'</span>')+'<div><div class="feed-author">'+esc(username)+'</div><div class="feed-date">'+feedDate(post.created_at)+'</div></div>'+(mine?'<button class="feed-delete" type="button" data-feed-delete="'+post.id+'">Eliminar</button>':'')+'</div>'+(post.caption?'<p class="feed-caption">'+esc(post.caption)+'</p>':'')+media+'<div class="feed-actions"><button type="button" data-feed-like="'+post.id+'" aria-pressed="'+(liked?'true':'false')+'">'+(liked?'♥':'♡')+' Me gusta ('+likes.filter(function(x){return x.post_id===post.id;}).length+')</button><span class="note">'+postComments.length+' comentarios</span></div><div class="feed-comments">'+postComments.map(function(c){return '<div class="feed-comment"><b>'+esc(commentProfiles[c.user_id]||'Atleta')+':</b> '+esc(c.body)+'</div>';}).join('')+'</div><form class="feed-comment-form" data-feed-comment="'+post.id+'"><input name="body" maxlength="1000" placeholder="Escribe un comentario…" required><button class="btn sm" type="submit">Enviar</button></form></article>';
+  }).join('');
+}
+async function publishFeed(e){
+  e.preventDefault();var error=$('feed-error'),btn=$('feed-publish');error.textContent='';
+  var caption=$('feed-caption').value.trim(),file=$('feed-file').files[0]||null;
+  if(!caption&&!file){error.textContent='Escribe algo o selecciona una foto/video.';return;}
+  if(file){
+    if(file.size>100*1024*1024){error.textContent='El archivo supera el límite de 100 MB.';return;}
+    if(file.type.startsWith('video/')){
+      try{var duration=await feedVideoDuration(file);if(duration>60.05){error.textContent='El video debe durar 60 segundos o menos.';return;}}
+      catch(err){error.textContent=err.message;return;}
+    }else if(!['image/jpeg','image/png','image/webp'].includes(file.type)){error.textContent='Formato no permitido.';return;}
+  }
+  btn.disabled=true;btn.textContent='Publicando…';
+  try{
+    var mediaPath=null,mediaType=null;
+    if(file){
+      var ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+      mediaPath=user.id+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
+      var up=await sb.storage.from('viper-feed').upload(mediaPath,file,{contentType:file.type,upsert:false});
+      if(up.error)throw up.error;
+      mediaType=file.type.startsWith('video/')?'video':'image';
+    }
+    var saved=await sb.from('viper_posts').insert({user_id:user.id,caption:caption,media_path:mediaPath,media_type:mediaType});
+    if(saved.error)throw saved.error;
+    $('feed-caption').value='';$('feed-file').value='';$('feed-file-name').textContent='Video máximo 60 segundos · 100 MB';
+    toast('¡Publicación compartida!');await loadFeed();
+  }catch(err){error.textContent=errMsg(err);}
+  finally{btn.disabled=false;btn.textContent='Publicar';}
+}
+async function handleFeedClick(e){
+  var like=e.target.closest('[data-feed-like]');
+  if(like){
+    var id=like.dataset.feedLike,existing=await sb.from('viper_post_likes').select('post_id').eq('post_id',id).eq('user_id',user.id).maybeSingle();
+    if(existing.error){toast(errMsg(existing.error),true);return;}
+    var result=existing.data?await sb.from('viper_post_likes').delete().eq('post_id',id).eq('user_id',user.id):await sb.from('viper_post_likes').insert({post_id:id,user_id:user.id});
+    if(result.error)toast(errMsg(result.error),true);else await loadFeed();
+    return;
+  }
+  var del=e.target.closest('[data-feed-delete]');
+  if(del&&confirm('¿Eliminar esta publicación?')){
+    var d=await sb.from('viper_posts').delete().eq('id',del.dataset.feedDelete).eq('user_id',user.id);
+    if(d.error)toast(errMsg(d.error),true);else{toast('Publicación eliminada');await loadFeed();}
+  }
+}
+async function handleFeedSubmit(e){
+  var form=e.target.closest('[data-feed-comment]');if(!form)return;
+  e.preventDefault();var input=form.querySelector('input[name="body"]'),body=input.value.trim();if(!body)return;
+  var r=await sb.from('viper_post_comments').insert({post_id:form.dataset.feedComment,user_id:user.id,body:body});
+  if(r.error)toast(errMsg(r.error),true);else await loadFeed();
+}
+
 function ir(v){
   if (v === 'boxeo'){ location.href = 'boxeo.html'; return; }
-  ['hoy', 'evolucion', 'temporada', 'ranking', 'amigos', 'perfil', 'public-profile', 'notificaciones'].forEach(function(n){
+  ['hoy', 'evolucion', 'temporada', 'ranking', 'amigos', 'feed', 'perfil', 'public-profile', 'notificaciones'].forEach(function(n){
     $('v-' + n).hidden = n !== v;
     var b = document.querySelector('[data-nav="' + n + '"]');
     if (b){
@@ -1357,6 +1487,7 @@ function ir(v){
   if (v === 'ranking') cargarRanking();
   if (v === 'amigos') cargarAmigos();
   if (v === 'perfil') renderPerfil();
+  if (v === 'feed') loadFeed().catch(function(e){toast(errMsg(e),true);});
   if (v === 'notificaciones') loadNotifications().catch(function(e){toast(errMsg(e),true);});
 }
 
@@ -1480,6 +1611,11 @@ function eventos(){
   document.querySelectorAll('[data-nav]').forEach(function(b){
     b.addEventListener('click', function(){ ir(b.dataset.nav); });
   });
+  $('feed-composer').addEventListener('submit',publishFeed);
+  $('feed-file').addEventListener('change',function(){var f=this.files[0];$('feed-file-name').textContent=f?f.name:'Video máximo 60 segundos · 100 MB';});
+  $('feed-refresh').addEventListener('click',function(){loadFeed().catch(function(e){toast(errMsg(e),true);});});
+  $('feed-list').addEventListener('click',function(e){handleFeedClick(e).catch(function(err){toast(errMsg(err),true);});});
+  $('feed-list').addEventListener('submit',function(e){handleFeedSubmit(e).catch(function(err){toast(errMsg(err),true);});});
 /* ---------- Evolución muscular ---------- */
 function evoDateLabel(d){return d ? new Date(d+'T12:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'}) : '';}
 async function cargarEvolucion(){
