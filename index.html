@@ -246,6 +246,7 @@ form.stack{display:grid;gap:8px}
 
 .board{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .row{display:grid;grid-template-columns:28px 32px minmax(0,1fr) auto;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.rank-avatar{width:46px;height:46px;padding:3px;border-width:2px;flex:none}.rank-avatar.rank-frame::before{inset:-5px;border-width:2px}.rank-avatar.rank-frame::after{width:9px;height:9px;top:-8px}.rank-avatar .avatar-fallback{font-size:1.2rem}.rank-person{display:grid;justify-items:center;gap:2px}.rank-level{font:800 .68rem/1 var(--display);color:var(--muted);white-space:nowrap}
 .row.me{border:2px solid var(--fg);padding:7px 11px}
 .pos{font:700 1.2rem/1 var(--display);color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
 .nm{min-width:0}
@@ -981,13 +982,35 @@ async function guardar(){
 }
 
 /* ---------- Ranking ---------- */
+function rankingAvatarHTML(r, rankIndex, levelNumber){
+  var color=RANKS[rankIndex].plate;
+  var photo='';
+  if(r.avatar_path){
+    photo='<img src="'+esc(sb.storage.from('avatars').getPublicUrl(r.avatar_path).data.publicUrl)+'" alt="Foto de '+esc(r.username||'atleta')+'">';
+  }else{
+    photo='<span class="avatar-fallback">'+esc((r.username||'V').slice(0,1).toUpperCase())+'</span>';
+  }
+  return '<span class="rank-person"><span class="avatar-ring rank-frame rank-avatar rank-'+rankIndex+'" style="--avatar-color:'+color+'">'+photo+'</span><small class="rank-level">NIVEL '+levelNumber+'</small></span>';
+}
+async function completarAvataresRanking(rows){
+  if(!rows.length)return rows;
+  try{
+    var ids=rows.map(function(r){return r.id;});
+    var p=await sb.from('viper_public_profiles').select('id,avatar_path').in('id',ids);
+    if(!p.error){
+      var paths={};p.data.forEach(function(x){paths[x.id]=x.avatar_path;});
+      rows.forEach(function(r){r.avatar_path=paths[r.id]||null;});
+    }
+  }catch(e){}
+  return rows;
+}
 function boardHTML(rows, fid){
   if (!rows.length) return '<li class="empty">Aún no hay nadie.</li>';
   return rows.map(function(r, i){
-    var L = LV[idxOf(r.xp_total)];
+    var levelIndex=idxOf(r.xp_total), L=LV[levelIndex];
     var quitar = (fid && r.id !== user.id && fid[r.id]) ? ' <button class="mini" type="button" data-act="quitar" data-id="' + fid[r.id] + '">Quitar</button>' : '';
     return '<li class="row' + (r.id === user.id ? ' me' : '') + '">' +
-      '<span class="pos">' + (i + 1) + '</span>' + plate(RANKS[L.ri].plate, 32) +
+      '<span class="pos">' + (i + 1) + '</span>' + rankingAvatarHTML(r,L.ri,levelIndex+1) +
       '<span class="nm"><b><button class="profile-link" type="button" data-profile="' + r.id + '">' + esc(r.username) + '</button></b><small>' + L.label + ' · racha ' + r.racha_activa + '</small>' + quitar + '</span>' +
       '<span class="pts">' + fmt(r.xp_total) + '<small>XP</small></span></li>';
   }).join('');
@@ -999,6 +1022,7 @@ async function cargarRanking(){
     var r = await sb.from('ranking_publico').select('id,username,xp_total,racha_activa')
       .order('xp_total', {ascending: false}).order('username').limit(100);
     if (r.error) throw r.error;
+    await completarAvataresRanking(r.data);
     b.innerHTML = boardHTML(r.data, null);
     $('rk-n').textContent = r.data.length === 1 ? '1 atleta' : r.data.length + ' atletas';
   } catch (e) {
@@ -1036,11 +1060,11 @@ async function cargarTemporada(){
     var rr=await sb.from('season_scores').select('user_id,xp').eq('season_id',season.id).order('xp',{ascending:false}).order('updated_at',{ascending:true}).limit(100);
     if(rr.error) throw rr.error;
     var ids=rr.data.map(function(x){return x.user_id;});
-    var names={};
+    var profiles={};
     if(ids.length){
-      var pr=await sb.from('ranking_publico').select('id,username').in('id',ids);
+      var pr=await sb.from('viper_public_profiles').select('id,username,avatar_path,xp_total').in('id',ids);
       if(pr.error) throw pr.error;
-      pr.data.forEach(function(x){names[x.id]=x.username;});
+      pr.data.forEach(function(x){profiles[x.id]=x;});
     }
     var mine=rr.data.findIndex(function(x){return x.user_id===user.id;});
     var myScore=mine>=0?rr.data[mine].xp:0;
@@ -1048,7 +1072,9 @@ async function cargarTemporada(){
     $('season-rank').textContent=mine>=0?'Tu posición: #'+(mine+1)+' de '+rr.data.length:'Todavía no tienes XP en esta temporada.';
     $('season-count').textContent=rr.data.length+' atletas';
     board.innerHTML=rr.data.length?rr.data.map(function(x,i){
-      return '<li class="row'+(x.user_id===user.id?' me':'')+'"><span class="pos">'+(i+1)+'</span><span></span><span class="nm"><b><button class="profile-link" type="button" data-profile="'+x.user_id+'">'+esc(names[x.user_id]||'Atleta')+'</button></b><small>'+(x.user_id===user.id?'Tú':'Temporada')+'</small></span><span class="pts">'+fmt(x.xp)+'<small>XP</small></span></li>';
+      var p=profiles[x.user_id]||{username:'Atleta',xp_total:0,avatar_path:null};
+      var levelIndex=idxOf(p.xp_total||0), rankLevel=LV[levelIndex];
+      return '<li class="row'+(x.user_id===user.id?' me':'')+'"><span class="pos">'+(i+1)+'</span>'+rankingAvatarHTML(p,rankLevel.ri,levelIndex+1)+'<span class="nm"><b><button class="profile-link" type="button" data-profile="'+x.user_id+'">'+esc(p.username||'Atleta')+'</button></b><small>'+rankLevel.label+' · Temporada</small></span><span class="pts">'+fmt(x.xp)+'<small>XP</small></span></li>';
     }).join(''):'<li class="empty">Sé el primero en sumar XP esta temporada.</li>';
   }catch(e){
     $('season-status').textContent='No disponible';
