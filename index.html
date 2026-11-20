@@ -142,6 +142,11 @@ button.act{cursor:pointer}
 .btn:disabled{opacity:.45;cursor:default}
 .social-links{display:flex;flex-wrap:wrap;gap:8px}
 .social-links a{min-width:110px}
+.public-menu{position:relative;justify-self:start}
+.public-menu summary{list-style:none;cursor:pointer}
+.public-menu summary::-webkit-details-marker{display:none}
+.public-menu-items{display:flex;flex-wrap:wrap;gap:8px;padding:10px;margin-top:6px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.public-menu-items button{color:var(--danger);border-color:var(--danger)}
 .profile-link{border:0;background:none;color:inherit;padding:0;text-align:left;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer}
 .profile-link:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
 .mini{border:0;background:none;color:var(--muted);font:inherit;font-size:.8rem;text-decoration:underline;padding:0;cursor:pointer}
@@ -362,6 +367,8 @@ main{padding-block:12px 40px}
         <p class="note" id="public-xp">0 XP</p>
         <p class="note" id="public-streak">Racha: 0</p>
       </div>
+      <div id="public-actions" class="view" style="gap:8px"></div>
+      <details class="public-menu"><summary class="btn sm">⋮ Más opciones</summary><div class="public-menu-items"><button class="btn sm" id="public-block" type="button">Bloquear usuario</button><button class="btn sm" id="public-report" type="button">Reportar usuario</button></div></details>
       <div class="season-card"><h2>Redes sociales</h2><div id="public-socials" class="social-links"><p class="note">Este usuario aún no agregó sus redes.</p></div></div>
       <p class="note">Los datos privados y las fotos de check-in no se muestran aquí.</p>
     </section>
@@ -743,9 +750,38 @@ function socialButtons(p){
   var defs=[['Instagram','instagram_url','instagram.com'],['TikTok','tiktok_url','tiktok.com'],['Facebook','facebook_url','facebook.com'],['X','x_url','x.com']];
   return defs.map(function(d){ var url=socialUrl(p[d[1]],d[2]); return url?'<a class="btn sm" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+d[0]+'</a>':''; }).filter(Boolean).join('');
 }
+var publicProfileId = null, publicRelation = null;
+async function cargarAccionesPerfil(id){
+  publicProfileId=id;
+  var block=await sb.rpc('is_blocked_between',{user_a:user.id,user_b:id});
+  if(block.error) throw block.error;
+  if(block.data){ $('public-actions').innerHTML='<p class="note">No puedes interactuar con este perfil porque existe un bloqueo entre ambos usuarios.</p>'; return; }
+  var q=await sb.from('friendships').select('id,solicitante,destinatario,estado')
+    .or('and(solicitante.eq.'+user.id+',destinatario.eq.'+id+'),and(solicitante.eq.'+id+',destinatario.eq.'+user.id+')');
+  if(q.error) throw q.error;
+  publicRelation=q.data && q.data.length ? q.data[0] : null;
+  var h='';
+  if(!publicRelation){
+    h+='<button class="btn primary wide" type="button" data-public-act="add">＋ Agregar amigo</button>';
+  }else if(publicRelation.estado==='aceptada'){
+    h+='<button class="btn primary wide" type="button" data-public-act="message">Enviar mensaje</button>';
+    h+='<button class="btn wide" type="button" data-public-act="remove">Eliminar amigo</button>';
+  }else if(publicRelation.solicitante===user.id){
+    h+='<button class="btn wide" type="button" disabled>Solicitud enviada</button>';
+    h+='<button class="btn wide" type="button" data-public-act="cancel">Cancelar solicitud</button>';
+  }else{
+    h+='<button class="btn primary wide" type="button" data-public-act="accept">Aceptar solicitud</button>';
+    h+='<button class="btn wide" type="button" data-public-act="reject">Rechazar solicitud</button>';
+  }
+  h+='<button class="btn wide" type="button" data-public-act="share">Compartir perfil</button>';
+  $('public-actions').innerHTML=h;
+}
 async function abrirPerfilPublico(id){
-  if(!id) return;
+  if(!id || id===user.id){ if(id===user.id) ir('perfil'); return; }
   try{
+    var blocked=await sb.rpc('is_blocked_between',{user_a:user.id,user_b:id});
+    if(blocked.error) throw blocked.error;
+    if(blocked.data){ toast('No puedes ver este perfil porque existe un bloqueo entre ambos usuarios.',true); return; }
     var r=await sb.from('viper_public_profiles').select('id,username,xp_total,racha,avatar_path,instagram_url,tiktok_url,facebook_url,x_url').eq('id',id).maybeSingle();
     if(r.error) throw r.error;
     if(!r.data){ toast('No se pudo encontrar ese perfil.',true); return; }
@@ -761,7 +797,77 @@ async function abrirPerfilPublico(id){
       $('public-avatar-img').src=av; $('public-avatar-img').hidden=false; $('public-avatar-fallback').hidden=true;
     }else{$('public-avatar-img').hidden=true;$('public-avatar-fallback').hidden=false;}
     $('public-socials').innerHTML=socialButtons(p)||'<p class="note">Este usuario aún no agregó sus redes.</p>';
+    await cargarAccionesPerfil(id);
     ir('public-profile');
+  }catch(e){toast(errMsg(e),true);}
+}
+async function accionPerfilPublico(action){
+  var id=publicProfileId;
+  if(!id) return;
+  try{
+    if(action==='add'){
+      var r=await sb.from('friendships').insert({solicitante:user.id,destinatario:id,estado:'pendiente'});
+      if(r.error) throw r.error;
+      toast('Solicitud de amistad enviada');
+    }else if(action==='accept'){
+      if(!publicRelation || publicRelation.destinatario!==user.id) return;
+      var r=await sb.from('friendships').update({estado:'aceptada'}).eq('id',publicRelation.id);
+      if(r.error) throw r.error;
+      toast('¡Ahora son amigos!');
+    }else if(action==='reject' || action==='cancel'){
+      if(!publicRelation) return;
+      var r=await sb.from('friendships').delete().eq('id',publicRelation.id);
+      if(r.error) throw r.error;
+      toast(action==='cancel'?'Solicitud cancelada':'Solicitud rechazada');
+    }else if(action==='remove'){
+      if(!publicRelation || !confirm('¿Eliminar a este amigo?')) return;
+      var r=await sb.from('friendships').delete().eq('id',publicRelation.id);
+      if(r.error) throw r.error;
+      toast('Amigo eliminado');
+    }else if(action==='message'){
+      var friend=U[id];
+      if(!friend){
+        var p=await sb.from('ranking_publico').select('id,username,xp_total,racha_activa').eq('id',id).maybeSingle();
+        if(p.error) throw p.error;
+        if(p.data) U[id]=p.data;
+        friend=U[id];
+      }
+      if(!friend){ toast('No se pudo abrir el chat.',true); return; }
+      ir('amigos'); await cargarAmigos(); await abrirChat(id); return;
+    }else if(action==='share'){
+      var url=location.origin+location.pathname+'?profile='+encodeURIComponent(id);
+      if(navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(url); toast('Enlace del perfil copiado'); }
+      else { window.prompt('Copia el enlace del perfil:',url); }
+      return;
+    }
+    await cargarAccionesPerfil(id);
+    if(action==='add' || action==='accept' || action==='remove' || action==='reject' || action==='cancel') await cargarAmigos();
+  }catch(e){toast(errMsg(e),true);}
+}
+async function bloquearPerfilPublico(){
+  var id=publicProfileId;
+  if(!id || !confirm('¿Bloquear a este usuario? Ya no podrán interactuar entre ustedes.')) return;
+  try{
+    var r=await sb.from('user_blocks').insert({blocker_id:user.id,blocked_id:id});
+    if(r.error && r.error.code!=='23505') throw r.error;
+    if(publicRelation){ var f=await sb.from('friendships').delete().eq('id',publicRelation.id); if(f.error) throw f.error; }
+    cerrarChat();
+    $('public-actions').innerHTML='<p class="note">Usuario bloqueado. No podrás interactuar con este perfil.</p>';
+    toast('Usuario bloqueado');
+    await cargarAmigos();
+  }catch(e){toast(errMsg(e),true);}
+}
+async function reportarPerfilPublico(){
+  var id=publicProfileId;
+  if(!id) return;
+  var reason=window.prompt('¿Por qué deseas reportar este perfil? Describe brevemente el motivo:');
+  if(reason===null) return;
+  reason=reason.trim();
+  if(reason.length<3 || reason.length>500){toast('Escribe un motivo de entre 3 y 500 caracteres.',true);return;}
+  try{
+    var r=await sb.from('content_reports').insert({reporter_id:user.id,reported_user_id:id,content_type:'user',reason:reason});
+    if(r.error) throw r.error;
+    toast('Reporte enviado. Gracias por ayudarnos a mantener VIPER seguro.');
   }catch(e){toast(errMsg(e),true);}
 }
 function renderAll(){
@@ -840,6 +946,8 @@ async function start(){
     await signPhoto();
     renderAll();
     ir('hoy');
+    var sharedProfile=new URLSearchParams(location.search).get('profile');
+    if(sharedProfile) await abrirPerfilPublico(sharedProfile);
   } catch (e) {
     iniciado = false;
     toast(errMsg(e), true);
@@ -945,6 +1053,12 @@ function eventos(){
     if(p){ abrirPerfilPublico(p.dataset.profile); }
   });
   $('profile-back').addEventListener('click',function(){ ir('ranking'); });
+  $('public-actions').addEventListener('click',function(e){
+    var b=e.target.closest('[data-public-act]');
+    if(b){ b.disabled=true; accionPerfilPublico(b.dataset.publicAct).finally(function(){b.disabled=false;}); }
+  });
+  $('public-block').addEventListener('click',bloquearPerfilPublico);
+  $('public-report').addEventListener('click',reportarPerfilPublico);
   $('v-amigos').addEventListener('click', async function(e){
     var b = e.target.closest('button[data-act]');
     if (!b) return;
