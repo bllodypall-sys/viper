@@ -171,6 +171,16 @@ button.act{cursor:pointer}
 .evo-chart svg{display:block;width:100%;height:auto;min-height:150px;overflow:visible}
 .evo-chart-empty{min-height:140px;display:grid;place-items:center;color:var(--muted);font-size:.88rem;text-align:center}
 .evo-muscle:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
+.evo-anatomy{margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.evo-anatomy-head{display:grid;gap:4px;text-align:center}.evo-anatomy-head strong{font:800 .9rem var(--display);letter-spacing:.12em;color:var(--fg)}.evo-anatomy-head span,.evo-anatomy-hint{font-size:.8rem;color:var(--muted);text-align:center}
+.evo-anatomy-views{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:440px;margin:12px auto 0}
+.evo-anatomy-panel{min-width:0;text-align:center}.evo-anatomy-panel>span{font-size:.72rem;letter-spacing:.14em;color:var(--muted);font-weight:800}
+.evo-anatomy-panel svg{width:100%;height:auto;max-height:390px;display:block;margin:4px auto 0}
+.evo-muscle-part{cursor:pointer;stroke:#101613;stroke-width:1.2;transition:fill .15s,filter .15s;outline:none}
+.evo-muscle-part:hover,.evo-muscle-part:focus{fill:#8eea3d;filter:drop-shadow(0 0 5px #8eea3d)}
+.evo-muscle-part.active{fill:#a5ff52;filter:drop-shadow(0 0 7px #8eea3d)}
+.evo-anatomy-hint{margin:8px 0 0}.evo-anatomy-hint b{color:var(--fg)}
+@media(max-width:420px){.evo-anatomy{padding:8px}.evo-anatomy-views{gap:2px}.evo-anatomy-panel svg{max-height:320px}}
 
 .evo-entry{padding:11px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 .evo-entry strong{display:block}
@@ -348,6 +358,40 @@ main{padding-block:12px 40px}
           <button type="button" class="evo-muscle" data-muscle="isquiotibiales">Isquiotibiales</button>
           <button type="button" class="evo-muscle" data-muscle="gluteos">Glúteos</button>
           <button type="button" class="evo-muscle" data-muscle="pantorrillas">Pantorrillas</button>
+        </div>
+        <div class="evo-anatomy">
+          <div class="evo-anatomy-head"><strong>MAPA MUSCULAR</strong><span>Toca un músculo para ver su progreso</span></div>
+          <div class="evo-anatomy-views">
+            <div class="evo-anatomy-panel"><span>FRENTE</span>
+              <svg viewBox="0 0 220 390" role="group" aria-label="Mapa muscular vista frontal">
+                <g fill="#26302d" stroke="#718078" stroke-width="1.5">
+                  <circle cx="110" cy="27" r="19"/><path d="M96 47 L124 47 L132 67 L157 76 L174 112 L157 126 L148 103 L143 157 L138 199 L146 222 L141 250 L151 318 L139 365 L121 365 L117 292 L110 246 L103 292 L99 365 L81 365 L69 318 L79 250 L74 222 L82 199 L77 157 L72 103 L63 126 L46 112 L63 76 L88 67 Z"/>
+                </g>
+                <g class="evo-muscle-part" data-muscle="hombros" tabindex="0" role="button" aria-label="Hombros" fill="#52645b"><path d="M88 68 Q67 64 59 84 L65 112 Q78 112 88 96 Z"/><path d="M132 68 Q153 64 161 84 L155 112 Q142 112 132 96 Z"/></g>
+                <g class="evo-muscle-part" data-muscle="pecho" tabindex="0" role="button" aria-label="Pecho" fill="#52645b"><path d="M91 78 Q108 70 109 91 L107 119 Q91 124 78 111 L80 91 Z"/><path d="M129 78 Q112 70 111 91 L113 119 Q129 124 142 111 L140 91 Z"/></g>
+                <g class="evo-muscle-part" data-muscle="biceps" tabindex="0" role="button" aria-label="Bíceps" fill="#52645b"><path d="M61 113 Q72 110 78 128 L74 163 Q63 171 58 151 Z"/><path d="M159 113 Q148 110 142 128 L146 163 Q157 171 162 151 Z"/></g>
+                <g class="evo-muscle-part" data-muscle="antebrazos" tabindex="0" role="button" aria-label="Antebrazos" fill="#52645b"><path d="M58 163 L74 164 L70 213 L58 216 L49 178 Z"/><path d="M162 163 L146 164 L150 213 L162 216 L171 178 Z"/></g>
+                <g class="evo-muscle-part" data-muscle="abdomen" tabindex="0" role="button" aria-label="Abdomen" fill="#52645b"><path d="M91 124 L129 124 L132 183 L88 183 Z"/></g>
+                <g class="evo-muscle-part" data-muscle="cuadriceps" tabindex="0" role="button" aria-label="Cuádriceps" fill="#52645b"><path d="M82 204 L108 205 L103 285 L91 310 L77 270 Z"/><path d="M112 205 L138 204 L143 270 L129 310 L117 285 Z"/></g>
+                <g class="evo-muscle-part" data-muscle="pantorrillas" tabindex="0" role="button" aria-label="Pantorrillas" fill="#52645b"><path d="M78 311 L98 310 L95 355 L83 365 L75 344 Z"/><path d="M122 310 L142 311 L145 344 L137 365 L125 355 Z"/></g>
+              </svg>
+            </div>
+            <div class="evo-anatomy-panel"><span>ESPALDA</span>
+              <svg viewBox="0 0 220 390" role="group" aria-label="Mapa muscular vista posterior">
+                <g fill="#26302d" stroke="#718078" stroke-width="1.5">
+                  <circle cx="110" cy="27" r="19"/><path d="M96 47 L124 47 L132 67 L157 76 L174 112 L157 126 L148 103 L143 157 L138 199 L146 222 L141 250 L151 318 L139 365 L121 365 L117 292 L110 246 L103 292 L99 365 L81 365 L69 318 L79 250 L74 222 L82 199 L77 157 L72 103 L63 126 L46 112 L63 76 L88 67 Z"/>
+                </g>
+                <g class="evo-muscle-part" data-muscle="hombros" tabindex="0" role="button" aria-label="Hombros" fill="#52645b"><path d="M88 68 Q67 64 59 84 L65 112 Q78 112 88 96 Z"/><path d="M132 68 Q153 64 161 84 L155 112 Q142 112 132 96 Z"/></g>
+                <g class="evo-muscle-part" data-muscle="espalda" tabindex="0" role="button" aria-label="Espalda" fill="#52645b"><path d="M89 76 L108 73 L108 157 L87 177 L76 126 Z"/><path d="M131 76 L112 73 L112 157 L133 177 L144 126 Z"/></g>
+                <g class="evo-muscle-part" data-muscle="triceps" tabindex="0" role="button" aria-label="Tríceps" fill="#52645b"><path d="M61 113 Q72 110 78 128 L74 163 Q63 171 58 151 Z"/><path d="M159 113 Q148 110 142 128 L146 163 Q157 171 162 151 Z"/></g>
+                <g class="evo-muscle-part" data-muscle="antebrazos" tabindex="0" role="button" aria-label="Antebrazos" fill="#52645b"><path d="M58 163 L74 164 L70 213 L58 216 L49 178 Z"/><path d="M162 163 L146 164 L150 213 L162 216 L171 178 Z"/></g>
+                <g class="evo-muscle-part" data-muscle="gluteos" tabindex="0" role="button" aria-label="Glúteos" fill="#52645b"><path d="M83 181 Q110 174 137 181 L136 215 Q110 228 84 215 Z"/></g>
+                <g class="evo-muscle-part" data-muscle="isquiotibiales" tabindex="0" role="button" aria-label="Isquiotibiales" fill="#52645b"><path d="M82 218 L108 220 L103 285 L91 310 L77 270 Z"/><path d="M112 220 L138 218 L143 270 L129 310 L117 285 Z"/></g>
+                <g class="evo-muscle-part" data-muscle="pantorrillas" tabindex="0" role="button" aria-label="Pantorrillas" fill="#52645b"><path d="M78 311 L98 310 L95 355 L83 365 L75 344 Z"/><path d="M122 310 L142 311 L145 344 L137 365 L125 355 Z"/></g>
+              </svg>
+            </div>
+          </div>
+          <p class="evo-anatomy-hint">Seleccionado: <b id="evo-anatomy-selected">Pecho</b></p>
         </div>
       </div>
       <div class="grid-two">
@@ -1267,6 +1311,9 @@ async function cargarEvolucion(){
 function renderEvolucion(){
   var buttons=document.querySelectorAll('.evo-muscle');
   buttons.forEach(function(b){b.classList.toggle('selected',b.dataset.muscle===EVO.muscle);});
+  document.querySelectorAll('.evo-muscle-part').forEach(function(p){p.classList.toggle('active',p.dataset.muscle===EVO.muscle);});
+  var selectedButton=Array.from(buttons).find(function(b){return b.dataset.muscle===EVO.muscle;});
+  if($('evo-anatomy-selected'))$('evo-anatomy-selected').textContent=selectedButton?selectedButton.textContent:EVO.muscle;
   var ex=EVO.exercises.filter(function(e){return e.muscle_group===EVO.muscle;});
   var exIds=ex.map(function(e){return e.id;});
   var sets=EVO.sets.filter(function(s){return exIds.indexOf(s.exercise_id)>=0;});
@@ -1372,6 +1419,12 @@ async function guardarEvoFoto(e){
   $('evo-measure-date').value = limaToday();
   $('evo-muscles').addEventListener('click',function(e){
     var b=e.target.closest('[data-muscle]');if(!b)return;EVO.muscle=b.dataset.muscle;renderEvolucion();
+  });
+  $('v-evolucion').addEventListener('click',function(e){
+    var part=e.target.closest('.evo-muscle-part');if(!part)return;EVO.muscle=part.dataset.muscle;renderEvolucion();
+  });
+  $('v-evolucion').addEventListener('keydown',function(e){
+    if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('evo-muscle-part')){e.preventDefault();EVO.muscle=e.target.dataset.muscle;renderEvolucion();}
   });
   $('evo-workout-form').addEventListener('submit',guardarEvoEntrenamiento);
   $('evo-measure-form').addEventListener('submit',guardarEvoMedidas);
