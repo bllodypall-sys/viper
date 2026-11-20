@@ -590,7 +590,7 @@ function boardHTML(rows, fid){
     var quitar = (fid && r.id !== user.id && fid[r.id]) ? ' <button class="mini" type="button" data-act="quitar" data-id="' + fid[r.id] + '">Quitar</button>' : '';
     return '<li class="row' + (r.id === user.id ? ' me' : '') + '">' +
       '<span class="pos">' + (i + 1) + '</span>' + plate(RANKS[L.ri].plate, 32) +
-      '<span class="nm"><b>' + esc(r.username) + '</b><small>' + L.label + ' · racha ' + r.racha_activa + '</small>' + quitar + '</span>' +
+      '<span class="nm"><b><button class="profile-link" type="button" data-profile="' + r.id + '">' + esc(r.username) + '</button></b><small>' + L.label + ' · racha ' + r.racha_activa + '</small>' + quitar + '</span>' +
       '<span class="pts">' + fmt(r.xp_total) + '<small>XP</small></span></li>';
   }).join('');
 }
@@ -650,7 +650,7 @@ async function cargarTemporada(){
     $('season-rank').textContent=mine>=0?'Tu posición: #'+(mine+1)+' de '+rr.data.length:'Todavía no tienes XP en esta temporada.';
     $('season-count').textContent=rr.data.length+' atletas';
     board.innerHTML=rr.data.length?rr.data.map(function(x,i){
-      return '<li class="row'+(x.user_id===user.id?' me':'')+'"><span class="pos">'+(i+1)+'</span><span></span><span class="nm"><b>'+esc(names[x.user_id]||'Atleta')+'</b><small>'+(x.user_id===user.id?'Tú':'Temporada')+'</small></span><span class="pts">'+fmt(x.xp)+'<small>XP</small></span></li>';
+      return '<li class="row'+(x.user_id===user.id?' me':'')+'"><span class="pos">'+(i+1)+'</span><span></span><span class="nm"><b><button class="profile-link" type="button" data-profile="'+x.user_id+'">'+esc(names[x.user_id]||'Atleta')+'</button></b><small>'+(x.user_id===user.id?'Tú':'Temporada')+'</small></span><span class="pts">'+fmt(x.xp)+'<small>XP</small></span></li>';
     }).join(''):'<li class="empty">Sé el primero en sumar XP esta temporada.</li>';
   }catch(e){
     $('season-status').textContent='No disponible';
