@@ -281,8 +281,12 @@ create policy content_reports_read_own on public.content_reports for select to a
 
 -- Permisos SQL de las tablas nuevas. RLS sigue controlando qué filas se pueden tocar.
 grant select on public.seasons,public.season_scores,public.challenges,public.challenge_progress to authenticated;
-grant select,insert,update,delete on public.posts,public.post_comments,public.exercise_logs,public.personal_records,public.activity_events,public.user_blocks to authenticated;
-grant select,update on public.notifications to authenticated;
+grant select,insert,update,delete on public.posts to authenticated;
+grant select,insert,delete on public.post_comments to authenticated;
+grant select,insert,update,delete on public.exercise_logs,public.personal_records,public.activity_events to authenticated;
+grant select,insert,delete on public.user_blocks to authenticated;
+grant select on public.notifications to authenticated;
+grant update (read_at) on public.notifications to authenticated;
 grant insert,select on public.content_reports to authenticated;
 -- Solo secuencias de tablas donde el cliente autenticado puede insertar.
 -- No conceder acceso general a todas las secuencias del esquema.
