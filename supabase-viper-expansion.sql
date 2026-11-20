@@ -155,13 +155,13 @@ language sql
 stable
 security definer
 set search_path = public, pg_temp
-as $
+as $function$
   select exists (
     select 1 from public.user_blocks
     where (blocker_id=user_a and blocked_id=user_b)
        or (blocker_id=user_b and blocked_id=user_a)
   );
-$;
+$function$;
 revoke all on function public.is_blocked_between(uuid,uuid) from public, anon;
 grant execute on function public.is_blocked_between(uuid,uuid) to authenticated;
 
