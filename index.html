@@ -973,7 +973,7 @@ async function start(){
 function eventos(){
   $('entrar').addEventListener('click', async function(){
     $('login-msg').textContent = '';
-    var r = await sb.auth.signInWithOAuth({provider: 'google', options: {redirectTo: location.origin + location.pathname}});
+    var r = await sb.auth.signInWithOAuth({provider: 'google', options: {redirectTo: location.origin + location.pathname + location.search}});
     if (r.error) $('login-msg').textContent = errMsg(r.error);
   });
   $('auth-toggle').addEventListener('click', function(){
@@ -1169,8 +1169,16 @@ async function boot(){
   }
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   eventos();
-  sb.auth.onAuthStateChange(function(ev){
-    if (ev === 'SIGNED_OUT'){ if(chatChannel) sb.removeChannel(chatChannel); chatChannel=null; chatFriend=null; user = null; P = null; T = null; iniciado = false; pantalla('login'); }
+  sb.auth.onAuthStateChange(function(ev, session){
+    if (ev === 'SIGNED_OUT'){
+      if(chatChannel) sb.removeChannel(chatChannel);
+      chatChannel=null; chatFriend=null; user = null; P = null; T = null; iniciado = false;
+      pantalla('login');
+    } else if (ev === 'SIGNED_IN' && session && session.user && !iniciado){
+      user = session.user;
+      // Espera a que Supabase termine su callback de autenticación antes de consultar datos.
+      setTimeout(function(){ if(user && !iniciado) start(); }, 0);
+    }
   });
   try {
     var s = await sb.auth.getSession();
