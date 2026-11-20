@@ -1354,13 +1354,52 @@ async function cargarEvolucion(){
     renderEvolucion();
   }catch(e){toast('No se pudo cargar Evolución muscular: '+errMsg(e),true);}
 }
+var EVO_MUSCLE_LABELS={deltoide_anterior:'Deltoides anterior',deltoide_posterior:'Deltoides posterior',pectoral_mayor:'Pectoral mayor',biceps_braquial:'Bíceps braquial',braquiorradial:'Braquiorradial',recto_abdominal:'Recto abdominal',oblicuos:'Oblicuos',recto_femoral:'Recto femoral',vasto_lateral:'Vasto lateral',gastrocnemio:'Gastrocnemio',dorsal_ancho:'Dorsal ancho',triceps_braquial:'Tríceps braquial',extensores_antebrazo:'Extensores del antebrazo',gluteo_mayor:'Glúteo mayor',gluteo_medio:'Glúteo medio',biceps_femoral:'Bíceps femoral',trapecio:'Trapecio',erectores_espinales:'Erectores espinales',soleo:'Sóleo'};
+var EVO_LEGACY_MUSCLES={pectoral_mayor:['pecho'],deltoide_anterior:['hombros'],deltoide_posterior:['hombros'],biceps_braquial:['biceps'],braquiorradial:['antebrazos'],extensores_antebrazo:['antebrazos'],recto_abdominal:['abdomen'],oblicuos:['abdomen'],recto_femoral:['cuadriceps'],vasto_lateral:['cuadriceps'],gastrocnemio:['pantorrillas'],soleo:['pantorrillas'],dorsal_ancho:['espalda'],trapecio:['espalda'],erectores_espinales:['espalda'],triceps_braquial:['triceps'],gluteo_mayor:['gluteos'],gluteo_medio:['gluteos'],biceps_femoral:['isquiotibiales']};
+function evoMonthName(ym){var p=ym.split('-');return new Date(Number(p[0]),Number(p[1])-1,1).toLocaleDateString('es-PE',{month:'long',year:'numeric'});}
+function evoMonthStats(ym){
+ var ss=EVO.sessions.filter(function(s){return (s.session_date||'').slice(0,7)===ym;}),ids=ss.map(function(s){return s.id;});
+ var ex=EVO.exercises.filter(function(e){return ids.indexOf(e.session_id)>=0;}),exids=ex.map(function(e){return e.id;});
+ var sets=EVO.sets.filter(function(s){return exids.indexOf(s.exercise_id)>=0;});
+ return {sessions:ss.length,volume:sets.reduce(function(n,s){return n+Number(s.reps)*Number(s.weight_kg);},0),pr:sets.reduce(function(n,s){return Math.max(n,Number(s.weight_kg));},0)};
+}
+function renderMonthlyComparison(){
+ var a=$('evo-month-a'),b=$('evo-month-b');if(!a||!b)return;
+ var months=Array.from(new Set(EVO.sessions.map(function(s){return (s.session_date||'').slice(0,7);}).concat(EVO.measurements.map(function(m){return (m.measured_on||'').slice(0,7);})).filter(function(x){return /^\\d{4}-\\d{2}$/.test(x);}))).sort();
+ var oldA=a.value,oldB=b.value,opts=months.map(function(m){return '<option value="'+m+'">'+esc(evoMonthName(m))+'</option>';}).join('');
+ a.innerHTML=opts||'<option value="">Sin datos</option>';b.innerHTML=opts||'<option value="">Sin datos</option>';
+ a.value=months.indexOf(oldA)>=0?oldA:(months[months.length-1]||'');
+ b.value=months.indexOf(oldB)>=0&&oldB!==a.value?oldB:(months[months.length-2]||a.value);
+ if(!a.dataset.bound){a.addEventListener('change',renderMonthlyComparison);b.addEventListener('change',renderMonthlyComparison);a.dataset.bound='1';}
+ var x=evoMonthStats(a.value),y=evoMonthStats(b.value);
+ $('evo-month-volume').textContent=Math.round(x.volume).toLocaleString('es-PE')+' kg';
+ $('evo-month-volume-diff').textContent=(x.volume-y.volume>=0?'+':'')+Math.round(x.volume-y.volume).toLocaleString('es-PE')+' kg';
+ $('evo-month-pr').textContent=x.pr+' kg';$('evo-month-sessions').textContent=x.sessions;
+ var vmax=Math.max(x.volume,y.volume,1),pmax=Math.max(x.pr,y.pr,1);
+ $('evo-month-chart').innerHTML=months.length?'<div class="evo-month-bar"><div class="evo-month-item"><div class="evo-month-bars"><i class="current" style="height:'+Math.max(2,x.volume/vmax*100)+'%"></i><i style="height:'+Math.max(2,y.volume/vmax*100)+'%"></i></div><b>Volumen</b><span>'+Math.round(x.volume)+' / '+Math.round(y.volume)+' kg</span></div><div class="evo-month-item"><div class="evo-month-bars"><i class="current" style="height:'+Math.max(2,x.pr/pmax*100)+'%"></i><i style="height:'+Math.max(2,y.pr/pmax*100)+'%"></i></div><b>Récord de peso</b><span>'+x.pr+' / '+y.pr+' kg</span></div></div><div class="evo-month-legend"><span><i></i>'+esc(evoMonthName(a.value))+'</span><span><i class="old"></i>'+esc(evoMonthName(b.value))+'</span></div>':'<div class="evo-chart-empty">Registra entrenamientos para comparar meses.</div>';
+ function weight(ym){var arr=EVO.measurements.filter(function(m){return (m.measured_on||'').slice(0,7)===ym&&m.weight_kg!==null;});return arr.length?Number(arr[arr.length-1].weight_kg):null;}
+ var wa=weight(a.value),wb=weight(b.value);
+ $('evo-month-measure-note').textContent=wa!==null&&wb!==null?'Peso corporal: '+wa+' kg frente a '+wb+' kg ('+(wa-wb>=0?'+':'')+Math.round((wa-wb)*10)/10+' kg).':'Registra medidas en ambos meses para comparar el peso corporal.';
+}
+function renderPhotoCompare(){
+ var a=$('evo-photo-a'),b=$('evo-photo-b'),out=$('evo-photo-compare-result');if(!a||!b||!out)return;
+ var photos=EVO.photos.filter(function(p){return !!p.signedUrl;});
+ function label(p){return evoDateLabel(p.photo_date)+' · '+p.pose;}
+ var opts=photos.map(function(p){return '<option value="'+p.id+'">'+esc(label(p))+'</option>';}).join('');
+ var oldA=a.value,oldB=b.value;a.innerHTML=opts||'<option value="">Sin fotos</option>';b.innerHTML=opts||'<option value="">Sin fotos</option>';
+ a.value=photos.some(function(p){return String(p.id)===oldA;})?oldA:(photos[photos.length-1]?String(photos[photos.length-1].id):'');
+ b.value=photos.some(function(p){return String(p.id)===oldB;})?oldB:(photos[0]?String(photos[0].id):'');
+ if(!a.dataset.bound){a.addEventListener('change',renderPhotoCompare);b.addEventListener('change',renderPhotoCompare);a.dataset.bound='1';}
+ var pa=photos.find(function(p){return String(p.id)===a.value;}),pb=photos.find(function(p){return String(p.id)===b.value;});
+ out.innerHTML=pa&&pb?'<div class="evo-photo-compare-item"><img src="'+esc(pa.signedUrl)+'" alt="Foto inicial"><small>Inicial · '+esc(label(pa))+'</small></div><div class="evo-photo-compare-item"><img src="'+esc(pb.signedUrl)+'" alt="Foto reciente"><small>Reciente · '+esc(label(pb))+'</small></div>':'<p class="note">Guarda fotos de progreso para comenzar a comparar.</p>';
+}
 function renderEvolucion(){
   var buttons=document.querySelectorAll('.evo-muscle');
   buttons.forEach(function(b){b.classList.toggle('selected',b.dataset.muscle===EVO.muscle);});
   document.querySelectorAll('.evo-muscle-part').forEach(function(p){p.classList.toggle('active',p.dataset.muscle===EVO.muscle);});
   var selectedButton=Array.from(buttons).find(function(b){return b.dataset.muscle===EVO.muscle;});
-  if($('evo-anatomy-selected'))$('evo-anatomy-selected').textContent=selectedButton?selectedButton.textContent:EVO.muscle;
-  var ex=EVO.exercises.filter(function(e){return e.muscle_group===EVO.muscle;});
+  if($('evo-anatomy-selected'))$('evo-anatomy-selected').textContent=EVO_MUSCLE_LABELS[EVO.muscle]||(selectedButton?selectedButton.textContent:EVO.muscle);
+  var legacy=EVO_LEGACY_MUSCLES[EVO.muscle]||[];var ex=EVO.exercises.filter(function(e){return e.muscle_group===EVO.muscle||legacy.indexOf(e.muscle_group)>=0;});
   var exIds=ex.map(function(e){return e.id;});
   var sets=EVO.sets.filter(function(s){return exIds.indexOf(s.exercise_id)>=0;});
   var sessionIds=Array.from(new Set(ex.map(function(e){return e.session_id;})));
@@ -1419,6 +1458,7 @@ function renderEvolucion(){
     return '<div class="evo-entry"><strong>'+evoDateLabel(m.measured_on)+'</strong><span class="note">'+(vals.map(function(x){return x[0]+': '+x[1]+' '+x[2];}).join(' · ')||'Medición guardada')+'</span></div>';
   }).join('')||'<p class="note">Aún no hay medidas guardadas.</p>';
   $('evo-photo-history').innerHTML=EVO.photos.map(function(p){return p.signedUrl?'<div class="evo-photo-card"><img src="'+esc(p.signedUrl)+'" alt="Foto de progreso '+esc(p.pose)+'"><small>'+evoDateLabel(p.photo_date)+' · '+esc(p.pose)+'</small></div>':'';}).join('')||'<p class="note">Aún no hay fotos de progreso.</p>';
+  renderMonthlyComparison();renderPhotoCompare();
 }
 async function guardarEvoEntrenamiento(e){
   e.preventDefault();
