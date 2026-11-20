@@ -1051,7 +1051,7 @@ function eventos(){
     var u = $('f-user').value.trim().toLowerCase().replace(/^@/, '');
     if (!/^[a-z0-9_]{3,20}$/.test(u)){ toast('Escribe un nombre de usuario válido', true); return; }
     try {
-      var f = await sb.from('profiles').select('id,username').eq('username', u).maybeSingle();
+      var f = await sb.from('viper_public_profiles').select('id,username').eq('username', u).maybeSingle();
       if (f.error) throw f.error;
       if (!f.data){ toast('No existe ese usuario', true); return; }
       if (f.data.id === user.id){ toast('Ese eres tú', true); return; }
