@@ -72,9 +72,21 @@ main{min-width:0;padding-block:12px 40px}
 .nav-collapsed .nav-label{display:none}
 .nav-toggle{min-height:38px;width:42px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;cursor:pointer;font-size:1.2rem}
 .avatar-card{display:grid;justify-items:center;gap:8px;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
-.avatar-ring{width:112px;height:112px;border-radius:50%;padding:5px;border:4px solid var(--avatar-color,var(--fg));background:var(--bg);display:grid;place-items:center;overflow:hidden}
-.avatar-ring img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.avatar-fallback{font:800 2.5rem var(--display);color:var(--muted)}
+.avatar-ring{position:relative;width:112px;height:112px;border-radius:50%;padding:5px;border:4px solid var(--avatar-color,var(--fg));background:var(--bg);display:grid;place-items:center;overflow:visible;isolation:isolate}
+.avatar-ring img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.avatar-fallback{position:relative;z-index:1;font:800 2.5rem var(--display);color:var(--muted)}
+.avatar-ring.rank-frame::before{content:"";position:absolute;inset:-8px;border:3px solid var(--avatar-color,var(--fg));border-radius:50%;box-shadow:0 0 0 2px var(--surface),0 0 13px var(--avatar-glow,transparent),inset 0 0 9px var(--avatar-glow,transparent);pointer-events:none}
+.avatar-ring.rank-frame::after{content:"";position:absolute;z-index:2;top:-11px;left:50%;width:13px;height:13px;transform:translateX(-50%) rotate(45deg);border:2px solid var(--surface);border-radius:2px;background:var(--avatar-color,var(--fg));box-shadow:0 0 10px var(--avatar-glow,transparent);pointer-events:none}
+.avatar-ring.rank-0{--avatar-glow:rgba(201,204,196,.55)}
+.avatar-ring.rank-1{--avatar-glow:rgba(47,158,87,.65)}
+.avatar-ring.rank-2{--avatar-glow:rgba(227,180,27,.65)}
+.avatar-ring.rank-3{--avatar-glow:rgba(44,107,209,.7)}
+.avatar-ring.rank-4{--avatar-glow:rgba(213,57,46,.7)}
+.avatar-ring.rank-5{--avatar-glow:rgba(120,130,140,.65)}
+.avatar-ring.rank-6{--avatar-glow:rgba(138,148,155,.75)}
+.avatar-ring.rank-7{--avatar-glow:rgba(200,160,42,.8)}
+.avatar-ring.rank-2::before,.avatar-ring.rank-4::before,.avatar-ring.rank-7::before{inset:-10px;border-width:4px}
+.avatar-ring.rank-3::after,.avatar-ring.rank-4::after,.avatar-ring.rank-7::after{width:16px;height:16px;top:-14px}
 .avatar-level{font:800 1.15rem var(--display);text-transform:uppercase;letter-spacing:.06em}
 .chat-panel{display:grid;gap:10px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface)}
 .chat-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -425,6 +437,11 @@ function plate(c, size){
     '<circle class="pl-line" cx="24" cy="24" r="16.5"/>' +
     '<circle class="pl-hole" cx="24" cy="24" r="5.5"/></svg>';
 }
+function setAvatarFrame(el, rankIndex){
+  el.classList.remove('rank-frame','rank-0','rank-1','rank-2','rank-3','rank-4','rank-5','rank-6','rank-7');
+  el.classList.add('rank-frame','rank-'+rankIndex);
+  el.style.setProperty('--avatar-color',RANKS[rankIndex].plate);
+}
 function limaToday(){
   return new Intl.DateTimeFormat('en-CA', {timeZone:'America/Lima', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date());
 }
@@ -735,7 +752,7 @@ function renderPerfil(){
   if (document.activeElement !== $('p-user')) $('p-user').value = P.username;
   [['p-instagram','instagram_url'],['p-tiktok','tiktok_url'],['p-facebook','facebook_url'],['p-x','x_url']].forEach(function(pair){ if(document.activeElement !== $(pair[0])) $(pair[0]).value = P[pair[1]] || ''; });
   var li = LV[idxOf(P.xp_total)], color = RANKS[li.ri].plate;
-  $('avatar-ring').style.setProperty('--avatar-color', color);
+  setAvatarFrame($('avatar-ring'),li.ri);
   $('avatar-level').textContent = li.label + ' · Nivel ' + (idxOf(P.xp_total) + 1);
   $('avatar-fallback').textContent = (P.username || 'V').slice(0,1).toUpperCase();
   if (P.avatar_path){ var av = sb.storage.from('avatars').getPublicUrl(P.avatar_path).data.publicUrl; $('avatar-img').src = av; $('avatar-img').hidden = false; $('avatar-fallback').hidden = true; }
@@ -790,7 +807,7 @@ async function abrirPerfilPublico(id){
     $('public-rank').textContent=lv.label+' · Nivel '+(idxOf(p.xp_total||0)+1);
     $('public-xp').textContent=fmt(p.xp_total||0)+' XP';
     $('public-streak').textContent='Racha: '+(p.racha||0);
-    $('public-avatar-ring').style.setProperty('--avatar-color',RANKS[lv.ri].plate);
+    setAvatarFrame($('public-avatar-ring'),lv.ri);
     $('public-avatar-fallback').textContent=(p.username||'V').slice(0,1).toUpperCase();
     if(p.avatar_path){
       var av=sb.storage.from('avatars').getPublicUrl(p.avatar_path).data.publicUrl;
