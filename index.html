@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Viper</title>
+<meta name="description" content="Entrena, registra tu día y sube de rango. Compite con tus amigos.">
+<meta name="theme-color" content="#111517">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Viper">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: una columna estrecha pensada para móvil. Navegación fija abajo. Colores de rango = discos olímpicos. */
+:root{
+  --bg:#ECEEEA;
+  --surface:#F7F8F5;
+  --fg:#15191B;
+  --muted:#586266;
+  --line:#D2D6CF;
+  --track:#D9DCD5;
+  --edge:rgba(0,0,0,.3);
+  --danger:#B3261E;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#111517;--surface:#1A1F22;--fg:#ECEFEA;--muted:#97A1A5;--line:#2B3337;--track:#2A3236;--edge:rgba(255,255,255,.32);--danger:#E5534B;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font:16px/1.45 var(--body);
+  padding-top:env(safe-area-inset-top,0px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+p{margin:0}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+h1,h2{margin:0}
+h2{font:700 1.2rem/1.2 var(--display);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.note{color:var(--muted);font-size:.9rem}
+.eyebrow{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* Login */
+.center{min-height:100vh;min-height:100dvh;max-width:420px;margin:0 auto;display:flex;flex-direction:column;justify-content:center;gap:16px;padding-block:32px}
+.logo-big{font:800 clamp(4rem,22vw,6rem)/.9 var(--display);text-transform:uppercase;letter-spacing:.02em}
+.lead{font-size:1.1rem}
+
+/* App */
+#app{max-width:560px;margin:0 auto}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-block:14px 6px}
+.logo{font:800 1.8rem/1 var(--display);text-transform:uppercase;letter-spacing:.04em}
+.who{color:var(--muted);font-size:.9rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+main{padding-block:12px 110px}
+.view{display:grid;gap:14px;min-width:0}
+.sec-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;margin-top:6px}
+.sec-head span{color:var(--muted);font-size:.9rem;text-transform:capitalize}
+
+.status{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 18px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+.status .lab{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.rankname{font:800 clamp(2.1rem,10vw,3.2rem)/1 var(--display);text-transform:uppercase;letter-spacing:.01em;overflow-wrap:anywhere}
+.xpbig{font:600 1.5rem/1.2 var(--display);font-variant-numeric:tabular-nums}
+.bar{grid-column:1/-1;height:12px;background:var(--track);border-radius:6px;overflow:hidden;margin-top:14px}
+.bar i{display:block;height:100%;width:0;background:var(--plate,var(--muted));box-shadow:inset 0 0 0 1px var(--edge);border-radius:6px;transition:width .35s ease}
+.faltan{grid-column:1/-1;margin-top:8px;font-variant-numeric:tabular-nums}
+.aviso{background:var(--fg);color:var(--bg);padding:12px 14px;border-radius:8px;font-weight:600}
+
+.acts{display:grid;gap:8px}
+.act{display:flex;align-items:center;gap:12px;min-height:58px;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;color:inherit;font:inherit;text-align:left;width:100%}
+button.act{cursor:pointer}
+.act .t{flex:1;min-width:0}
+.act small{display:block;color:var(--muted);font-size:.85rem}
+.v{font:700 1.35rem/1 var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.chk{width:22px;height:22px;border:2px solid var(--muted);border-radius:5px;flex:none;position:relative}
+.act.on,.act[aria-pressed="true"]{border-color:var(--fg)}
+.act.on .chk,.act[aria-pressed="true"] .chk{background:var(--fg);border-color:var(--fg)}
+.act.on .chk::after,.act[aria-pressed="true"] .chk::after{content:"";position:absolute;left:5px;top:1px;width:6px;height:11px;border:solid var(--bg);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.fotobox{display:grid;gap:8px;justify-items:start}
+.fotobox:empty{display:none}
+.thumb{display:block;max-width:100%;max-height:220px;border-radius:8px;object-fit:cover}
+.meals{flex-wrap:wrap}
+.meals .t{min-width:150px}
+.mbtns{display:flex;gap:6px}
+.mb{width:44px;height:44px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;font:700 1.1rem var(--display);cursor:pointer}
+.mb[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.total{display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid var(--fg);padding-top:10px}
+.total b{font:800 2.2rem/1 var(--display);font-variant-numeric:tabular-nums}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:1px solid var(--fg);background:transparent;color:var(--fg);border-radius:8px;font:600 .95rem var(--body);cursor:pointer;text-decoration:none}
+.btn.primary{background:var(--fg);color:var(--bg)}
+.btn.sm{min-height:36px;padding:0 12px;font-size:.85rem}
+.btn.wide{width:100%}
+.btn:disabled{opacity:.45;cursor:default}
+.mini{border:0;background:none;color:var(--muted);font:inherit;font-size:.8rem;text-decoration:underline;padding:0;cursor:pointer}
+
+input[type=text]{min-height:44px;width:100%;min-width:0;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:0 12px;font:inherit}
+.addrow{display:flex;flex-wrap:wrap;gap:8px}
+.addrow input{flex:1;min-width:170px}
+label.lbl{font-size:.9rem;color:var(--muted)}
+form.stack{display:grid;gap:8px}
+
+.board{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.row{display:grid;grid-template-columns:28px 32px minmax(0,1fr) auto;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.row.me{border:2px solid var(--fg);padding:7px 11px}
+.pos{font:700 1.2rem/1 var(--display);color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
+.nm{min-width:0}
+.nm b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nm small{color:var(--muted);font-size:.82rem}
+.pts{font:700 1.3rem/1 var(--display);text-align:right;font-variant-numeric:tabular-nums}
+.pts small{margin-left:3px;font-size:.7em;color:var(--muted)}
+.empty{color:var(--muted);padding:8px 2px}
+.reqs{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.req{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.req b{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.btns{display:flex;gap:6px}
+
+.ranks{list-style:none;margin:0;padding:0;display:grid;gap:16px}
+.rk{display:grid;gap:8px;min-width:0}
+.rkh{display:flex;align-items:center;gap:10px;font:700 1.35rem/1 var(--display);text-transform:uppercase;letter-spacing:.03em}
+.lv{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.lv li{display:flex;flex-direction:column;min-width:0;border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.lv li.wide{grid-column:1/-1}
+.lv .n{font:700 1.05rem/1.2 var(--display);text-transform:uppercase;letter-spacing:.03em}
+.lv .x{font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.lv li.done{background:var(--track)}
+.lv li.now{border:2px solid var(--fg);padding:5px 7px;background:var(--surface)}
+.lv li.now .x{color:var(--fg);font-weight:600}
+.pl-line{fill:none;stroke:var(--edge);stroke-width:1.5}
+.pl-hole{fill:var(--bg);stroke:var(--edge);stroke-width:1.5}
+
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.nav button{min-height:60px;border:0;background:none;color:var(--muted);font:700 1rem var(--display);text-transform:uppercase;letter-spacing:.08em;cursor:pointer;border-top:3px solid transparent}
+.nav button[aria-current="page"]{color:var(--fg);border-top-color:var(--fg)}
+
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:10;max-width:min(92vw,420px);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;text-align:center}
+#toast.err{background:var(--danger);color:#fff}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+
+<section id="login" class="center" hidden>
+  <p class="eyebrow">Gym · Rangos · Amigos</p>
+  <h1 class="logo-big">Viper</h1>
+  <p class="lead">Entrena, registra tu día y sube de rango. Compite con tus amigos.</p>
+  <button class="btn primary wide" id="entrar" type="button">Entrar con Google</button>
+  <p class="note" id="login-msg"></p>
+  <p class="note"><a href="privacidad.html">Privacidad</a> · <a href="terminos.html">Condiciones</a></p>
+</section>
+
+<div id="app" hidden>
+  <header class="top">
+    <span class="logo">Viper</span>
+    <span class="who" id="who"></span>
+  </header>
+
+  <main>
+    <section id="v-hoy" class="view" aria-label="Hoy">
+      <div class="status" id="status">
+        <div id="plate"></div>
+        <div>
+          <p class="lab">Rango actual</p>
+          <p class="rankname" id="rango">—</p>
+          <p class="xpbig"><span id="xp">0</span> XP</p>
+        </div>
+        <div class="bar"><i id="fill"></i></div>
+        <p class="faltan" id="faltan"></p>
+      </div>
+      <div class="aviso" id="aviso" role="status" aria-live="polite" hidden></div>
+
+      <div class="sec-head"><h2>Hoy</h2><span id="dia"></span></div>
+      <div class="acts">
+        <div class="act" id="gym-row">
+          <span class="chk" aria-hidden="true"></span>
+          <span class="t">Gym + foto<small id="gymsub"></small></span>
+          <span class="v" id="gymxp"></span>
+        </div>
+        <div class="fotobox" id="fotobox"></div>
+        <div class="act meals" role="group" aria-labelledby="mealt">
+          <span class="t" id="mealt">Comidas de la dieta<small>10 XP cada una, máximo 4 al día</small></span>
+          <span class="mbtns">
+            <button class="mb" type="button" data-m="0" aria-pressed="false" aria-label="Comida 1">1</button>
+            <button class="mb" type="button" data-m="1" aria-pressed="false" aria-label="Comida 2">2</button>
+            <button class="mb" type="button" data-m="2" aria-pressed="false" aria-label="Comida 3">3</button>
+            <button class="mb" type="button" data-m="3" aria-pressed="false" aria-label="Comida 4">4</button>
+          </span>
+          <span class="v" id="mealxp"></span>
+        </div>
+        <button class="act" id="prot" type="button" aria-pressed="false">
+          <span class="chk" aria-hidden="true"></span>
+          <span class="t">Proteína en polvo</span>
+          <span class="v">+15</span>
+        </button>
+      </div>
+      <input id="foto-in" class="vh" type="file" accept="image/*" capture="environment">
+      <p class="note">La foto debe hacerse hoy. Solo cuenta un gym por día. Racha: 5 XP por día seguido, tope +50.</p>
+      <div class="total"><span>XP de hoy</span><b id="hoyxp">0</b></div>
+      <p class="note" id="sucio"></p>
+      <button class="btn primary wide" id="guardar" type="button">Guardar día</button>
+    </section>
+
+    <section id="v-ranking" class="view" aria-label="Ranking" hidden>
+      <div class="sec-head"><h2>Ranking global</h2><span id="rk-n"></span></div>
+      <ol class="board" id="board"></ol>
+    </section>
+
+    <section id="v-amigos" class="view" aria-label="Amigos" hidden>
+      <h2>Agregar amigo</h2>
+      <form id="f-add" class="addrow">
+        <input id="f-user" type="text" placeholder="nombre de usuario" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="21" aria-label="Nombre de usuario de tu amigo">
+        <button class="btn primary" type="submit">Enviar solicitud</button>
+      </form>
+      <div id="f-reqs" class="view"></div>
+      <div class="sec-head"><h2>Ranking de amigos</h2></div>
+      <ol class="board" id="f-board"></ol>
+      <p class="note" id="f-vacio" hidden>Aún no tienes amigos. Busca a alguien por su nombre de usuario.</p>
+    </section>
+
+    <section id="v-perfil" class="view" aria-label="Perfil" hidden>
+      <h2>Tu cuenta</h2>
+      <p class="note" id="p-email"></p>
+      <form id="p-form" class="stack">
+        <label class="lbl" for="p-user">Nombre de usuario (es público)</label>
+        <input id="p-user" type="text" maxlength="20" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false">
+        <p class="note">De 3 a 20 caracteres: letras minúsculas, números y guion bajo.</p>
+        <button class="btn primary" type="submit">Guardar nombre</button>
+      </form>
+      <button class="btn" id="salir" type="button">Cerrar sesión</button>
+      <p class="note">Para instalarla: en iPhone, Compartir y Añadir a pantalla de inicio. En Android, menú y Instalar app.</p>
+      <div class="sec-head"><h2>Niveles y XP necesarios</h2></div>
+      <ol class="ranks" id="ranks"></ol>
+      <p class="note"><a href="privacidad.html">Privacidad</a> · <a href="terminos.html">Condiciones</a></p>
+    </section>
+  </main>
+
+  <nav class="nav" aria-label="Secciones">
+    <button type="button" data-nav="hoy" aria-current="page">Hoy</button>
+    <button type="button" data-nav="ranking">Ranking</button>
+    <button type="button" data-nav="amigos">Amigos</button>
+    <button type="button" data-nav="perfil">Perfil</button>
+  </nav>
+</div>
+
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ====== CONFIGURACIÓN: pega aquí los dos datos de tu proyecto en Supabase ====== */
+var SUPABASE_URL = 'PEGA_AQUI_LA_URL_DEL_PROYECTO';
+var SUPABASE_KEY = 'PEGA_AQUI_LA_CLAVE_PUBLICABLE';
+/* ================================================================================ */
+
+var RANKS = [
+  {name:'Novato',    plate:'#C9CCC4', xp:[0,125,250,375]},
+  {name:'Aprendiz',  plate:'#2F9E57', xp:[500,750,1000,1250]},
+  {name:'Constante', plate:'#E3B41B', xp:[1500,2125,2750,3375]},
+  {name:'Atleta',    plate:'#2C6BD1', xp:[4000,5250,6500,7750]},
+  {name:'Guerrero',  plate:'#D5392E', xp:[9000,11250,13500,15750]},
+  {name:'Élite',     plate:'#2A2E31', xp:[18000,22250,26500,30750]},
+  {name:'Titán',     plate:'#8A949B', xp:[35000,43750,52500,61250]},
+  {name:'Leyenda',   plate:'#C8A02A', xp:[70000]}
+];
+var LV = [];
+RANKS.forEach(function(r, ri){
+  r.xp.forEach(function(x, i){
+    var multi = r.xp.length === 4;
+    LV.push({ri: ri, x: x, label: multi ? r.name + ' ' + (4 - i) : r.name});
+  });
+});
+
+function $(id){ return document.getElementById(id); }
+function fmt(n){ return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+function esc(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function idxOf(t){
+  var k = 0;
+  LV.forEach(function(l, i){ if (t >= l.x) k = i; });
+  return k;
+}
+function plate(c, size){
+  return '<svg viewBox="0 0 48 48" width="' + size + '" height="' + size + '" aria-hidden="true" focusable="false">' +
+    '<circle cx="24" cy="24" r="22" style="fill:' + c + '"/>' +
+    '<circle class="pl-line" cx="24" cy="24" r="22"/>' +
+    '<circle class="pl-line" cx="24" cy="24" r="16.5"/>' +
+    '<circle class="pl-hole" cx="24" cy="24" r="5.5"/></svg>';
+}
+function limaToday(){
+  return new Intl.DateTimeFormat('en-CA', {timeZone:'America/Lima', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date());
+}
+function addDays(iso, n){
+  var d = new Date(iso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+var sb = null, user = null, P = null, T = null, F = [], U = {}, iniciado = false, toastT = null;
+
+function toast(msg, err){
+  var el = $('toast');
+  el.textContent = msg;
+  el.className = err ? 'err' : '';
+  el.hidden = false;
+  clearTimeout(toastT);
+  toastT = setTimeout(function(){ el.hidden = true; }, 3800);
+}
+function errMsg(e){
+  var m = e && e.message ? String(e.message) : '';
+  if (/La foto debe subirse hoy/.test(m)) return 'La foto debe hacerse y subirse hoy. Haz una foto nueva.';
+  if (/Failed to fetch|NetworkError|Load failed/i.test(m)) return 'Sin conexión. Revisa tu internet.';
+  if (/duplicate key|23505/.test(m)) return 'Ese dato ya existe.';
+  return m || 'Algo falló. Inténtalo de nuevo.';
+}
+function pantalla(n){
+  $('login').hidden = n !== 'login';
+  $('app').hidden = n !== 'app';
+}
+
+/* ---------- Datos ---------- */
+async function loadProfile(){
+  var r = await sb.from('profiles').select('username,xp_total,racha,ultimo_gym').eq('id', user.id).single();
+  if (r.error) throw r.error;
+  P = r.data;
+}
+async function loadToday(){
+  var hoy = limaToday(), ayer = addDays(hoy, -1);
+  var r = await sb.from('checkins').select('dia,foto_path,comidas,proteina,gym_racha,xp').in('dia', [hoy, ayer]);
+  if (r.error) throw r.error;
+  var h = r.data.find(function(x){ return x.dia === hoy; }) || null;
+  var a = r.data.find(function(x){ return x.dia === ayer; }) || null;
+  var n = h ? h.comidas : 0;
+  T = {
+    hoy: hoy,
+    rachaAyer: a ? a.gym_racha : 0,
+    saved: h,
+    fotoPath: h ? h.foto_path : null,
+    meals: [0,1,2,3].map(function(i){ return i < n; }),
+    prot: h ? !!h.proteina : false,
+    blob: null, blobUrl: null, signed: null
+  };
+}
+async function signPhoto(){
+  if (!T.fotoPath) return;
+  var r = await sb.storage.from('fotos-gym').createSignedUrl(T.fotoPath, 3600);
+  T.signed = r.data ? r.data.signedUrl : null;
+}
+
+/* ---------- Pantalla Hoy ---------- */
+function mealsN(){ return T.meals.filter(Boolean).length; }
+function previewXP(){
+  var gym = !!(T.fotoPath || T.blob);
+  var racha = gym ? T.rachaAyer + 1 : 0;
+  var bonus = Math.min(racha, 10) * 5;
+  return {gym: gym, racha: racha, bonus: bonus, xp: (gym ? 50 + bonus : 0) + mealsN() * 10 + (T.prot ? 15 : 0)};
+}
+function dirty(){
+  var n = T.saved ? T.saved.comidas : 0;
+  var pr = T.saved ? !!T.saved.proteina : false;
+  return !!T.blob || mealsN() !== n || T.prot !== pr;
+}
+function fotoHTML(){
+  if (T.fotoPath){
+    return (T.signed ? '<img class="thumb" alt="Foto de hoy" src="' + esc(T.signed) + '">' : '') + '<p class="note">Foto de hoy guardada.</p>';
+  }
+  if (T.blob){
+    return '<img class="thumb" alt="Foto lista" src="' + esc(T.blobUrl) + '"><p class="note">Foto lista. Guarda el día para que cuente.</p><label class="btn sm" for="foto-in">Cambiar foto</label>';
+  }
+  return '<label class="btn" for="foto-in">Hacer foto del gym</label>';
+}
+function renderRank(){
+  var t = P.xp_total, i = idxOf(t), cur = LV[i], nx = LV[i + 1], color = RANKS[cur.ri].plate;
+  $('status').style.setProperty('--plate', color);
+  $('plate').innerHTML = plate(color, 88);
+  $('rango').textContent = cur.label;
+  $('xp').textContent = fmt(t);
+  $('fill').style.width = (nx ? (t - cur.x) / (nx.x - cur.x) * 100 : 100).toFixed(1) + '%';
+  $('faltan').textContent = nx ? 'Faltan ' + fmt(nx.x - t) + ' XP para ' + nx.label : 'Rango máximo alcanzado';
+}
+function renderHoy(){
+  var p = previewXP();
+  var bonusSi = Math.min(T.rachaAyer + 1, 10) * 5;
+  $('dia').textContent = new Date(T.hoy + 'T12:00:00').toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'long'});
+  $('gym-row').classList.toggle('on', p.gym);
+  $('gymxp').textContent = '+' + (50 + bonusSi);
+  $('gymsub').textContent = '50 base + ' + bonusSi + ' de racha (día ' + (T.rachaAyer + 1) + ')';
+  $('fotobox').innerHTML = fotoHTML();
+  document.querySelectorAll('.mb').forEach(function(b){
+    b.setAttribute('aria-pressed', T.meals[+b.dataset.m] ? 'true' : 'false');
+  });
+  $('mealxp').textContent = '+' + (mealsN() * 10);
+  $('prot').setAttribute('aria-pressed', T.prot ? 'true' : 'false');
+  $('hoyxp').textContent = fmt(p.xp);
+  var d = dirty();
+  $('sucio').textContent = d ? 'Hay cambios sin guardar.' : (T.saved ? 'Guardado: ' + T.saved.xp + ' XP.' : '');
+  var g = $('guardar');
+  g.disabled = !d;
+  g.textContent = 'Guardar día';
+}
+function aviso(msg){
+  var a = $('aviso');
+  if (msg){ a.textContent = msg; a.hidden = false; } else { a.hidden = true; }
+}
+async function comprimir(file){
+  try {
+    var bmp = await createImageBitmap(file, {imageOrientation: 'from-image'});
+    var k = Math.min(1, 1280 / Math.max(bmp.width, bmp.height));
+    var c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * k);
+    c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    var blob = await new Promise(function(r){ c.toBlob(r, 'image/jpeg', 0.8); });
+    if (blob) return blob;
+  } catch (e) { /* se prueba con el archivo original */ }
+  if (file.size <= 5242880 && /^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+  throw new Error('No se pudo leer la foto. Prueba con otra.');
+}
+async function guardar(){
+  if (!dirty()) return;
+  var btn = $('guardar');
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+  aviso('');
+  var antes = idxOf(P.xp_total);
+  try {
+    var path = null;
+    if (T.blob){
+      var ext = T.blob.type === 'image/png' ? 'png' : T.blob.type === 'image/webp' ? 'webp' : 'jpg';
+      path = user.id + '/' + T.hoy + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+      var up = await sb.storage.from('fotos-gym').upload(path, T.blob, {contentType: T.blob.type || 'image/jpeg', upsert: false});
+      if (up.error) throw up.error;
+    }
+    var r = await sb.rpc('registrar_dia', {p_comidas: mealsN(), p_proteina: T.prot, p_foto: path});
+    if (r.error) throw r.error;
+    if (T.blobUrl) URL.revokeObjectURL(T.blobUrl);
+    await Promise.all([loadProfile(), loadToday()]);
+    await signPhoto();
+    renderAll();
+    var despues = idxOf(P.xp_total);
+    if (despues > antes) aviso('Subiste a ' + LV[despues].label);
+    else toast('Día guardado');
+  } catch (e) {
+    toast(errMsg(e), true);
+    renderHoy();
+  }
+}
+
+/* ---------- Ranking ---------- */
+function boardHTML(rows, fid){
+  if (!rows.length) return '<li class="empty">Aún no hay nadie.</li>';
+  return rows.map(function(r, i){
+    var L = LV[idxOf(r.xp_total)];
+    var quitar = (fid && r.id !== user.id && fid[r.id]) ? ' <button class="mini" type="button" data-act="quitar" data-id="' + fid[r.id] + '">Quitar</button>' : '';
+    return '<li class="row' + (r.id === user.id ? ' me' : '') + '">' +
+      '<span class="pos">' + (i + 1) + '</span>' + plate(RANKS[L.ri].plate, 32) +
+      '<span class="nm"><b>' + esc(r.username) + '</b><small>' + L.label + ' · racha ' + r.racha_activa + '</small>' + quitar + '</span>' +
+      '<span class="pts">' + fmt(r.xp_total) + '<small>XP</small></span></li>';
+  }).join('');
+}
+async function cargarRanking(){
+  var b = $('board');
+  b.innerHTML = '<li class="empty">Cargando…</li>';
+  try {
+    var r = await sb.from('ranking_publico').select('id,username,xp_total,racha_activa')
+      .order('xp_total', {ascending: false}).order('username').limit(100);
+    if (r.error) throw r.error;
+    b.innerHTML = boardHTML(r.data, null);
+    $('rk-n').textContent = r.data.length === 1 ? '1 atleta' : r.data.length + ' atletas';
+  } catch (e) {
+    b.innerHTML = '<li class="empty">No se pudo cargar el ranking.</li>';
+    toast(errMsg(e), true);
+  }
+}
+
+/* ---------- Amigos ---------- */
+async function cargarAmigos(){
+  try {
+    var r = await sb.from('friendships').select('id,solicitante,destinatario,estado');
+    if (r.error) throw r.error;
+    F = r.data;
+    var ids = {};
+    ids[user.id] = true;
+    F.forEach(function(f){ ids[f.solicitante] = true; ids[f.destinatario] = true; });
+    var p = await sb.from('ranking_publico').select('id,username,xp_total,racha_activa').in('id', Object.keys(ids));
+    if (p.error) throw p.error;
+    U = {};
+    p.data.forEach(function(x){ U[x.id] = x; });
+    renderAmigos();
+  } catch (e) {
+    toast(errMsg(e), true);
+  }
+}
+function renderAmigos(){
+  var me = user.id;
+  var rec = F.filter(function(f){ return f.estado === 'pendiente' && f.destinatario === me; });
+  var env = F.filter(function(f){ return f.estado === 'pendiente' && f.solicitante === me; });
+  var ok = F.filter(function(f){ return f.estado === 'aceptada'; });
+  function nombre(id){ return U[id] ? esc(U[id].username) : 'usuario'; }
+  var h = '';
+  if (rec.length){
+    h += '<h2>Solicitudes recibidas</h2><ul class="reqs">' + rec.map(function(f){
+      return '<li class="req"><b>' + nombre(f.solicitante) + '</b><span class="btns">' +
+        '<button class="btn primary sm" type="button" data-act="aceptar" data-id="' + f.id + '">Aceptar</button>' +
+        '<button class="btn sm" type="button" data-act="borrar" data-id="' + f.id + '">Rechazar</button></span></li>';
+    }).join('') + '</ul>';
+  }
+  if (env.length){
+    h += '<h2>Solicitudes enviadas</h2><ul class="reqs">' + env.map(function(f){
+      return '<li class="req"><b>' + nombre(f.destinatario) + '</b><span class="btns">' +
+        '<button class="btn sm" type="button" data-act="borrar" data-id="' + f.id + '">Cancelar</button></span></li>';
+    }).join('') + '</ul>';
+  }
+  $('f-reqs').innerHTML = h;
+  var fid = {};
+  ok.forEach(function(f){ fid[f.solicitante === me ? f.destinatario : f.solicitante] = f.id; });
+  var rows = [me].concat(Object.keys(fid)).map(function(id){ return U[id]; }).filter(Boolean)
+    .sort(function(a, b){ return b.xp_total - a.xp_total || a.username.localeCompare(b.username); });
+  $('f-board').innerHTML = boardHTML(rows, fid);
+  $('f-vacio').hidden = ok.length > 0;
+}
+
+/* ---------- Perfil ---------- */
+function renderLevels(){
+  var cur = idxOf(P.xp_total), g = 0;
+  $('ranks').innerHTML = RANKS.map(function(r){
+    var multi = r.xp.length === 4;
+    var chips = r.xp.map(function(x, i){
+      var cls = (multi ? '' : 'wide ') + (g === cur ? 'now' : g < cur ? 'done' : '');
+      var li = '<li class="' + cls.trim() + '"><span class="n">' + (multi ? 'Nivel ' + (4 - i) : 'Máximo') + '</span><span class="x">' + fmt(x) + ' XP</span></li>';
+      g++;
+      return li;
+    }).join('');
+    return '<li class="rk"><div class="rkh">' + plate(r.plate, 28) + '<span>' + r.name + '</span></div><ol class="lv">' + chips + '</ol></li>';
+  }).join('');
+}
+function renderPerfil(){
+  $('p-email').textContent = user.email || '';
+  if (document.activeElement !== $('p-user')) $('p-user').value = P.username;
+  renderLevels();
+}
+function renderAll(){
+  $('who').textContent = P.username;
+  renderRank();
+  renderHoy();
+  renderPerfil();
+}
+
+/* ---------- Navegación ---------- */
+function ir(v){
+  ['hoy', 'ranking', 'amigos', 'perfil'].forEach(function(n){
+    $('v-' + n).hidden = n !== v;
+    var b = document.querySelector('[data-nav="' + n + '"]');
+    if (b){
+      if (n === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    }
+  });
+  window.scrollTo(0, 0);
+  if (v === 'ranking') cargarRanking();
+  if (v === 'amigos') cargarAmigos();
+  if (v === 'perfil') renderPerfil();
+}
+
+/* ---------- Arranque ---------- */
+async function start(){
+  if (iniciado) return;
+  iniciado = true;
+  pantalla('app');
+  try {
+    await Promise.all([loadProfile(), loadToday()]);
+    await signPhoto();
+    renderAll();
+    ir('hoy');
+  } catch (e) {
+    iniciado = false;
+    toast(errMsg(e), true);
+  }
+}
+function eventos(){
+  $('entrar').addEventListener('click', async function(){
+    $('login-msg').textContent = '';
+    var r = await sb.auth.signInWithOAuth({provider: 'google', options: {redirectTo: location.origin + location.pathname}});
+    if (r.error) $('login-msg').textContent = errMsg(r.error);
+  });
+  $('salir').addEventListener('click', async function(){ await sb.auth.signOut(); });
+  document.querySelectorAll('[data-nav]').forEach(function(b){
+    b.addEventListener('click', function(){ ir(b.dataset.nav); });
+  });
+  $('v-hoy').addEventListener('click', function(e){
+    var m = e.target.closest('.mb');
+    if (m){ var k = +m.dataset.m; T.meals[k] = !T.meals[k]; renderHoy(); return; }
+    if (e.target.closest('#prot')){ T.prot = !T.prot; renderHoy(); }
+  });
+  $('foto-in').addEventListener('change', async function(e){
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    try {
+      var b = await comprimir(f);
+      if (T.blobUrl) URL.revokeObjectURL(T.blobUrl);
+      T.blob = b;
+      T.blobUrl = URL.createObjectURL(b);
+      renderHoy();
+    } catch (err) { toast(errMsg(err), true); }
+    e.target.value = '';
+  });
+  $('guardar').addEventListener('click', guardar);
+
+  $('f-add').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var u = $('f-user').value.trim().toLowerCase().replace(/^@/, '');
+    if (!/^[a-z0-9_]{3,20}$/.test(u)){ toast('Escribe un nombre de usuario válido', true); return; }
+    try {
+      var f = await sb.from('profiles').select('id,username').eq('username', u).maybeSingle();
+      if (f.error) throw f.error;
+      if (!f.data){ toast('No existe ese usuario', true); return; }
+      if (f.data.id === user.id){ toast('Ese eres tú', true); return; }
+      var r = await sb.from('friendships').insert({solicitante: user.id, destinatario: f.data.id});
+      if (r.error){
+        toast(r.error.code === '23505' ? 'Ya hay una solicitud o amistad con esa persona' : errMsg(r.error), true);
+        return;
+      }
+      $('f-user').value = '';
+      toast('Solicitud enviada');
+      await cargarAmigos();
+    } catch (err) { toast(errMsg(err), true); }
+  });
+  $('v-amigos').addEventListener('click', async function(e){
+    var b = e.target.closest('button[data-act]');
+    if (!b) return;
+    var id = b.dataset.id, act = b.dataset.act;
+    if (act === 'quitar' && !confirm('¿Quitar a este amigo?')) return;
+    b.disabled = true;
+    try {
+      var r = act === 'aceptar'
+        ? await sb.from('friendships').update({estado: 'aceptada'}).eq('id', id)
+        : await sb.from('friendships').delete().eq('id', id);
+      if (r.error) throw r.error;
+      await cargarAmigos();
+    } catch (err) {
+      toast(errMsg(err), true);
+      b.disabled = false;
+    }
+  });
+
+  $('p-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var u = $('p-user').value.trim().toLowerCase();
+    if (!/^[a-z0-9_]{3,20}$/.test(u)){ toast('Usa de 3 a 20 letras minúsculas, números o guion bajo', true); return; }
+    try {
+      var r = await sb.from('profiles').update({username: u}).eq('id', user.id);
+      if (r.error){
+        toast(r.error.code === '23505' ? 'Ese nombre ya lo usa otra persona' : errMsg(r.error), true);
+        return;
+      }
+      P.username = u;
+      $('who').textContent = u;
+      toast('Nombre guardado');
+    } catch (err) { toast(errMsg(err), true); }
+  });
+}
+
+async function boot(){
+  pantalla('login');
+  if (typeof supabase === 'undefined'){
+    $('login-msg').textContent = 'No se pudo cargar la librería de Supabase. Revisa tu conexión.';
+    $('entrar').disabled = true;
+    return;
+  }
+  if (!/^https:\/\//.test(SUPABASE_URL) || SUPABASE_KEY.indexOf('PEGA_AQUI') === 0){
+    $('login-msg').textContent = 'Falta la configuración de Supabase en index.html.';
+    $('entrar').disabled = true;
+    return;
+  }
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  eventos();
+  sb.auth.onAuthStateChange(function(ev){
+    if (ev === 'SIGNED_OUT'){ user = null; P = null; T = null; iniciado = false; pantalla('login'); }
+  });
+  try {
+    var s = await sb.auth.getSession();
+    if (s.data && s.data.session){ user = s.data.session.user; await start(); }
+  } catch (e) {
+    $('login-msg').textContent = errMsg(e);
+  }
+}
+
+if (window.__TEST__) window.__t = {idxOf: idxOf, LV: LV, limaToday: limaToday, addDays: addDays, fmt: fmt};
+boot();
+
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+})();
+</script>
+</body>
+</html>
