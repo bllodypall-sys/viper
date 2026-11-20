@@ -184,6 +184,19 @@ form.stack{display:grid;gap:8px}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:10;max-width:min(92vw,420px);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;text-align:center}
 #toast.err{background:var(--danger);color:#fff}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+
+/* Ajustes finales del menú: se declaran al final para prevalecer sobre estilos heredados. */
+main{padding-block:12px 40px}
+@media(max-width:700px){
+  #app{max-width:560px}
+  .app-layout{display:block}
+  .nav{position:fixed;left:12px;right:auto;top:72px;bottom:12px;width:min(260px,82vw);height:auto;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.25);transform:translateX(calc(-100% - 20px));transition:transform .2s ease}
+  #app.sidebar-open .nav{transform:translateX(0)}
+  .nav button{justify-content:flex-start;padding:0 12px}
+  .nav-label{display:inline}
+  main{padding-bottom:36px}
+}
+@media(prefers-reduced-motion:reduce){.nav{transition:none}}
 </style>
 </head>
 <body>
