@@ -46,7 +46,8 @@ create policy viper_notifications_mark_own
 -- No se permite insertar notificaciones directamente desde el navegador.
 -- Las siguientes fases las generaran mediante funciones/triggers seguros.
 revoke all on public.viper_notifications from anon, authenticated;
-grant select, update on public.viper_notifications to authenticated;
+grant select on public.viper_notifications to authenticated;
+grant update (read_at) on public.viper_notifications to authenticated;
 
 create table if not exists public.viper_notification_preferences (
   user_id uuid primary key references auth.users(id) on delete cascade,
