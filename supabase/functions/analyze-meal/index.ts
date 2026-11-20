@@ -104,7 +104,11 @@ Deno.serve(async (req) => {
       return json({ error: "Esta comida ya fue registrada hoy" }, 409);
     }
 
-    const base64 = btoa(String.fromCharCode(...bytes));
+    let binary = "";
+    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+    }
+    const base64 = btoa(binary);
     const prompt = `Analiza esta fotografía de una comida. Devuelve ÚNICAMENTE JSON válido con esta forma:
 {"contains_food":boolean,"confidence":number,"food_name":string,"calories":number,"protein_g":number,"carbs_g":number,"fat_g":number,"notes":string}
 Determina si se ve comida real y reconocible. No aceptes fotos de personas, gimnasios, envases vacíos, capturas de pantalla ni imágenes sin alimentos visibles. Estima macros y calorías solo a partir de lo visible; si no puedes reconocer comida, contains_food=false. confidence entre 0 y 1. No inventes precisión: notes debe indicar que son estimaciones visuales. `;
