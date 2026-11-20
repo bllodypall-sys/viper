@@ -1004,8 +1004,8 @@ async function guardar(){
   btn.textContent = 'Guardando…';
   aviso('');
   var antes = idxOf(P.xp_total);
+  var path = null, daySaved = false;
   try {
-    var path = null;
     if (T.blob){
       var ext = T.blob.type === 'image/png' ? 'png' : T.blob.type === 'image/webp' ? 'webp' : 'jpg';
       path = user.id + '/' + T.hoy + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
@@ -1014,6 +1014,7 @@ async function guardar(){
     }
     var r = await sb.rpc('registrar_dia', {p_comidas: mealsN(), p_proteina: T.prot, p_foto: path});
     if (r.error) throw r.error;
+    daySaved = true;
     if (T.blobUrl) URL.revokeObjectURL(T.blobUrl);
     await Promise.all([loadProfile(), loadToday()]);
     await signPhoto();
@@ -1022,6 +1023,10 @@ async function guardar(){
     if (despues > antes) aviso('Subiste a ' + LV[despues].label);
     else toast('Día guardado');
   } catch (e) {
+    if(path && !daySaved){
+      try{var cleanup=await sb.storage.from('fotos-gym').remove([path]);if(cleanup.error)console.error('VIPER: no se pudo limpiar la foto de gimnasio',cleanup.error);}
+      catch(cleanupError){console.error('VIPER: error limpiando foto de gimnasio',cleanupError);}
+    }
     toast(errMsg(e), true);
     renderHoy();
   }
