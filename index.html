@@ -665,7 +665,7 @@ function addDays(iso, n){
 }
 
 var sb = null, user = null, P = null, T = null, F = [], U = {}, iniciado = false, toastT = null, authMode = 'login', chatFriend = null, chatChannel = null;
-var EVO = {muscle:'pecho',sessions:[],exercises:[],sets:[],measurements:[],photos:[]};
+var EVO = {muscle:'pectoral_mayor',sessions:[],exercises:[],sets:[],measurements:[],photos:[]};
 
 function toast(msg, err){
   var el = $('toast');
@@ -1358,10 +1358,10 @@ var EVO_MUSCLE_LABELS={deltoide_anterior:'Deltoides anterior',deltoide_posterior
 var EVO_LEGACY_MUSCLES={pectoral_mayor:['pecho'],deltoide_anterior:['hombros'],deltoide_posterior:['hombros'],biceps_braquial:['biceps'],braquiorradial:['antebrazos'],extensores_antebrazo:['antebrazos'],recto_abdominal:['abdomen'],oblicuos:['abdomen'],recto_femoral:['cuadriceps'],vasto_lateral:['cuadriceps'],gastrocnemio:['pantorrillas'],soleo:['pantorrillas'],dorsal_ancho:['espalda'],trapecio:['espalda'],erectores_espinales:['espalda'],triceps_braquial:['triceps'],gluteo_mayor:['gluteos'],gluteo_medio:['gluteos'],biceps_femoral:['isquiotibiales']};
 function evoMonthName(ym){var p=ym.split('-');return new Date(Number(p[0]),Number(p[1])-1,1).toLocaleDateString('es-PE',{month:'long',year:'numeric'});}
 function evoMonthStats(ym){
- var ss=EVO.sessions.filter(function(s){return (s.session_date||'').slice(0,7)===ym;}),ids=ss.map(function(s){return s.id;});
- var ex=EVO.exercises.filter(function(e){return ids.indexOf(e.session_id)>=0;}),exids=ex.map(function(e){return e.id;});
+ var ss=EVO.sessions.filter(function(s){return (s.session_date||'').slice(0,7)===ym;}),ids=ss.map(function(s){return s.id;}),legacy=EVO_LEGACY_MUSCLES[EVO.muscle]||[];
+ var ex=EVO.exercises.filter(function(e){return ids.indexOf(e.session_id)>=0&&(e.muscle_group===EVO.muscle||legacy.indexOf(e.muscle_group)>=0);}),exids=ex.map(function(e){return e.id;});
  var sets=EVO.sets.filter(function(s){return exids.indexOf(s.exercise_id)>=0;});
- return {sessions:ss.length,volume:sets.reduce(function(n,s){return n+Number(s.reps)*Number(s.weight_kg);},0),pr:sets.reduce(function(n,s){return Math.max(n,Number(s.weight_kg));},0)};
+ return {sessions:Array.from(new Set(ex.map(function(e){return e.session_id;}))).length,volume:sets.reduce(function(n,s){return n+Number(s.reps)*Number(s.weight_kg);},0),pr:sets.reduce(function(n,s){return Math.max(n,Number(s.weight_kg));},0)};
 }
 function renderMonthlyComparison(){
  var a=$('evo-month-a'),b=$('evo-month-b');if(!a||!b)return;
