@@ -60,10 +60,18 @@ create policy "viper_posts_public_read" on public.viper_posts
   using (not public.is_blocked_between(auth.uid(), user_id));
 drop policy if exists "viper_posts_owner_insert" on public.viper_posts;
 create policy "viper_posts_owner_insert" on public.viper_posts
-  for insert to authenticated with check (auth.uid() = user_id);
+  for insert to authenticated with check (
+    auth.uid() = user_id
+    and (media_path is null or (storage.foldername(media_path))[1] = auth.uid()::text)
+  );
 drop policy if exists "viper_posts_owner_update" on public.viper_posts;
 create policy "viper_posts_owner_update" on public.viper_posts
-  for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for update to authenticated
+  using (auth.uid() = user_id)
+  with check (
+    auth.uid() = user_id
+    and (media_path is null or (storage.foldername(media_path))[1] = auth.uid()::text)
+  );
 drop policy if exists "viper_posts_owner_delete" on public.viper_posts;
 create policy "viper_posts_owner_delete" on public.viper_posts
   for delete to authenticated using (auth.uid() = user_id);
