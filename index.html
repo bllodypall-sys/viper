@@ -1992,6 +1992,8 @@ async function guardarEvoFoto(e){
   });
   $('public-block').addEventListener('click',bloquearPerfilPublico);
   $('public-report').addEventListener('click',reportarPerfilPublico);
+  $('refresh-blocked').addEventListener('click',cargarUsuariosBloqueados);
+  $('blocked-users').addEventListener('click',function(e){var b=e.target.closest('[data-unblock-user]');if(!b)return;b.disabled=true;desbloquearUsuario(b.dataset.unblockUser).finally(function(){b.disabled=false;});});
   $('v-amigos').addEventListener('click', async function(e){
     var b = e.target.closest('button[data-act]');
     if (!b) return;
