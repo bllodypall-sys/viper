@@ -47,17 +47,22 @@ main{max-width:620px;margin:auto}.top{display:flex;justify-content:space-between
 </div>
 <p class="safe">Usa el temporizador como apoyo. En sparring, entrena con supervisión, equipo de protección y acuerdos claros.</p>
 </section>
-<section class="card"><h2>Historial de sesiones</h2><div class="history" id="history"><p class="empty">Todavía no hay sesiones guardadas en este dispositivo.</p></div><div class="actions"><button class="btn" id="clear">Borrar historial</button></div></section>
+<section class="card"><h2>Historial de sesiones</h2><p class="safe" id="history-status" aria-live="polite">Conectando con tu cuenta VIPER…</p><div class="history" id="history"><p class="empty">Todavía no hay sesiones guardadas en este dispositivo.</p></div><div class="actions"><button class="btn" id="clear">Borrar historial</button></div></section>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
 const storeKey='viper_boxeo_history_v1';
-let phase='idle',remaining=180,roundNow=1,interval=null,startedAt=null,elapsed=0,completedRounds=0;
+const migratedKey='viper_boxeo_history_synced_v1';
+const SUPABASE_URL='https://yebhrojlziirrwrwhmzq.supabase.co';
+const SUPABASE_KEY='sb_publishable_pFFv-DXoxs-rViVcxyaC1w_C6qt3qnc';
+let sb=null,user=null,cloudHistory=[],phase='idle',remaining=180,roundNow=1,interval=null,startedAt=null,elapsed=0,completedRounds=0,saving=false;
 const readHistory=()=>{try{return JSON.parse(localStorage.getItem(storeKey)||'[]')}catch(e){return []}};
 function config(){return {kind:$('kind').value,roundMin:clamp($('roundMin').value,1,10,3),rounds:clamp($('rounds').value,1,20,3),restSec:clamp($('restSec').value,15,300,60),warmMin:clamp($('warmMin').value,0,30,5)}}
 function clamp(v,min,max,fallback){const n=parseInt(v,10);return Number.isFinite(n)?Math.min(max,Math.max(min,n)):fallback}
 function fmt(s){s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function status(message,isError){const el=$('history-status');el.textContent=message||'';el.style.color=isError?'#ff8585':'var(--muted)'}
 function render(){ $('clock').textContent=fmt(remaining);$('roundLabel').textContent=phase==='warm'?'Preparación':('Round '+roundNow+' de '+config().rounds);$('phase').textContent=({idle:'Listo para comenzar',warm:'Calentamiento',work:config().kind+' · EN CURSO',rest:'DESCANSO',done:'SESIÓN COMPLETADA'})[phase];$('start').disabled=phase==='done';$('pause').disabled=phase==='idle'||phase==='done';}
 function beep(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.08;o.start();o.stop(c.currentTime+.22);o.onended=()=>c.close()}catch(e){}}
 function setPhase(next){phase=next;const c=config();if(next==='warm')remaining=c.warmMin*60;else if(next==='work')remaining=c.roundMin*60;else if(next==='rest')remaining=c.restSec;else if(next==='done')remaining=0;beep();render()}
@@ -65,14 +70,17 @@ function tick(){if(remaining>0){remaining--;elapsed++;render();return}if(phase==
 function start(){if(phase==='idle'){const c=config();roundNow=1;completedRounds=0;elapsed=0;startedAt=new Date().toISOString();setPhase(c.warmMin>0?'warm':'work')}if(phase==='done')return;if(!interval)interval=setInterval(tick,1000)}
 function pause(){if(interval){clearInterval(interval);interval=null;$('pause').textContent='Continuar'}else{start();$('pause').textContent='Pausar'}}
 function reset(){if(interval)clearInterval(interval);interval=null;phase='idle';const c=config();remaining=c.warmMin?c.warmMin*60:c.roundMin*60;roundNow=1;completedRounds=0;elapsed=0;startedAt=null;$('pause').textContent='Pausar';render()}
-function saveSession(){const c=config(),arr=readHistory();arr.unshift({date:new Date().toISOString(),kind:c.kind,rounds:completedRounds,planned:c.rounds,roundMin:c.roundMin,restSec:c.restSec,elapsed});localStorage.setItem(storeKey,JSON.stringify(arr.slice(0,50)));renderHistory()}
+function toRow(x,clientId){return {user_id:user.id,client_id:clientId,session_at:x.date||new Date().toISOString(),kind:String(x.kind||'Saco').slice(0,30),rounds_completed:clamp(x.rounds,0,20,0),rounds_planned:clamp(x.planned,1,20,3),round_minutes:clamp(x.roundMin,1,10,3),rest_seconds:clamp(x.restSec,15,300,60),warmup_minutes:clamp(x.warmMin,0,30,0),elapsed_seconds:clamp(x.elapsed,0,86400,0)}}
+async function saveSession(){if(saving)return;saving=true;const c=config(),record={date:startedAt||new Date().toISOString(),kind:c.kind,rounds:completedRounds,planned:c.rounds,roundMin:c.roundMin,restSec:c.restSec,warmMin:c.warmMin,elapsed};try{const row=toRow(record,crypto.randomUUID());const r=await sb.from('boxing_sessions').insert(row);if(r.error)throw r.error;cloudHistory.unshift(row);renderHistory();status('Sesión guardada en tu cuenta VIPER.')}catch(e){const a=readHistory();a.unshift(record);localStorage.setItem(storeKey,JSON.stringify(a.slice(0,100)));renderHistory();status('No se pudo sincronizar. La sesión quedó guardada en este dispositivo: '+(e.message||'revisa la conexión o la migración SQL.'),true)}finally{saving=false}}
 function finish(){if(phase==='idle'||phase==='done')return;if(interval)clearInterval(interval);interval=null;if(phase==='work')completedRounds=Math.min(config().rounds,completedRounds+1);phase='done';remaining=0;render();if(elapsed>0)saveSession()}
-function renderHistory(){const a=readHistory();$('history').innerHTML=a.length?a.map(x=>'<div class="entry"><span><b>'+escapeHtml(x.kind)+'</b><br><small class="muted">'+new Date(x.date).toLocaleString('es-PE')+'</small></span><span><b>'+x.rounds+'/'+x.planned+' rounds</b><br><small class="muted">'+Math.floor(x.elapsed/60)+' min registrados</small></span></div>').join(''):'<p class="empty">Todavía no hay sesiones guardadas en este dispositivo.</p>'}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function renderHistory(){const a=cloudHistory.slice();$('history').innerHTML=a.length?a.map(x=>'<div class="entry"><span><b>'+escapeHtml(x.kind)+'</b><br><small class="muted">'+new Date(x.session_at).toLocaleString('es-PE')+'</small></span><span><b>'+x.rounds_completed+'/'+x.rounds_planned+' rounds</b><br><small class="muted">'+Math.floor(x.elapsed_seconds/60)+' min registrados</small></span></div>').join(''):'<p class="empty">Todavía no hay sesiones guardadas en tu cuenta.</p>'}
+async function loadHistory(){if(!user){status('Inicia sesión desde VIPER para sincronizar tu historial.',true);return}status('Cargando historial…');try{if(localStorage.getItem(migratedKey)!=='1'){const old=readHistory();for(let i=0;i<old.length;i++){const row=toRow(old[i],'legacy-'+i+'-'+String(old[i].date||'').replace(/[^0-9]/g,''));const up=await sb.from('boxing_sessions').upsert(row,{onConflict:'user_id,client_id'});if(up.error)throw up.error}localStorage.setItem(migratedKey,'1')}const r=await sb.from('boxing_sessions').select('client_id,session_at,kind,rounds_completed,rounds_planned,round_minutes,rest_seconds,warmup_minutes,elapsed_seconds').eq('user_id',user.id).order('session_at',{ascending:false}).limit(100);if(r.error)throw r.error;cloudHistory=r.data||[];renderHistory();status('Historial sincronizado con tu cuenta.')}catch(e){status('Error al cargar/sincronizar el historial: '+(e.message||'comprueba que ejecutaste el SQL de VIPER Boxeo.'),true)}}
 $('start').addEventListener('click',start);$('pause').addEventListener('click',pause);$('reset').addEventListener('click',reset);$('finish').addEventListener('click',finish);
 ['kind','roundMin','rounds','restSec','warmMin'].forEach(id=>$(id).addEventListener('change',()=>{if(phase==='idle')reset()}));
-$('clear').addEventListener('click',()=>{if(confirm('¿Borrar el historial guardado en este dispositivo?')){localStorage.removeItem(storeKey);renderHistory()}});
-reset();renderHistory();
+$('clear').addEventListener('click',async()=>{if(!confirm('¿Borrar todo tu historial de boxeo sincronizado en tu cuenta?'))return;try{const r=await sb.from('boxing_sessions').delete().eq('user_id',user.id);if(r.error)throw r.error;cloudHistory=[];renderHistory();status('Historial de boxeo eliminado de tu cuenta.')}catch(e){status('No se pudo borrar: '+e.message,true)}});
+async function boot(){reset();if(!window.supabase){status('No se pudo cargar Supabase. Revisa tu conexión.',true);return}sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const s=await sb.auth.getSession();user=s.data&&s.data.session?s.data.session.user:null;if(!user){status('Inicia sesión en VIPER y vuelve a entrar a Boxeo para guardar tu progreso.',true);return}await loadHistory()}
+boot();
 })();
 </script>
 </body></html>
