@@ -119,7 +119,8 @@ begin
   from public.meal_entries
   where user_id = p_user_id
     and meal_date = p_day
-    and status = 'approved';
+    and status = 'approved'
+    and source = 'ai';
 
   update public.checkins
   set comidas = v_meals,
@@ -191,7 +192,8 @@ begin
   from public.meal_entries
   where user_id = v_uid
     and meal_date = v_hoy
-    and status = 'approved';
+    and status = 'approved'
+    and source = 'ai';
 
   v_gym := v_foto is not null;
 
