@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap">
 <style>
-/* Layout: una columna estrecha pensada para móvil. Navegación fija abajo. Colores de rango = discos olímpicos. */
+/* Layout VIPER: navegación lateral adaptable y colores de rango. */
 :root{
   --bg:#ECEEEA;
   --surface:#F7F8F5;
@@ -59,7 +59,44 @@ h2{font:700 1.2rem/1.2 var(--display);text-transform:uppercase;letter-spacing:.0
 .lead{font-size:1.1rem}
 
 /* App */
-#app{max-width:560px;margin:0 auto}
+#app{max-width:1180px;margin:0 auto}
+.top{grid-column:1/-1}
+.app-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px;align-items:start}
+main{min-width:0;padding-block:12px 40px}
+.nav{position:sticky;top:12px;z-index:4;display:grid;gap:6px;align-content:start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;height:max-content}
+.nav button{display:flex;align-items:center;gap:12px;text-align:left;min-height:48px;padding:0 12px;border:0;border-left:3px solid transparent;border-radius:7px;background:none;color:var(--muted);font:700 1rem var(--display);text-transform:uppercase;letter-spacing:.08em;cursor:pointer}
+.nav button[aria-current="page"]{color:var(--fg);border-left-color:var(--fg);background:var(--bg)}
+.nav .nav-icon{width:24px;text-align:center;font-size:1.1rem}
+.nav-collapsed .app-layout{grid-template-columns:72px minmax(0,1fr)}
+.nav-collapsed .nav button{justify-content:center;padding:0}
+.nav-collapsed .nav-label{display:none}
+.nav-toggle{min-height:38px;width:42px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;cursor:pointer;font-size:1.2rem}
+.avatar-card{display:grid;justify-items:center;gap:8px;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.avatar-ring{width:112px;height:112px;border-radius:50%;padding:5px;border:4px solid var(--avatar-color,var(--fg));background:var(--bg);display:grid;place-items:center;overflow:hidden}
+.avatar-ring img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.avatar-fallback{font:800 2.5rem var(--display);color:var(--muted)}
+.avatar-level{font:800 1.15rem var(--display);text-transform:uppercase;letter-spacing:.06em}
+.chat-panel{display:grid;gap:10px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface)}
+.chat-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chat-messages{display:grid;gap:8px;max-height:420px;overflow:auto;padding:8px;background:var(--bg);border-radius:8px}
+.chat-msg{max-width:86%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--surface);justify-self:start;overflow-wrap:anywhere}
+.chat-msg.mine{justify-self:end;background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chat-msg small{display:block;margin-top:5px;opacity:.7;font-size:.72rem}
+.chat-img{display:block;max-width:min(100%,260px);max-height:260px;border-radius:7px;object-fit:contain}
+.chat-compose{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
+.chat-tools{display:flex;flex-wrap:wrap;gap:7px}
+.friend-chat{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.friend-chat .friend-meta{min-width:0}
+@media(max-width:700px){
+  #app{max-width:560px}
+  .app-layout{display:block}
+  .nav{position:fixed;left:12px;top:72px;bottom:12px;width:min(260px,82vw);overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.25);transform:translateX(calc(-100% - 20px));transition:transform .2s ease}
+  #app.sidebar-open .nav{transform:translateX(0)}
+  .nav button{justify-content:flex-start;padding:0 12px}
+  .nav-label{display:inline}
+  main{padding-bottom:36px}
+}
+@media(prefers-reduced-motion:reduce){.nav{transition:none}}
 .top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-block:14px 6px}
 .logo{font:800 1.8rem/1 var(--display);text-transform:uppercase;letter-spacing:.04em}
 .who{color:var(--muted);font-size:.9rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -171,10 +208,17 @@ form.stack{display:grid;gap:8px}
 
 <div id="app" hidden>
   <header class="top">
-    <span class="logo">Viper</span>
+    <div style="display:flex;align-items:center;gap:12px"><button class="nav-toggle" id="nav-toggle" type="button" aria-label="Abrir menú" aria-expanded="true">☰</button><span class="logo">Viper</span></div>
     <span class="who" id="who"></span>
   </header>
-
+  <div class="app-layout">
+  <nav class="nav" id="sidebar" aria-label="Secciones">
+    <button type="button" data-nav="hoy" aria-current="page"><span class="nav-icon">⌂</span><span class="nav-label">Hoy</span></button>
+    <button type="button" data-nav="boxeo"><span class="nav-icon">🥊</span><span class="nav-label">Boxeo</span></button>
+    <button type="button" data-nav="ranking"><span class="nav-icon">🏆</span><span class="nav-label">Ranking</span></button>
+    <button type="button" data-nav="amigos"><span class="nav-icon">♧</span><span class="nav-label">Amigos</span></button>
+    <button type="button" data-nav="perfil"><span class="nav-icon">◉</span><span class="nav-label">Perfil</span></button>
+  </nav>
   <main>
     <section id="v-hoy" class="view" aria-label="Hoy">
       <div class="status" id="status">
@@ -235,10 +279,23 @@ form.stack{display:grid;gap:8px}
       <div class="sec-head"><h2>Ranking de amigos</h2></div>
       <ol class="board" id="f-board"></ol>
       <p class="note" id="f-vacio" hidden>Aún no tienes amigos. Busca a alguien por su nombre de usuario.</p>
+      <section id="chat-panel" class="chat-panel" hidden aria-label="Chat privado">
+        <div class="chat-head"><div><h2 id="chat-title">Chat</h2><p class="note" id="chat-subtitle">Solo amigos aceptados</p></div><button class="btn sm" id="chat-close" type="button">Cerrar</button></div>
+        <div id="chat-messages" class="chat-messages" aria-live="polite"><p class="empty">Selecciona un amigo para conversar.</p></div>
+        <form id="chat-form" class="chat-compose"><input id="chat-text" type="text" maxlength="1500" placeholder="Escribe un mensaje…" autocomplete="off"><button class="btn primary" type="submit">Enviar</button></form>
+        <div class="chat-tools"><label class="btn sm" for="chat-image">📷 Cámara o galería</label><input id="chat-image" class="vh" type="file" accept="image/*"><button class="btn sm" id="share-progress" type="button">Compartir progreso</button></div>
+        <p class="note">Imágenes de hasta 8 MB. Elige cámara o galería desde tu dispositivo.</p>
+      </section>
     </section>
 
     <section id="v-perfil" class="view" aria-label="Perfil" hidden>
       <h2>Tu cuenta</h2>
+      <div class="avatar-card">
+        <div class="avatar-ring" id="avatar-ring"><span class="avatar-fallback" id="avatar-fallback">V</span><img id="avatar-img" alt="Foto de perfil" hidden></div>
+        <div class="avatar-level" id="avatar-level">Novato · Nivel 1</div>
+        <label class="btn sm" for="avatar-input">Cambiar foto de perfil</label><input id="avatar-input" class="vh" type="file" accept="image/*">
+        <p class="note">El borde cambia según tu rango.</p>
+      </div>
       <p class="note" id="p-email"></p>
       <form id="p-form" class="stack">
         <label class="lbl" for="p-user">Nombre de usuario (es público)</label>
@@ -253,14 +310,7 @@ form.stack{display:grid;gap:8px}
       <p class="note"><a href="privacidad.html">Privacidad</a> · <a href="terminos.html">Condiciones</a></p>
     </section>
   </main>
-
-  <nav class="nav" aria-label="Secciones">
-    <button type="button" data-nav="hoy" aria-current="page">Hoy</button>
-    <button type="button" onclick="location.href='boxeo.html'">Boxeo</button>
-    <button type="button" data-nav="ranking">Ranking</button>
-    <button type="button" data-nav="amigos">Amigos</button>
-    <button type="button" data-nav="perfil">Perfil</button>
-  </nav>
+  </div>
 </div>
 
 <div id="toast" role="status" aria-live="polite" hidden></div>
@@ -321,7 +371,7 @@ function addDays(iso, n){
   return d.toISOString().slice(0, 10);
 }
 
-var sb = null, user = null, P = null, T = null, F = [], U = {}, iniciado = false, toastT = null, authMode = 'login';
+var sb = null, user = null, P = null, T = null, F = [], U = {}, iniciado = false, toastT = null, authMode = 'login', chatFriend = null, chatChannel = null;
 
 function toast(msg, err){
   var el = $('toast');
@@ -345,7 +395,7 @@ function pantalla(n){
 
 /* ---------- Datos ---------- */
 async function loadProfile(){
-  var r = await sb.from('profiles').select('username,xp_total,racha,ultimo_gym').eq('id', user.id).single();
+  var r = await sb.from('profiles').select('username,xp_total,racha,ultimo_gym,avatar_path').eq('id', user.id).single();
   if (r.error) throw r.error;
   P = r.data;
 }
@@ -541,7 +591,10 @@ function renderAmigos(){
   ok.forEach(function(f){ fid[f.solicitante === me ? f.destinatario : f.solicitante] = f.id; });
   var rows = [me].concat(Object.keys(fid)).map(function(id){ return U[id]; }).filter(Boolean)
     .sort(function(a, b){ return b.xp_total - a.xp_total || a.username.localeCompare(b.username); });
-  $('f-board').innerHTML = boardHTML(rows, fid);
+  $('f-board').innerHTML = rows.length ? rows.map(function(r){
+    var l = LV[idxOf(r.xp_total)];
+    return '<li class="req friend-chat"><span class="friend-meta"><b>' + esc(r.username) + '</b><br><small>' + l.label + ' · ' + fmt(r.xp_total) + ' XP · racha ' + r.racha_activa + '</small></span>' + (r.id !== me ? '<button class="btn primary sm" type="button" data-act="chat" data-user="' + r.id + '">Abrir chat</button>' : '<span class="note">Tú</span>') + '</li>';
+  }).join('') : '<li class="empty">Aún no hay amigos aceptados.</li>';
   $('f-vacio').hidden = ok.length > 0;
 }
 
@@ -562,6 +615,12 @@ function renderLevels(){
 function renderPerfil(){
   $('p-email').textContent = user.email || '';
   if (document.activeElement !== $('p-user')) $('p-user').value = P.username;
+  var li = LV[idxOf(P.xp_total)], color = RANKS[li.ri].plate;
+  $('avatar-ring').style.setProperty('--avatar-color', color);
+  $('avatar-level').textContent = li.label + ' · Nivel ' + (idxOf(P.xp_total) + 1);
+  $('avatar-fallback').textContent = (P.username || 'V').slice(0,1).toUpperCase();
+  if (P.avatar_path){ var av = sb.storage.from('avatars').getPublicUrl(P.avatar_path).data.publicUrl; $('avatar-img').src = av; $('avatar-img').hidden = false; $('avatar-fallback').hidden = true; }
+  else { $('avatar-img').hidden = true; $('avatar-fallback').hidden = false; }
   renderLevels();
 }
 function renderAll(){
@@ -573,6 +632,7 @@ function renderAll(){
 
 /* ---------- Navegación ---------- */
 function ir(v){
+  if (v === 'boxeo'){ location.href = 'boxeo.html'; return; }
   ['hoy', 'ranking', 'amigos', 'perfil'].forEach(function(n){
     $('v-' + n).hidden = n !== v;
     var b = document.querySelector('[data-nav="' + n + '"]');
@@ -581,9 +641,51 @@ function ir(v){
     }
   });
   window.scrollTo(0, 0);
+  $('app').classList.remove('sidebar-open');
   if (v === 'ranking') cargarRanking();
   if (v === 'amigos') cargarAmigos();
   if (v === 'perfil') renderPerfil();
+}
+
+/* ---------- Chat privado entre amigos ---------- */
+async function abrirChat(id){
+  var friend=U[id]; if(!friend) return;
+  var accepted=F.some(function(f){ return f.estado==='aceptada' && (f.solicitante===id && f.destinatario===user.id || f.destinatario===id && f.solicitante===user.id); });
+  if(!accepted){ toast('Solo puedes chatear con amigos aceptados.',true); return; }
+  chatFriend={id:id,username:friend.username};
+  $('chat-panel').hidden=false; $('chat-title').textContent='Chat con '+friend.username; $('chat-subtitle').textContent=LV[idxOf(friend.xp_total)].label+' · '+fmt(friend.xp_total)+' XP';
+  await cargarMensajes();
+  if(chatChannel) sb.removeChannel(chatChannel);
+  chatChannel=sb.channel('viper-chat-'+[user.id,id].sort().join('-')).on('postgres_changes',{event:'*',schema:'public',table:'messages'},function(payload){
+    var m=payload.new||payload.old;
+    if(m && (m.sender_id===user.id || m.recipient_id===user.id) && (m.sender_id===id || m.recipient_id===id)) cargarMensajes();
+  }).subscribe();
+}
+function cerrarChat(){
+  $('chat-panel').hidden=true; chatFriend=null;
+  if(chatChannel){ sb.removeChannel(chatChannel); chatChannel=null; }
+}
+async function cargarMensajes(){
+  if(!chatFriend) return;
+  var id=chatFriend.id, box=$('chat-messages');
+  var filter='and(sender_id.eq.'+user.id+',recipient_id.eq.'+id+'),and(sender_id.eq.'+id+',recipient_id.eq.'+user.id+')';
+  var r=await sb.from('messages').select('id,sender_id,recipient_id,kind,content,media_path,progress_xp,progress_rank,created_at').or(filter).order('created_at',{ascending:true}).limit(100);
+  if(r.error){ box.innerHTML='<p class="empty">No se pudo cargar el chat. Comprueba la configuración SQL.</p>'; return; }
+  if(!r.data.length){ box.innerHTML='<p class="empty">Aún no hay mensajes. ¡Saluda a tu amigo!</p>'; return; }
+  var html=[];
+  for(var i=0;i<r.data.length;i++){
+    var m=r.data[i], mine=m.sender_id===user.id, body='';
+    if(m.kind==='image' && m.media_path){
+      var signed=await sb.storage.from('chat-images').createSignedUrl(m.media_path,3600);
+      body=signed.data ? '<img class="chat-img" alt="Imagen compartida" src="'+esc(signed.data.signedUrl)+'">' : '<span>Imagen no disponible</span>';
+    } else if(m.kind==='progress'){
+      body='<b>🏆 '+esc(m.progress_rank||'Progreso')+'</b><br>'+fmt(m.progress_xp||0)+' XP<br><span>'+esc(m.content||'Progreso compartido')+'</span>';
+    } else body=esc(m.content||'');
+    var date=new Date(m.created_at).toLocaleString('es-PE',{dateStyle:'short',timeStyle:'short'});
+    html.push('<article class="chat-msg'+(mine?' mine':'')+'">'+body+'<small>'+date+'</small></article>');
+  }
+  box.innerHTML=html.join('');
+  box.scrollTop=box.scrollHeight;
 }
 
 /* ---------- Arranque ---------- */
@@ -651,6 +753,10 @@ function eventos(){
     }
   });
   $('salir').addEventListener('click', async function(){ await sb.auth.signOut(); });
+  $('nav-toggle').addEventListener('click', function(){
+    if (window.matchMedia('(max-width:700px)').matches){ $('app').classList.toggle('sidebar-open'); $('nav-toggle').setAttribute('aria-expanded', $('app').classList.contains('sidebar-open') ? 'true' : 'false'); }
+    else { $('app').classList.toggle('nav-collapsed'); }
+  });
   document.querySelectorAll('[data-nav]').forEach(function(b){
     b.addEventListener('click', function(){ ir(b.dataset.nav); });
   });
@@ -695,6 +801,7 @@ function eventos(){
   $('v-amigos').addEventListener('click', async function(e){
     var b = e.target.closest('button[data-act]');
     if (!b) return;
+    if (b.dataset.act === 'chat'){ abrirChat(b.dataset.user); return; }
     var id = b.dataset.id, act = b.dataset.act;
     if (act === 'quitar' && !confirm('¿Quitar a este amigo?')) return;
     b.disabled = true;
@@ -708,6 +815,40 @@ function eventos(){
       toast(errMsg(err), true);
       b.disabled = false;
     }
+  });
+
+  $('chat-close').addEventListener('click', cerrarChat);
+  $('chat-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    if (!chatFriend) return;
+    var value = $('chat-text').value.trim(); if (!value) return;
+    var b = e.submitter; if (b) b.disabled = true;
+    try { var r = await sb.from('messages').insert({sender_id:user.id,recipient_id:chatFriend.id,kind:'text',content:value}); if (r.error) throw r.error; $('chat-text').value=''; await cargarMensajes(); }
+    catch(err){ toast(errMsg(err),true); } finally { if (b) b.disabled=false; }
+  });
+  $('chat-image').addEventListener('change', async function(e){
+    var file=e.target.files && e.target.files[0]; e.target.value=''; if(!file || !chatFriend) return;
+    if(!/^image\//.test(file.type) || file.size>8*1024*1024){ toast('Elige una imagen de hasta 8 MB.',true); return; }
+    try { var blob=await comprimir(file); var path=user.id+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.jpg';
+      var up=await sb.storage.from('chat-images').upload(path,blob,{contentType:'image/jpeg',upsert:false}); if(up.error) throw up.error;
+      var r=await sb.from('messages').insert({sender_id:user.id,recipient_id:chatFriend.id,kind:'image',media_path:path}); if(r.error) throw r.error;
+      await cargarMensajes();
+    } catch(err){ toast(errMsg(err),true); }
+  });
+  $('share-progress').addEventListener('click', async function(){
+    if(!chatFriend) return;
+    var li=LV[idxOf(P.xp_total)];
+    try { var r=await sb.from('messages').insert({sender_id:user.id,recipient_id:chatFriend.id,kind:'progress',content:'Mi progreso en VIPER',progress_xp:P.xp_total,progress_rank:li.label}); if(r.error) throw r.error; await cargarMensajes(); }
+    catch(err){ toast(errMsg(err),true); }
+  });
+  $('avatar-input').addEventListener('change', async function(e){
+    var file=e.target.files && e.target.files[0]; e.target.value=''; if(!file) return;
+    if(!/^image\//.test(file.type) || file.size>8*1024*1024){ toast('Elige una imagen de hasta 8 MB.',true); return; }
+    try { var blob=await comprimir(file); var path=user.id+'/avatar.jpg';
+      var up=await sb.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg',upsert:true}); if(up.error) throw up.error;
+      var r=await sb.from('profiles').update({avatar_path:path}).eq('id',user.id); if(r.error) throw r.error;
+      P.avatar_path=path; renderPerfil(); toast('Foto de perfil actualizada');
+    } catch(err){ toast(errMsg(err),true); }
   });
 
   $('p-form').addEventListener('submit', async function(e){
@@ -742,7 +883,7 @@ async function boot(){
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   eventos();
   sb.auth.onAuthStateChange(function(ev){
-    if (ev === 'SIGNED_OUT'){ user = null; P = null; T = null; iniciado = false; pantalla('login'); }
+    if (ev === 'SIGNED_OUT'){ if(chatChannel) sb.removeChannel(chatChannel); chatChannel=null; chatFriend=null; user = null; P = null; T = null; iniciado = false; pantalla('login'); }
   });
   try {
     var s = await sb.auth.getSession();
