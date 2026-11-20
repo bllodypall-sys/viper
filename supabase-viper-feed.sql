@@ -48,6 +48,12 @@ alter table public.viper_posts enable row level security;
 alter table public.viper_post_likes enable row level security;
 alter table public.viper_post_comments enable row level security;
 
+-- Permisos SQL para que PostgREST pueda acceder a las tablas.
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on table public.viper_posts to authenticated;
+grant select, insert, delete on table public.viper_post_likes to authenticated;
+grant select, insert, delete on table public.viper_post_comments to authenticated;
+
 drop policy if exists "viper_posts_public_read" on public.viper_posts;
 create policy "viper_posts_public_read" on public.viper_posts
   for select to authenticated using (true);
