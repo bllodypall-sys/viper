@@ -565,10 +565,51 @@ function renderMeals(){
     var nutrients = m && m.status === 'approved' ?
       '<div class="meal-nutrients">'+esc(m.food_name || 'Comida')+' · '+Math.round(Number(m.calories)||0)+' kcal · Proteína '+Math.round(Number(m.protein_g)||0)+' g · Carbohidratos '+Math.round(Number(m.carbs_g)||0)+' g · Grasas '+Math.round(Number(m.fat_g)||0)+' g <small>(estimado)</small></div>' : '';
     var action = (!m || m.status === 'rejected') ?
-      '<label class="btn meal-action" for="meal-file-'+slot+'">'+(m ? 'Volver a intentar' : 'Subir foto')+'</label><input class="vh meal-file" id="meal-file-'+slot+'" data-slot="'+slot+'" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">' :
+      '<button class="btn meal-action meal-camera" type="button" data-slot="'+slot+'">'+(m ? 'Tomar otra foto' : 'Abrir cámara')+'</button>' :
       '<span class="meal-xp">'+(m.status === 'approved' ? '+10 XP' : '…')+'</span>';
     return '<article class="meal-card '+state+'"><div><h3>'+title+'</h3><p class="meal-state">'+stateText+'</p></div>'+action+(photo ? '<div class="meal-photo">'+photo+'</div>' : '')+nutrients+'</article>';
   }).join('');
+}
+async function abrirCamaraComida(slot){
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast('Tu navegador no permite abrir la cámara. Usa VIPER desde HTTPS y permite el acceso a la cámara.', true); return;
+  }
+  var overlay = document.createElement('div');
+  overlay.id = 'meal-camera-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML = '<div style="width:min(100%,560px);background:#111820;border:1px solid #35d07f;border-radius:14px;padding:16px;color:white;display:grid;gap:12px"><h2 style="margin:0">Foto en tiempo real</h2><p style="margin:0;color:#b8c4c9">Coloca tu comida frente a la cámara y toma la foto ahora.</p><video id="meal-camera-video" autoplay playsinline muted style="width:100%;max-height:65vh;object-fit:contain;background:#000;border-radius:9px"></video><canvas id="meal-camera-canvas" style="display:none"></canvas><div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button type="button" id="meal-camera-close" class="btn">Cancelar</button><button type="button" id="meal-camera-capture" class="btn" style="background:#35d07f;color:#07120c">Tomar foto</button></div></div>';
+  document.body.appendChild(overlay);
+  var video=overlay.querySelector('#meal-camera-video'), stream=null, closed=false;
+  function cerrar(){
+    if(closed)return; closed=true;
+    if(stream)stream.getTracks().forEach(function(t){t.stop();});
+    overlay.remove();
+  }
+  overlay.querySelector('#meal-camera-close').addEventListener('click',cerrar);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)cerrar();});
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1600},height:{ideal:1200}},audio:false});
+    if(closed){stream.getTracks().forEach(function(t){t.stop();});return;}
+    video.srcObject=stream;
+    await video.play();
+  }catch(e){
+    cerrar();
+    toast('No se pudo abrir la cámara. Revisa los permisos del navegador y vuelve a intentarlo.',true);
+    return;
+  }
+  overlay.querySelector('#meal-camera-capture').addEventListener('click',function(){
+    if(!video.videoWidth || !video.videoHeight){toast('La cámara todavía está iniciando. Espera un momento.',true);return;}
+    var canvas=overlay.querySelector('#meal-camera-canvas');
+    var scale=Math.min(1,1600/video.videoWidth);
+    canvas.width=Math.round(video.videoWidth*scale); canvas.height=Math.round(video.videoHeight*scale);
+    canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+    canvas.toBlob(async function(blob){
+      if(!blob){toast('No se pudo capturar la foto. Inténtalo otra vez.',true);return;}
+      cerrar();
+      var file=new File([blob],'viper-camera-'+Date.now()+'.jpg',{type:'image/jpeg',lastModified:Date.now()});
+      await analizarComida(slot,file);
+    },'image/jpeg',0.9);
+  });
 }
 async function analizarComida(slot, file){
   if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 8*1024*1024){
@@ -1082,13 +1123,10 @@ function eventos(){
   $('v-hoy').addEventListener('click', function(e){
     if (e.target.closest('#prot')){ T.prot = !T.prot; renderHoy(); }
   });
-  $('meal-list').addEventListener('change', async function(e){
-    var input = e.target.closest('.meal-file');
-    if (!input) return;
-    var file = input.files && input.files[0];
-    var slot = Number(input.dataset.slot);
-    input.value = '';
-    await analizarComida(slot, file);
+  $('meal-list').addEventListener('click', async function(e){
+    var button = e.target.closest('.meal-camera');
+    if (!button) return;
+    await abrirCamaraComida(Number(button.dataset.slot));
   });
   $('foto-in').addEventListener('change', async function(e){
     var f = e.target.files && e.target.files[0];
