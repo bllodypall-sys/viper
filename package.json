@@ -4,9 +4,10 @@
   "private": true,
   "description": "VIPER fitness app",
   "scripts": {
-    "cap:sync": "cap sync",
-    "cap:android": "cap open android",
-    "cap:ios": "cap open ios"
+    "prepare:web": "node scripts/prepare-web.mjs",
+    "cap:sync": "npm run prepare:web && cap sync",
+    "cap:android": "npm run cap:sync && cap open android",
+    "cap:ios": "npm run cap:sync && cap open ios"
   },
   "dependencies": {
     "@capacitor/core": "^8.6.2"
