@@ -93,13 +93,16 @@ Deno.serve(async (req) => {
 
     const { count, error: countError } = await admin.from("meal_entries")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", userId).eq("meal_date", day);
+      .eq("user_id", userId).eq("meal_date", day)
+      .in("status", ["approved", "pending"]);
     if (countError) throw countError;
     if ((count || 0) >= 4) return json({ error: "Ya alcanzaste el máximo de 4 comidas de hoy" }, 429);
 
     const { data: occupied } = await admin.from("meal_entries")
-      .select("id").eq("user_id", userId).eq("meal_date", day).eq("meal_slot", slot).maybeSingle();
-    if (occupied) return json({ error: "Esta comida ya fue registrada hoy" }, 409);
+      .select("id,status").eq("user_id", userId).eq("meal_date", day).eq("meal_slot", slot).maybeSingle();
+    if (occupied && occupied.status !== "rejected") {
+      return json({ error: "Esta comida ya fue registrada hoy" }, 409);
+    }
 
     const base64 = btoa(String.fromCharCode(...bytes));
     const prompt = `Analiza esta fotografía de una comida. Devuelve ÚNICAMENTE JSON válido con esta forma:
@@ -149,13 +152,26 @@ Determina si se ve comida real y reconocible. No aceptes fotos de personas, gimn
       analyzed_at: new Date().toISOString(),
     };
 
-    const { data: entry, error: insertError } = await admin.from("meal_entries")
-      .insert(values).select("id,status,food_name,calories,protein_g,carbs_g,fat_g,confidence,ai_notes").single();
-    if (insertError) {
-      if (insertError.code === "23505") return json({ error: "Esta comida o foto ya fue registrada" }, 409);
-      throw insertError;
+    let entry;
+    if (occupied && occupied.status === "rejected") {
+      const { data, error: updateError } = await admin.from("meal_entries")
+        .update(values).eq("id", occupied.id)
+        .select("id,status,food_name,calories,protein_g,carbs_g,fat_g,confidence,ai_notes").single();
+      if (updateError) {
+        if (updateError.code === "23505") return json({ error: "Esta foto ya fue utilizada" }, 409);
+        throw updateError;
+      }
+      entry = data;
+    } else {
+      const { data, error: insertError } = await admin.from("meal_entries")
+        .insert(values).select("id,status,food_name,calories,protein_g,carbs_g,fat_g,confidence,ai_notes").single();
+      if (insertError) {
+        if (insertError.code === "23505") return json({ error: "Esta comida o foto ya fue registrada" }, 409);
+        throw insertError;
+      }
+      entry = data;
+      insertedId = entry.id;
     }
-    insertedId = entry.id;
 
     if (approved) {
       const { error: refreshError } = await admin.rpc("refresh_viper_daily_meal_xp", {
