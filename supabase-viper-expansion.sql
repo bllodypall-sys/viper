@@ -147,6 +147,24 @@ create table if not exists public.content_reports (
   created_at timestamptz not null default now()
 );
 
+-- Función segura para comprobar bloqueos en ambos sentidos sin depender
+-- de las políticas RLS de user_blocks (evita que un bloqueo del autor se oculte).
+create or replace function public.is_blocked_between(user_a uuid, user_b uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $
+  select exists (
+    select 1 from public.user_blocks
+    where (blocker_id=user_a and blocked_id=user_b)
+       or (blocker_id=user_b and blocked_id=user_a)
+  );
+$;
+revoke all on function public.is_blocked_between(uuid,uuid) from public, anon;
+grant execute on function public.is_blocked_between(uuid,uuid) to authenticated;
+
 -- RLS en todas las tablas nuevas.
 alter table public.seasons enable row level security;
 alter table public.season_scores enable row level security;
@@ -176,33 +194,33 @@ create policy challenge_progress_read_own on public.challenge_progress for selec
 -- entre el lector y el autor. Los comentarios heredan la misma regla.
 drop policy if exists posts_read_unblocked on public.posts;
 create policy posts_read_unblocked on public.posts for select to authenticated using (
-  not exists (select 1 from public.user_blocks b where
-    (b.blocker_id=auth.uid() and b.blocked_id=posts.user_id) or
-    (b.blocker_id=posts.user_id and b.blocked_id=auth.uid()))
+  not public.is_blocked_between(auth.uid(),posts.user_id)
 );
 drop policy if exists posts_insert_own on public.posts;
-create policy posts_insert_own on public.posts for insert to authenticated with check (user_id=auth.uid());
+create policy posts_insert_own on public.posts for insert to authenticated with check (
+  user_id=auth.uid() and (image_path is null or (storage.foldername(image_path))[1]=auth.uid()::text)
+);
 drop policy if exists posts_update_own on public.posts;
-create policy posts_update_own on public.posts for update to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+create policy posts_update_own on public.posts for update to authenticated
+using (user_id=auth.uid())
+with check (user_id=auth.uid() and (image_path is null or (storage.foldername(image_path))[1]=auth.uid()::text));
 drop policy if exists posts_delete_own on public.posts;
 create policy posts_delete_own on public.posts for delete to authenticated using (user_id=auth.uid());
 
 drop policy if exists post_comments_read_unblocked on public.post_comments;
 create policy post_comments_read_unblocked on public.post_comments for select to authenticated using (
-  exists (select 1 from public.posts p where p.id=post_comments.post_id)
-  and not exists (
-    select 1 from public.posts p join public.user_blocks b on
-      (b.blocker_id=auth.uid() and b.blocked_id=p.user_id) or
-      (b.blocker_id=p.user_id and b.blocked_id=auth.uid())
+  exists (
+    select 1 from public.posts p
     where p.id=post_comments.post_id
+      and not public.is_blocked_between(auth.uid(),p.user_id)
   )
 );
 drop policy if exists post_comments_insert_own on public.post_comments;
 create policy post_comments_insert_own on public.post_comments for insert to authenticated with check (
-  user_id=auth.uid() and exists (select 1 from public.posts p where p.id=post_id)
-  and not exists (select 1 from public.posts p join public.user_blocks b on
-    (b.blocker_id=auth.uid() and b.blocked_id=p.user_id) or
-    (b.blocker_id=p.user_id and b.blocked_id=auth.uid()) where p.id=post_id)
+  user_id=auth.uid() and exists (
+    select 1 from public.posts p
+    where p.id=post_id and not public.is_blocked_between(auth.uid(),p.user_id)
+  )
 );
 drop policy if exists post_comments_delete_own on public.post_comments;
 create policy post_comments_delete_own on public.post_comments for delete to authenticated using (user_id=auth.uid());
@@ -236,7 +254,16 @@ grant select on public.seasons,public.season_scores,public.challenges,public.cha
 grant select,insert,update,delete on public.posts,public.post_comments,public.exercise_logs,public.personal_records,public.activity_events,public.user_blocks to authenticated;
 grant select,update on public.notifications to authenticated;
 grant insert,select on public.content_reports to authenticated;
-grant usage,select on all sequences in schema public to authenticated;
+-- Solo secuencias de tablas donde el cliente autenticado puede insertar.
+-- No conceder acceso general a todas las secuencias del esquema.
+grant usage,select on sequence
+  public.posts_id_seq,
+  public.post_comments_id_seq,
+  public.exercise_logs_id_seq,
+  public.personal_records_id_seq,
+  public.activity_events_id_seq,
+  public.content_reports_id_seq
+to authenticated;
 
 -- Storage del muro: los propietarios suben; lectura solo si la publicación es visible.
 drop policy if exists community_images_owner_upload on storage.objects;
@@ -246,9 +273,7 @@ drop policy if exists community_images_visible_read on storage.objects;
 create policy community_images_visible_read on storage.objects for select to authenticated using (
   bucket_id='community-images' and exists (
     select 1 from public.posts p where p.image_path=storage.objects.name
-    and not exists (select 1 from public.user_blocks b where
-      (b.blocker_id=auth.uid() and b.blocked_id=p.user_id) or
-      (b.blocker_id=p.user_id and b.blocked_id=auth.uid()))
+    and not public.is_blocked_between(auth.uid(),p.user_id)
   )
 );
 drop policy if exists community_images_owner_delete on storage.objects;
