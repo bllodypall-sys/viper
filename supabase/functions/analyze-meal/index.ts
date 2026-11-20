@@ -93,14 +93,14 @@ Deno.serve(async (req) => {
 
     const { count, error: countError } = await admin.from("meal_entries")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", userId).eq("meal_date", day)
+      .eq("user_id", userId).eq("meal_date", day).eq("source", "ai")
       .in("status", ["approved", "pending"]);
     if (countError) throw countError;
     if ((count || 0) >= 4) return json({ error: "Ya alcanzaste el máximo de 4 comidas de hoy" }, 429);
 
     const { data: occupied } = await admin.from("meal_entries")
-      .select("id,status").eq("user_id", userId).eq("meal_date", day).eq("meal_slot", slot).maybeSingle();
-    if (occupied && occupied.status !== "rejected") {
+      .select("id,status,source").eq("user_id", userId).eq("meal_date", day).eq("meal_slot", slot).maybeSingle();
+    if (occupied && occupied.source === "ai" && occupied.status !== "rejected") {
       return json({ error: "Esta comida ya fue registrada hoy" }, 409);
     }
 
@@ -157,7 +157,7 @@ Determina si se ve comida real y reconocible. No aceptes fotos de personas, gimn
     };
 
     let entry;
-    if (occupied && occupied.status === "rejected") {
+    if (occupied && (occupied.status === "rejected" || occupied.source === "legacy")) {
       const { data, error: updateError } = await admin.from("meal_entries")
         .update(values).eq("id", occupied.id)
         .select("id,status,food_name,calories,protein_g,carbs_g,fat_g,confidence,ai_notes").single();
