@@ -163,7 +163,37 @@ as $function$
   );
 $function$;
 revoke all on function public.is_blocked_between(uuid,uuid) from public, anon;
+
 grant execute on function public.is_blocked_between(uuid,uuid) to authenticated;
+
+-- El muro solo muestra publicaciones propias o de amistades aceptadas.
+-- También oculta contenido si cualquiera de las dos personas bloqueó a la otra.
+create or replace function public.can_view_social_content(author_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $social$
+  select
+    auth.uid() is not null
+    and (
+      author_id = auth.uid()
+      or exists (
+        select 1
+        from public.friendships f
+        where f.estado = 'aceptada'
+          and (
+            (f.solicitante = auth.uid() and f.destinatario = author_id)
+            or
+            (f.destinatario = auth.uid() and f.solicitante = author_id)
+          )
+      )
+    )
+    and not public.is_blocked_between(auth.uid(), author_id);
+$social$;
+revoke all on function public.can_view_social_content(uuid) from public, anon;
+grant execute on function public.can_view_social_content(uuid) to authenticated;
 
 -- RLS en todas las tablas nuevas.
 alter table public.seasons enable row level security;
@@ -194,7 +224,7 @@ create policy challenge_progress_read_own on public.challenge_progress for selec
 -- entre el lector y el autor. Los comentarios heredan la misma regla.
 drop policy if exists posts_read_unblocked on public.posts;
 create policy posts_read_unblocked on public.posts for select to authenticated using (
-  not public.is_blocked_between(auth.uid(),posts.user_id)
+  public.can_view_social_content(posts.user_id)
 );
 drop policy if exists posts_insert_own on public.posts;
 create policy posts_insert_own on public.posts for insert to authenticated with check (
@@ -212,7 +242,7 @@ create policy post_comments_read_unblocked on public.post_comments for select to
   exists (
     select 1 from public.posts p
     where p.id=post_comments.post_id
-      and not public.is_blocked_between(auth.uid(),p.user_id)
+      and public.can_view_social_content(p.user_id)
   )
 );
 drop policy if exists post_comments_insert_own on public.post_comments;
@@ -273,7 +303,7 @@ drop policy if exists community_images_visible_read on storage.objects;
 create policy community_images_visible_read on storage.objects for select to authenticated using (
   bucket_id='community-images' and exists (
     select 1 from public.posts p where p.image_path=storage.objects.name
-    and not public.is_blocked_between(auth.uid(),p.user_id)
+    and public.can_view_social_content(p.user_id)
   )
 );
 drop policy if exists community_images_owner_delete on storage.objects;
