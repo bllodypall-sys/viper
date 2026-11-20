@@ -23,5 +23,5 @@ create policy boxing_sessions_owner_all on public.boxing_sessions
   for all to authenticated
   using (user_id=auth.uid())
   with check (user_id=auth.uid());
-grant select,insert,delete on public.boxing_sessions to authenticated;
+grant select,insert,update,delete on public.boxing_sessions to authenticated;
 grant usage,select on sequence public.boxing_sessions_id_seq to authenticated;
