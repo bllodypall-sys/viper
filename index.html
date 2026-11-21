@@ -900,18 +900,15 @@ function scheduleIdleLogout(){
   if(remaining<=0){
     idleTimer=setTimeout(async function(){
       if(!user)return;
-      toast('Tu sesión se cerró por 1 hora de inactividad. Inicia sesión nuevamente.');
-      try{await sb.auth.signOut({scope:'local'});}catch(e){toast('No se pudo cerrar la sesión automáticamente. Cierra sesión manualmente.',true);}
+      try{
+        var result=await sb.auth.signOut({scope:'local'});
+        if(result.error)throw result.error;
+        toast('Tu sesión se cerró por 1 hora de inactividad. Inicia sesión nuevamente.');
+      }catch(e){toast('No se pudo cerrar la sesión automáticamente. Cierra sesión manualmente.',true);}
     },0);
     return;
   }
-  idleTimer=setTimeout(function(){
-    if(Date.now()-lastActivityAt>=IDLE_TIMEOUT_MS){
-      scheduleIdleLogout();
-    }else{
-      scheduleIdleLogout();
-    }
-  },remaining+100);
+  idleTimer=setTimeout(scheduleIdleLogout,remaining+100);
 }
 function registerSessionActivity(){
   if(!user||!idleStorageKey)return;
@@ -935,6 +932,9 @@ function setupIdleActivityListeners(){
   ['pointerdown','keydown','touchstart','scroll','wheel'].forEach(function(type){
     document.addEventListener(type,registerSessionActivity,{passive:true});
   });
+  document.addEventListener('mousemove',function(){
+    if(user&&Date.now()-lastActivityAt>=5000)registerSessionActivity();
+  },{passive:true});
   document.addEventListener('visibilitychange',function(){
     if(document.visibilityState==='visible'&&user){
       var saved=readLastActivity();
