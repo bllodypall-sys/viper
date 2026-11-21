@@ -513,12 +513,13 @@ main{padding-block:12px 40px}
         <p class="note">Sube una foto clara de cada comida. La IA estimará los nutrientes; las cantidades son aproximadas.</p>
         <button class="act" id="prot" type="button" aria-pressed="false">
           <span class="chk" aria-hidden="true"></span>
-          <span class="t">Proteína en polvo<small>Registro personal · no otorga XP</small></span>
-          <span class="v">Registro</span>
+          <span class="t">Proteína en polvo<small>Sube una foto del batido para obtener +15 XP</small></span>
+          <span class="v">15 XP</span>
         </button>
       </div>
       <input id="foto-in" class="vh" type="file" accept="image/*" capture="environment">
       <p class="note">La foto debe hacerse hoy. Solo cuenta un gym por día. Racha: 5 XP por día seguido, tope +50.</p>
+      <div id="protein-shake-evidence" class="fotobox"></div>
       <div class="total"><span>XP de hoy</span><b id="hoyxp">0</b></div>
       <p class="note" id="sucio"></p>
       <button class="btn primary wide" id="guardar" type="button">Guardar día</button>
@@ -1108,13 +1109,21 @@ async function loadToday(){
       mealRows[mi].signedUrl = signedMeal.data ? signedMeal.data.signedUrl : null;
     }
   }
+  var ps = await sb.from('protein_shake_entries').select('id,status,protein_g,ai_notes,photo_path').eq('meal_date', hoy).maybeSingle();
+  if (ps.error) throw ps.error;
+  var proteinShake = ps.data || null;
+  if (proteinShake && proteinShake.photo_path){
+    var signedShake = await sb.storage.from('meal-photos').createSignedUrl(proteinShake.photo_path, 3600);
+    proteinShake.signedUrl = signedShake.data ? signedShake.data.signedUrl : null;
+  }
   T = {
     hoy: hoy,
     rachaAyer: a ? a.gym_racha : 0,
     saved: h,
     fotoPath: h ? h.foto_path : null,
     mealEntries: mealRows,
-    prot: h ? !!h.proteina : false,
+    proteinShake: proteinShake,
+    prot: !!(proteinShake && proteinShake.status === 'approved'),
     blob: null, blobUrl: null, signed: null
   };
 }
@@ -1130,7 +1139,7 @@ function previewXP(){
   var gym = !!(T.fotoPath || T.blob);
   var racha = gym ? T.rachaAyer + 1 : 0;
   var bonus = Math.min(racha, 10) * 5;
-  return {gym: gym, racha: racha, bonus: bonus, xp: (gym ? 50 + bonus : 0) + mealsN() * 10};
+  return {gym: gym, racha: racha, bonus: bonus, xp: (gym ? 50 + bonus : 0) + mealsN() * 10 + (T.prot ? 15 : 0)};
 }
 function dirty(){
   var n = T.saved ? T.saved.comidas : 0;
@@ -1240,6 +1249,69 @@ async function analizarComida(slot, file){
     toast(errMsg(e), true);
   }
 }
+async function abrirCamaraBatido(){
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast('Tu navegador no permite abrir la cámara. Usa VIPER desde HTTPS y permite el acceso a la cámara.', true); return;
+  }
+  var overlay = document.createElement('div');
+  overlay.id = 'protein-camera-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML = '<div style="width:min(100%,560px);background:#111820;border:1px solid #35d07f;border-radius:14px;padding:16px;color:white;display:grid;gap:12px"><h2 style="margin:0">Foto del batido en tiempo real</h2><p style="margin:0;color:#b8c4c9">Prepara tu batido, colócalo frente a la cámara y toma la foto ahora. No se permite subir una foto de la galería.</p><video id="protein-camera-video" autoplay playsinline muted style="width:100%;max-height:65vh;object-fit:contain;background:#000;border-radius:9px"></video><canvas id="protein-camera-canvas" style="display:none"></canvas><div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button type="button" id="protein-camera-close" class="btn">Cancelar</button><button type="button" id="protein-camera-capture" class="btn" style="background:#35d07f;color:#07120c">Tomar foto</button></div></div>';
+  document.body.appendChild(overlay);
+  var video=overlay.querySelector('#protein-camera-video'), stream=null, closed=false;
+  function cerrar(){
+    if(closed)return; closed=true;
+    if(stream)stream.getTracks().forEach(function(t){t.stop();});
+    overlay.remove();
+  }
+  overlay.querySelector('#protein-camera-close').addEventListener('click',cerrar);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)cerrar();});
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1600},height:{ideal:1200}},audio:false});
+    if(closed){stream.getTracks().forEach(function(t){t.stop();});return;}
+    video.srcObject=stream;
+    await video.play();
+  }catch(e){
+    cerrar();
+    toast('No se pudo abrir la cámara. Revisa los permisos del navegador y vuelve a intentarlo.',true);
+    return;
+  }
+  overlay.querySelector('#protein-camera-capture').addEventListener('click',function(){
+    if(!video.videoWidth || !video.videoHeight){toast('La cámara todavía está iniciando. Espera un momento.',true);return;}
+    var canvas=overlay.querySelector('#protein-camera-canvas');
+    var scale=Math.min(1,1600/video.videoWidth);
+    canvas.width=Math.round(video.videoWidth*scale); canvas.height=Math.round(video.videoHeight*scale);
+    canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+    canvas.toBlob(async function(blob){
+      if(!blob){toast('No se pudo capturar la foto. Inténtalo otra vez.',true);return;}
+      cerrar();
+      var file=new File([blob],'viper-protein-camera-'+Date.now()+'.jpg',{type:'image/jpeg',lastModified:Date.now()});
+      await analizarBatido(file);
+    },'image/jpeg',0.9);
+  });
+}
+async function analizarBatido(file){
+  if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 8*1024*1024){
+    toast('Elige una foto JPG, PNG o WEBP de hasta 8 MB.', true); return;
+  }
+  try {
+    toast('Preparando foto del batido…');
+    var blob = await comprimir(file);
+    var ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
+    var path = user.id+'/'+T.hoy+'/protein-'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.'+ext;
+    var up = await sb.storage.from('meal-photos').upload(path, blob, {contentType: blob.type || 'image/jpeg', upsert: false});
+    if (up.error) throw up.error;
+    toast('VIPER está verificando tu batido…');
+    var result = await sb.functions.invoke('analyze-protein-shake', {body:{photoPath:path}});
+    if (result.error) throw result.error;
+    if (result.data && result.data.error) throw new Error(result.data.error);
+    await Promise.all([loadProfile(),loadToday()]);
+    renderAll();
+    toast(result.data && result.data.approved ? '¡Batido validado! +15 XP.' : 'La IA no pudo confirmar el batido. Inténtalo con otra foto.');
+  } catch (e) {
+    toast(errMsg(e), true);
+  }
+}
 function renderHoy(){
   var p = previewXP();
   var bonusSi = Math.min(T.rachaAyer + 1, 10) * 5;
@@ -1251,6 +1323,11 @@ function renderHoy(){
   renderMeals();
   $('mealxp').textContent = '+' + (mealsN() * 10) + ' XP';
   $('prot').setAttribute('aria-pressed', T.prot ? 'true' : 'false');
+  $('prot').disabled = !!(T.proteinShake && T.proteinShake.status === 'approved');
+  $('prot').querySelector('.t').innerHTML = 'Proteína en polvo<small>' + (T.prot ? 'Batido validado por IA' : (T.proteinShake && T.proteinShake.status === 'rejected' ? 'No validado · toma otra foto' : 'Sube una foto del batido para obtener +15 XP')) + '</small>';
+  $('prot').querySelector('.v').textContent = T.prot ? '+15 XP' : '15 XP';
+  var shakePhoto = T.proteinShake && T.proteinShake.signedUrl ? '<img class="thumb" alt="Foto del batido de proteína" src="' + esc(T.proteinShake.signedUrl) + '">' : '';
+  $('protein-shake-evidence').innerHTML = shakePhoto + (T.prot ? '<p class="note">+15 XP confirmados por VIPER AI.</p>' : '');
   $('hoyxp').textContent = fmt(p.xp);
   var d = dirty();
   $('sucio').textContent = d ? 'Hay cambios sin guardar.' : (T.saved ? 'Guardado: ' + T.saved.xp + ' XP.' : '');
@@ -2490,7 +2567,7 @@ async function guardarEvoFoto(e){
   $('evo-measure-form').addEventListener('submit',guardarEvoMedidas);
   $('evo-photo-form').addEventListener('submit',guardarEvoFoto);
   $('v-hoy').addEventListener('click', function(e){
-    if (e.target.closest('#prot')){ T.prot = !T.prot; renderHoy(); }
+    if (e.target.closest('#prot') && !T.prot){ abrirCamaraBatido(); }
   });
   $('meal-list').addEventListener('click', async function(e){
     var button = e.target.closest('.meal-camera');
