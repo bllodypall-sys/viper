@@ -273,6 +273,12 @@ form.stack{display:grid;gap:8px}
 .req b{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .btns{display:flex;gap:6px}
 
+.rank-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;text-align:left;padding:13px 15px;font-weight:800;border-color:var(--line);background:var(--surface)}
+.rank-toggle #rank-toggle-icon{font-size:1.35rem;line-height:1;transition:transform .2s ease}
+.rank-toggle[aria-expanded="true"] #rank-toggle-icon{transform:rotate(180deg)}
+.rank-panel{margin-top:12px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;display:grid;gap:14px}
+.rank-panel[hidden]{display:none}
+.rank-panel-heading h2{margin:0 0 5px;font:800 1.1rem var(--display);text-transform:uppercase}
 .ranks{list-style:none;margin:0;padding:0;display:grid;gap:16px}
 .rk{display:grid;gap:8px;min-width:0}
 .rkh{display:flex;align-items:center;gap:10px;font:700 1.35rem/1 var(--display);text-transform:uppercase;letter-spacing:.03em}
@@ -723,8 +729,11 @@ main{padding-block:12px 40px}
       <section class="season-card" aria-label="Usuarios bloqueados"><div class="sec-head"><h2>Usuarios bloqueados</h2><button class="btn sm" id="refresh-blocked" type="button">Actualizar</button></div><div id="blocked-users"><p class="note">Cargando lista...</p></div></section>
       <button class="btn" id="salir" type="button">Cerrar sesión</button>
       <p class="note">Para instalarla: en iPhone, Compartir y Añadir a pantalla de inicio. En Android, menú y Instalar app.</p>
-      <div class="sec-head"><h2>Niveles y XP necesarios</h2></div>
-      <ol class="ranks" id="ranks"></ol>
+      <button class="btn rank-toggle" id="toggle-ranks" type="button" aria-expanded="false" aria-controls="rank-panel"><span>🏆 Ver todos los rangos</span><span id="rank-toggle-icon" aria-hidden="true">⌄</span></button>
+      <div id="rank-panel" class="rank-panel" hidden>
+        <div class="rank-panel-heading"><h2>Niveles y XP necesarios</h2><p class="note">Explora todos los rangos y descubre cuánta XP necesitas para llegar al siguiente.</p></div>
+        <ol class="ranks" id="ranks"></ol>
+      </div>
       <p class="note"><a href="privacidad.html">Privacidad</a> · <a href="terminos.html">Condiciones</a></p>
     </section>
 
@@ -2126,6 +2135,12 @@ async function guardarEvoFoto(e){
   $('public-block').addEventListener('click',bloquearPerfilPublico);
   $('public-report').addEventListener('click',reportarPerfilPublico);
   $('refresh-blocked').addEventListener('click',cargarUsuariosBloqueados);
+  $('toggle-ranks').addEventListener('click',function(){
+    var button=$('toggle-ranks'),panel=$('rank-panel'),expanded=button.getAttribute('aria-expanded')==='true';
+    button.setAttribute('aria-expanded',String(!expanded));
+    panel.hidden=expanded;
+    button.querySelector('span').textContent=expanded?'🏆 Ver todos los rangos':'🏆 Ocultar rangos';
+  });
   $('blocked-users').addEventListener('click',function(e){var b=e.target.closest('[data-unblock-user]');if(!b)return;b.disabled=true;desbloquearUsuario(b.dataset.unblockUser).finally(function(){b.disabled=false;});});
   $('v-amigos').addEventListener('click', async function(e){
     var b = e.target.closest('button[data-act]');
