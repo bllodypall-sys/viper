@@ -300,6 +300,7 @@ form.stack{display:grid;gap:8px}
 .home-subtitle{color:#b8c4bc;max-width:480px;font-size:.95rem}
 .home-rank{position:relative;z-index:1;display:grid;justify-items:center;gap:5px;min-width:90px}.home-rank svg{width:64px;height:64px}.home-rank strong{font:800 .9rem var(--display);text-transform:uppercase;text-align:center}
 .home-progress{grid-column:1/-1;position:relative;z-index:1;display:grid;gap:7px;margin-top:6px}.home-progress-top{display:flex;justify-content:space-between;gap:8px;color:#d5ddd6;font-size:.82rem}.home-progress-track{height:9px;border-radius:9px;background:#35423a;overflow:hidden}.home-progress-track i{display:block;height:100%;background:#8eea3d;border-radius:9px}
+.my-videos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}.my-video-card{min-width:0;overflow:hidden;background:var(--bg);border:1px solid var(--line);border-radius:12px}.my-video-card video{display:block;width:100%;max-height:340px;aspect-ratio:9/16;object-fit:contain;background:#000}.my-video-caption{padding:10px 12px;font-size:.88rem;overflow-wrap:anywhere}.my-video-date{display:block;padding:0 12px 10px;color:var(--muted);font-size:.75rem}.my-videos-empty{padding:18px;text-align:center;border:1px dashed var(--line);border-radius:11px;color:var(--muted);font-size:.88rem}
 .home-activity{display:grid;gap:9px}.home-activity-item{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:11px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:11px}.home-activity-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:10px;background:var(--bg);font-size:1.2rem}.home-activity-copy{min-width:0}.home-activity-copy strong{display:block;font:800 1rem var(--display);text-transform:uppercase;letter-spacing:.03em}.home-activity-copy small{display:block;color:var(--muted);font-size:.78rem;overflow-wrap:anywhere}.home-activity-date{color:var(--muted);font-size:.72rem;text-align:right;white-space:nowrap}.home-activity-empty{padding:18px;text-align:center;border:1px dashed var(--line);border-radius:11px;color:var(--muted);font-size:.88rem}
 .home-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.home-stat{display:grid;gap:5px;padding:15px;background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}.home-stat span{font-size:.78rem;color:var(--muted)}.home-stat strong{font:800 clamp(1.35rem,4vw,1.9rem)/1 var(--display);overflow-wrap:anywhere}.home-section-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:5px}.home-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.home-shortcut{display:flex;align-items:center;gap:12px;min-height:76px;padding:13px;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--fg);text-align:left;cursor:pointer;font:inherit}.home-shortcut:hover{border-color:#35d07f}.home-shortcut-icon{width:42px;height:42px;display:grid;place-items:center;flex:none;border-radius:11px;background:var(--bg);font-size:1.35rem}.home-shortcut b{display:block;font:800 1rem var(--display);text-transform:uppercase;letter-spacing:.04em}.home-shortcut small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}
 @media(max-width:520px){.home-hero{padding:18px;grid-template-columns:minmax(0,1fr) 72px}.home-rank{min-width:68px}.home-rank svg{width:52px;height:52px}.home-stats{gap:7px}.home-stat{padding:12px 10px}.home-shortcuts{gap:8px}.home-shortcut{padding:10px;gap:9px;min-height:72px}.home-shortcut-icon{width:36px;height:36px}}
@@ -695,6 +696,7 @@ main{padding-block:12px 40px}
 
     <section id="v-perfil" class="view" aria-label="Perfil" hidden>
       <h2>Tu cuenta</h2>
+      <section class="season-card" aria-label="Mis videos"><div class="sec-head"><h2>Mis videos</h2><button class="btn sm" id="my-videos-refresh" type="button">Actualizar</button></div><div id="my-videos-list" class="my-videos-grid"><p class="note">Cargando tus videos…</p></div></section>
       <div class="avatar-card">
         <div class="avatar-ring" id="avatar-ring"><span class="avatar-fallback" id="avatar-fallback">V</span><img id="avatar-img" alt="Foto de perfil" hidden></div>
         <div class="avatar-level" id="avatar-level">Novato · Nivel 1</div>
@@ -1260,6 +1262,24 @@ function renderLevels(){
     return '<li class="rk"><div class="rkh">' + plate(r.plate, 28) + '<span>' + r.name + '</span></div><ol class="lv">' + chips + '</ol></li>';
   }).join('');
 }
+async function loadMyVideos(){
+  var box=$('my-videos-list');
+  if(!box||!user)return;
+  box.innerHTML='<p class="note">Cargando tus videos…</p>';
+  try{
+    var r=await sb.from('viper_posts').select('id,caption,media_path,created_at').eq('user_id',user.id).eq('media_type','video').not('media_path','is',null).order('created_at',{ascending:false}).limit(30);
+    if(r.error)throw r.error;
+    var videos=r.data||[];
+    if(!videos.length){box.innerHTML='<div class="my-videos-empty">Todavía no has publicado videos. Cuando compartas uno en VIPER Feed, aparecerá aquí.</div>';return;}
+    box.innerHTML=videos.map(function(v){
+      var url=sb.storage.from('viper-feed').getPublicUrl(v.media_path).data.publicUrl;
+      var date=new Date(v.created_at).toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'});
+      return '<article class="my-video-card"><video controls playsinline preload="metadata" src="'+esc(url)+'"></video>'+(v.caption?'<p class="my-video-caption">'+esc(v.caption)+'</p>':'')+'<time class="my-video-date" datetime="'+esc(new Date(v.created_at).toISOString())+'">'+esc(date)+'</time></article>';
+    }).join('');
+  }catch(e){
+    box.innerHTML='<div class="my-videos-empty">No se pudieron cargar tus videos. Pulsa Actualizar para intentarlo de nuevo.</div>';
+  }
+}
 function renderPerfil(){
   $('p-email').textContent = user.email || '';
   if (document.activeElement !== $('p-user')) $('p-user').value = P.username;
@@ -1271,6 +1291,7 @@ function renderPerfil(){
   if (P.avatar_path){ var av = sb.storage.from('avatars').getPublicUrl(P.avatar_path).data.publicUrl; $('avatar-img').src = av; $('avatar-img').hidden = false; $('avatar-fallback').hidden = true; }
   else { $('avatar-img').hidden = true; $('avatar-fallback').hidden = false; }
   renderLevels();
+  loadMyVideos();
   cargarUsuariosBloqueados();
 }
 function socialUrl(value, host){
@@ -1757,6 +1778,7 @@ function eventos(){
   $('notify-read-all').addEventListener('click',function(){markAllNotificationsRead().catch(function(e){toast(errMsg(e),true);});});
   $('notify-list').addEventListener('click',function(e){var b=e.target.closest('[data-notify-id]');if(!b)return;markNotificationRead(b.dataset.notifyId).catch(function(err){toast(errMsg(err),true);});});
   $('v-inicio').addEventListener('click',function(e){var b=e.target.closest('[data-home-nav]');if(b)ir(b.dataset.homeNav);});
+  $('my-videos-refresh').addEventListener('click',function(){loadMyVideos();});
   $('home-activity-refresh').addEventListener('click',function(){loadHomeActivity();});
   $('nav-toggle').addEventListener('click', function(){
     if (window.matchMedia('(max-width:700px)').matches){ $('app').classList.toggle('sidebar-open'); $('nav-toggle').setAttribute('aria-expanded', $('app').classList.contains('sidebar-open') ? 'true' : 'false'); }
