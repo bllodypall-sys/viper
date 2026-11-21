@@ -2255,7 +2255,7 @@ async function consultarViperCoach(e){
   if(!response.data||response.data.error)throw new Error(response.data&&response.data.error?response.data.error:'No se recibió una respuesta del entrenador.');
   result.textContent=response.data.answer||'El entrenador no devolvió una respuesta.';
   var used=response.data.data_used||{};
-  meta.textContent='Análisis basado en '+(used.workouts||0)+' entrenamientos, '+(used.measurements||0)+' mediciones y '+(used.goals||0)+' objetivos.';
+  meta.textContent='Análisis basado en tu perfil de atleta'+(used.athlete_profile?'':' (aún no configurado)')+', '+(used.workouts||0)+' entrenamientos, '+(used.measurements||0)+' mediciones y '+(used.goals||0)+' objetivos.';
   meta.hidden=false;
  }catch(err){
   result.textContent='No se pudo consultar al entrenador: '+errMsg(err);
