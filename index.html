@@ -2105,6 +2105,7 @@ function eventos(){
     $('auth-toggle').textContent = authMode === 'signup' ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate';
     $('signup-profile-fields').disabled = authMode !== 'signup';
     $('signup-profile-fields').hidden = authMode !== 'signup';
+    $('forgot-password').hidden = authMode !== 'login';
     $('login-msg').textContent = '';
   });
   $('auth-form').addEventListener('submit', async function(e){
