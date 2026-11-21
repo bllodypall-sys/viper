@@ -395,6 +395,28 @@ main{padding-block:12px 40px}
 .onboarding-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.onboarding-field{display:grid;gap:5px;min-width:0}.onboarding-field.full{grid-column:1/-1}.onboarding-field label{font-size:.83rem;font-weight:700;color:var(--muted)}.onboarding-field input,.onboarding-field select{width:100%;min-width:0;min-height:44px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit}
 .onboarding-submit{width:100%;margin-top:16px;min-height:48px;border:0;border-radius:9px;background:#35d07f;color:#07120c;font:800 1rem var(--display);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}.onboarding-hint{margin-top:10px!important;font-size:.78rem!important}
 @media(max-width:440px){.onboarding-grid{grid-template-columns:1fr}.onboarding-field.full{grid-column:auto}.onboarding-card{padding:18px}}
+
+/* VIPER · Anatomía inmersiva */
+.evo-anatomy{margin-top:18px;padding:18px;border:1px solid rgba(68,255,125,.28);border-radius:20px;background:radial-gradient(ellipse at 50% 35%,#152a24 0%,#080d12 62%,#05080c 100%);box-shadow:inset 0 0 45px rgba(27,255,105,.055),0 14px 36px rgba(0,0,0,.28)}
+.evo-anatomy-head strong{color:#7df5a1;letter-spacing:.18em}
+.evo-anatomy-head span{color:#b4c9c0}
+.evo-three-stage{max-width:760px;margin:16px auto 0;border:1px solid rgba(56,255,127,.42);border-radius:18px;background:radial-gradient(ellipse at 50% 44%,#25453a 0%,#101c1b 45%,#070b10 100%);box-shadow:0 0 32px rgba(28,255,110,.12),inset 0 0 60px rgba(0,0,0,.45)}
+.evo-three-stage canvas{height:590px;touch-action:pan-y}
+.evo-three-controls{padding:12px;background:linear-gradient(180deg,rgba(5,12,15,.25),rgba(3,7,11,.92));border-top:1px solid rgba(97,255,151,.18)}
+.evo-three-controls .note{color:#c8e5d4}
+.evo-three-controls .btn{border-color:rgba(80,255,132,.55);background:rgba(21,52,39,.9);color:#9affb6}
+.evo-muscle-info,.evo-exercise-library{border:1px solid rgba(64,255,132,.28);border-radius:16px;background:linear-gradient(145deg,#111a20,#080d12);box-shadow:0 10px 28px rgba(0,0,0,.2)}
+.evo-muscle-info h3,.evo-library-head h3{color:#8cf7a7}
+.evo-muscle-chip{background:#0d6535;color:#c4ffd4;border:1px solid #24e875}
+.evo-muscle-facts>div{background:rgba(32,54,47,.48);border:1px solid rgba(112,255,166,.1)}
+.evo-muscle-facts b{color:#8cf7a7}
+.evo-muscle-facts span{color:#d2ded8}
+.evo-library-filters select{border-color:rgba(77,255,137,.28);background:#080e13}
+.evo-exercise-card{border-color:rgba(77,255,137,.22);border-radius:13px;background:linear-gradient(120deg,#17232a,#0b1117)}
+.evo-exercise-card h4{color:#f2fff6}
+.evo-exercise-card .btn,.evo-exercise-card button{border-color:#29ed76}
+.evo-anatomy-hint{color:#b7d2c4}
+@media(max-width:650px){.evo-anatomy{padding:12px}.evo-three-stage canvas{height:480px}.evo-muscle-info,.evo-exercise-library{padding:12px}.evo-muscle-facts{grid-template-columns:1fr}.evo-library-filters{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -2561,21 +2583,21 @@ function renderEvoMuscleLibrary(){
 var EVO3D={ready:false,loading:false,scene:null,camera:null,renderer:null,controls:null,group:null,parts:[],back:false,frame:0};
 function evoLoadScript(src){return new Promise(function(resolve,reject){var sc=document.createElement('script');sc.src=src;sc.async=true;sc.onload=resolve;sc.onerror=function(){reject(new Error('No se pudo cargar el visor 3D'));};document.head.appendChild(sc);});}
 function evoAddMesh(key,x,y,z,sx,sy,sz,rz){
- var geo=new THREE.SphereGeometry(1,24,18),mat=new THREE.MeshStandardMaterial({color:0x65766d,roughness:.72,metalness:.02,emissive:0x000000});
+ var geo=new THREE.SphereGeometry(1,24,18),mat=new THREE.MeshStandardMaterial({color:0xb87568,roughness:.58,metalness:.01,emissive:0x170604});
  var mesh=new THREE.Mesh(geo,mat);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);mesh.rotation.z=rz||0;mesh.userData.muscle=key;EVO3D.group.add(mesh);EVO3D.parts.push(mesh);return mesh;
 }
 function evoAddBase(x,y,z,sx,sy,sz,rz){
- var mesh=new THREE.Mesh(new THREE.SphereGeometry(1,24,18),new THREE.MeshStandardMaterial({color:0x263b32,roughness:.8,metalness:.02}));mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);mesh.rotation.z=rz||0;EVO3D.group.add(mesh);return mesh;
+ var mesh=new THREE.Mesh(new THREE.SphereGeometry(1,24,18),new THREE.MeshStandardMaterial({color:0x754c46,roughness:.76,metalness:.01}));mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);mesh.rotation.z=rz||0;EVO3D.group.add(mesh);return mesh;
 }
 function evoRefresh3D(){
  if(!EVO3D.ready)return;
  var key=evoCanonicalMuscle(EVO.muscle);
- EVO3D.parts.forEach(function(m){var active=m.userData.muscle===key;m.material.color.setHex(active?0x8eea3d:0x65766d);m.material.emissive.setHex(active?0x244d12:0x000000);});
+ EVO3D.parts.forEach(function(m){var active=m.userData.muscle===key;m.material.color.setHex(active?0x8df238:0xb87568);m.material.emissive.setHex(active?0x244d12:0x190806);});
 }
 function evoBuild3D(){
  var stage=$('evo-three-stage'),canvas=$('evo-three-canvas');if(!stage||!canvas||!window.THREE||!THREE.OrbitControls)return;
- var w=Math.max(280,stage.clientWidth),h=390;
- EVO3D.scene=new THREE.Scene();EVO3D.camera=new THREE.PerspectiveCamera(34,w/h,.1,100);EVO3D.camera.position.set(0,.65,5.6);
+ var w=Math.max(280,stage.clientWidth),h=590;
+ EVO3D.scene=new THREE.Scene();EVO3D.camera=new THREE.PerspectiveCamera(31,w/h,.1,100);EVO3D.camera.position.set(0,.55,5.15);
  EVO3D.renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true});EVO3D.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));EVO3D.renderer.setSize(w,h,false);EVO3D.renderer.outputEncoding=THREE.sRGBEncoding;
  EVO3D.scene.add(new THREE.HemisphereLight(0xdfffea,0x15231b,1.7));
  var light=new THREE.DirectionalLight(0xffffff,2.1);light.position.set(3,4,5);EVO3D.scene.add(light);
@@ -2606,13 +2628,13 @@ function evoBuild3D(){
  evoAddMesh('biceps_femoral',-.2,.13,-.13,.11,.4,.08,-.04);evoAddMesh('biceps_femoral',.2,.13,-.13,.11,.4,.08,.04);
  evoAddMesh('erectores_espinales',-.07,1.2,-.23,.055,.43,.045);evoAddMesh('erectores_espinales',.07,1.2,-.23,.055,.43,.045);
  evoAddMesh('soleo',-.21,-.58,-.1,.085,.2,.07);evoAddMesh('soleo',.21,-.58,-.1,.085,.2,.07);
- EVO3D.controls=new THREE.OrbitControls(EVO3D.camera,canvas);EVO3D.controls.enablePan=false;EVO3D.controls.enableZoom=false;EVO3D.controls.target.set(0,.55,0);EVO3D.controls.minPolarAngle=.45;EVO3D.controls.maxPolarAngle=2.55;
+ EVO3D.controls=new THREE.OrbitControls(EVO3D.camera,canvas);EVO3D.controls.enablePan=false;EVO3D.controls.enableZoom=false;EVO3D.controls.target.set(0,.48,0);EVO3D.controls.minPolarAngle=.45;EVO3D.controls.maxPolarAngle=2.55;
  var raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
  canvas.addEventListener('pointerup',function(e){var r=canvas.getBoundingClientRect();pointer.x=((e.clientX-r.left)/r.width)*2-1;pointer.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(pointer,EVO3D.camera);var hits=raycaster.intersectObjects(EVO3D.parts,false);if(hits.length){EVO.muscle=hits[0].object.userData.muscle;renderEvolucion();}});
  $('evo-three-view').addEventListener('click',function(){EVO3D.back=!EVO3D.back;EVO3D.group.rotation.y=EVO3D.back?Math.PI:0;$('evo-three-view').textContent=EVO3D.back?'Vista frontal':'Vista posterior';});
  EVO3D.ready=true;stage.hidden=false;$('evo-anatomy-views').hidden=true;evoRefresh3D();
  function animate(){if(!EVO3D.ready)return;EVO3D.frame=requestAnimationFrame(animate);EVO3D.controls.update();EVO3D.renderer.render(EVO3D.scene,EVO3D.camera);}animate();
- window.addEventListener('resize',function(){if(!EVO3D.ready)return;var width=Math.max(280,stage.clientWidth);EVO3D.camera.aspect=width/390;EVO3D.camera.updateProjectionMatrix();EVO3D.renderer.setSize(width,390,false);});
+ window.addEventListener('resize',function(){if(!EVO3D.ready)return;var width=Math.max(280,stage.clientWidth);EVO3D.camera.aspect=width/590;EVO3D.camera.updateProjectionMatrix();EVO3D.renderer.setSize(width,590,false);});
 }
 function setupEvo3D(){
  if(EVO3D.ready||EVO3D.loading)return;EVO3D.loading=true;
