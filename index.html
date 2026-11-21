@@ -840,6 +840,7 @@ function addDays(iso, n){
 }
 
 var sb = null, user = null, P = null, T = null, F = [], U = {}, iniciado = false, toastT = null, welcomeT = null, welcomeHideT = null, authMode = 'login', chatFriend = null, chatChannel = null;
+var IDLE_TIMEOUT_MS = 60 * 60 * 1000, idleTimer = null, lastActivityAt = 0, lastActivitySavedAt = 0, idleStorageKey = null;
 var EVO = {muscle:'pectoral_mayor',sessions:[],exercises:[],sets:[],measurements:[],photos:[],goals:[]};
 
 function toast(msg, err){
@@ -874,6 +875,84 @@ function errMsg(e){
 function pantalla(n){
   $('login').hidden = n !== 'login';
   $('app').hidden = n !== 'app';
+}
+
+/* ---------- Seguridad: cierre por inactividad ---------- */
+function stopIdleSession(){
+  if(idleTimer) clearTimeout(idleTimer);
+  idleTimer=null;lastActivityAt=0;lastActivitySavedAt=0;idleStorageKey=null;
+}
+function readLastActivity(){
+  if(!idleStorageKey)return 0;
+  try{return Number(localStorage.getItem(idleStorageKey))||0;}catch(e){return 0;}
+}
+function saveLastActivity(force){
+  if(!idleStorageKey)return;
+  var now=Date.now();
+  if(!force&&now-lastActivitySavedAt<10000)return;
+  lastActivitySavedAt=now;
+  try{localStorage.setItem(idleStorageKey,String(lastActivityAt));}catch(e){}
+}
+function scheduleIdleLogout(){
+  if(idleTimer)clearTimeout(idleTimer);
+  if(!user||!idleStorageKey)return;
+  var remaining=IDLE_TIMEOUT_MS-(Date.now()-lastActivityAt);
+  if(remaining<=0){
+    idleTimer=setTimeout(async function(){
+      if(!user)return;
+      toast('Tu sesión se cerró por 1 hora de inactividad. Inicia sesión nuevamente.');
+      try{await sb.auth.signOut({scope:'local'});}catch(e){toast('No se pudo cerrar la sesión automáticamente. Cierra sesión manualmente.',true);}
+    },0);
+    return;
+  }
+  idleTimer=setTimeout(function(){
+    if(Date.now()-lastActivityAt>=IDLE_TIMEOUT_MS){
+      scheduleIdleLogout();
+    }else{
+      scheduleIdleLogout();
+    }
+  },remaining+100);
+}
+function registerSessionActivity(){
+  if(!user||!idleStorageKey)return;
+  lastActivityAt=Date.now();
+  saveLastActivity(false);
+  scheduleIdleLogout();
+}
+function startIdleSession(){
+  if(!user)return;
+  stopIdleSession();
+  idleStorageKey='viper_last_activity_'+user.id;
+  var saved=readLastActivity();
+  lastActivityAt=saved||Date.now();
+  if(Date.now()-lastActivityAt>=IDLE_TIMEOUT_MS){
+    scheduleIdleLogout();
+    return;
+  }
+  registerSessionActivity();
+}
+function setupIdleActivityListeners(){
+  ['pointerdown','keydown','touchstart','scroll','wheel'].forEach(function(type){
+    document.addEventListener(type,registerSessionActivity,{passive:true});
+  });
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible'&&user){
+      var saved=readLastActivity();
+      if(saved>lastActivityAt)lastActivityAt=saved;
+      scheduleIdleLogout();
+    }
+  });
+  window.addEventListener('focus',function(){
+    if(!user)return;
+    var saved=readLastActivity();
+    if(saved>lastActivityAt)lastActivityAt=saved;
+    scheduleIdleLogout();
+  });
+  window.addEventListener('storage',function(e){
+    if(!idleStorageKey||e.key!==idleStorageKey)return;
+    var shared=Number(e.newValue)||0;
+    if(shared>lastActivityAt){lastActivityAt=shared;scheduleIdleLogout();}
+  });
 }
 
 /* ---------- Datos ---------- */
@@ -1716,6 +1795,7 @@ async function cargarMensajes(){
 async function start(){
   if (iniciado) return;
   iniciado = true;
+  startIdleSession();
   pantalla('app');
   try {
     await Promise.all([loadProfile(), loadToday()]);
@@ -2235,15 +2315,19 @@ async function boot(){
   }
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   eventos();
+  setupIdleActivityListeners();
   sb.auth.onAuthStateChange(function(ev, session){
     if (ev === 'SIGNED_OUT'){
+      stopIdleSession();
       if(chatChannel) sb.removeChannel(chatChannel);
       if(notificationChannel) sb.removeChannel(notificationChannel);
       notificationChannel=null; NOTIFICATIONS=[];
       chatChannel=null; chatFriend=null; user = null; P = null; T = null; iniciado = false;
       pantalla('login');
-    } else if (ev === 'SIGNED_IN' && session && session.user && !iniciado){
+    } else if (ev === 'SIGNED_IN' && session && session.user){
       user = session.user;
+      startIdleSession();
+      if(iniciado)return;
       // Espera a que Supabase termine su callback de autenticación antes de consultar datos.
       setTimeout(function(){ if(user && !iniciado) start(); }, 0);
     }
