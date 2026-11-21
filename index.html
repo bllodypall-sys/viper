@@ -866,6 +866,22 @@ main{padding-block:12px 40px}
     <section id="v-notificaciones" class="view" aria-label="Notificaciones" hidden>
       <div class="sec-head"><h2>Notificaciones</h2><span id="notify-subtitle">Tu actividad en VIPER</span></div>
       <div class="notify-toolbar"><p class="note">Novedades de tus amigos, comidas y entrenamientos.</p><button class="btn sm" type="button" id="notify-read-all">Marcar todas como leídas</button></div>
+      <section class="season-card" aria-labelledby="reminder-settings-title">
+        <div class="sec-head"><h2 id="reminder-settings-title">Recordatorios diarios</h2><span>Hora de Perú</span></div>
+        <p class="note">Elige cuándo quieres que VIPER te recuerde tus comidas y tu entrenamiento.</p>
+        <form id="reminder-settings-form" class="stack">
+          <label class="lbl"><input id="meal-reminders-enabled" type="checkbox" checked> Activar recordatorios de comidas</label>
+          <div class="grid-two">
+            <label class="stack"><span class="lbl" for="meal-breakfast-time">Desayuno</span><input id="meal-breakfast-time" type="time" value="08:00" required></label>
+            <label class="stack"><span class="lbl" for="meal-lunch-time">Almuerzo</span><input id="meal-lunch-time" type="time" value="13:00" required></label>
+            <label class="stack"><span class="lbl" for="meal-dinner-time">Cena</span><input id="meal-dinner-time" type="time" value="20:00" required></label>
+          </div>
+          <label class="lbl"><input id="workout-reminders-enabled" type="checkbox" checked> Activar recordatorio de entrenamiento</label>
+          <label class="stack"><span class="lbl" for="workout-reminder-time">Hora de entrenamiento</span><input id="workout-reminder-time" type="time" value="18:00" required></label>
+          <button class="btn primary" id="reminder-settings-save" type="submit">Guardar horarios</button>
+          <p class="note" id="reminder-settings-status" role="status" aria-live="polite">Los avisos aparecerán en Notificaciones de VIPER.</p>
+        </form>
+      </section>
       <div id="notify-list" class="notify-list"><p class="note">Cargando notificaciones…</p></div>
     </section>
   </main>
@@ -1765,7 +1781,32 @@ async function reportarPerfilPublico(){
   }catch(e){toast(errMsg(e),true);}
 }
 var NOTIFICATIONS = [], notificationChannel = null;
+var REMINDER_DEFAULTS = {breakfast_reminder_time:'08:00',lunch_reminder_time:'13:00',dinner_reminder_time:'20:00',workout_reminder_time:'18:00'};
 function notificationIcon(type){return ({meal_reminder:'🥗',workout_reminder:'🏋️',friend_workout:'💪',friend_xp:'⚡',friend_level:'🏆',meal_update:'🍎',system:'🔔'})[type]||'🔔';}
+async function loadReminderSettings(){
+  if(!user)return;
+  var status=$('reminder-settings-status');if(status)status.textContent='Cargando tus horarios…';
+  var r=await sb.from('viper_notification_preferences').select('meal_reminders,workout_reminders,breakfast_reminder_time,lunch_reminder_time,dinner_reminder_time,workout_reminder_time').eq('user_id',user.id).maybeSingle();
+  if(r.error)throw r.error;
+  var p=r.data||{};
+  $('meal-reminders-enabled').checked=p.meal_reminders!==false;
+  $('workout-reminders-enabled').checked=p.workout_reminders!==false;
+  Object.keys(REMINDER_DEFAULTS).forEach(function(k){var el=$(k.replace('_reminder_time','-time').replace('breakfast','meal-breakfast').replace('lunch','meal-lunch').replace('dinner','meal-dinner').replace('workout','workout-reminder'));if(el)el.value=p[k]||REMINDER_DEFAULTS[k];});
+  if(status)status.textContent='Horarios en hora de Perú (Lima). Guarda los cambios para activarlos.';
+}
+async function saveReminderSettings(e){
+  e.preventDefault();var button=$('reminder-settings-save'),status=$('reminder-settings-status');
+  button.disabled=true;button.textContent='Guardando…';status.textContent='Guardando tus preferencias…';
+  try{
+    var payload={user_id:user.id,meal_reminders:$('meal-reminders-enabled').checked,workout_reminders:$('workout-reminders-enabled').checked,
+      breakfast_reminder_time:$('meal-breakfast-time').value,lunch_reminder_time:$('meal-lunch-time').value,dinner_reminder_time:$('meal-dinner-time').value,workout_reminder_time:$('workout-reminder-time').value,updated_at:new Date().toISOString()};
+    var r=await sb.from('viper_notification_preferences').upsert(payload,{onConflict:'user_id'});
+    if(r.error)throw r.error;
+    status.textContent='¡Horarios guardados! VIPER te avisará en los horarios elegidos.';
+    toast('Recordatorios actualizados.');
+  }catch(err){status.textContent='No se pudieron guardar los horarios: '+errMsg(err);toast(errMsg(err),true);}
+  finally{button.disabled=false;button.textContent='Guardar horarios';}
+}
 function renderNotifications(){
   var unread=NOTIFICATIONS.filter(function(n){return !n.read_at;}).length;
   ['notify-count','nav-notify-count'].forEach(function(id){var el=$(id);if(!el)return;el.textContent=unread>99?'99+':String(unread);el.hidden=unread===0;});
@@ -1981,7 +2022,7 @@ function ir(v){
   if (v === 'amigos') cargarAmigos();
   if (v === 'perfil') renderPerfil();
   if (v === 'feed') loadFeed().catch(function(e){toast(errMsg(e),true);});
-  if (v === 'notificaciones') loadNotifications().catch(function(e){toast(errMsg(e),true);});
+  if (v === 'notificaciones'){loadNotifications().catch(function(e){toast(errMsg(e),true);});loadReminderSettings().catch(function(e){$('reminder-settings-status').textContent='No se pudieron cargar tus horarios: '+errMsg(e);});}
   if (v === 'seguridad') loadAccountActivity().catch(function(e){toast(errMsg(e),true);});
 }
 
@@ -2269,6 +2310,7 @@ function eventos(){
   $('error-report-form').addEventListener('submit',reportVipError);
   $('notify-bell').addEventListener('click',function(){ir('notificaciones');});
   $('notify-read-all').addEventListener('click',function(){markAllNotificationsRead().catch(function(e){toast(errMsg(e),true);});});
+  $('reminder-settings-form').addEventListener('submit',function(e){saveReminderSettings(e).catch(function(err){toast(errMsg(err),true);});});
   $('notify-list').addEventListener('click',function(e){var b=e.target.closest('[data-notify-id]');if(!b)return;markNotificationRead(b.dataset.notifyId).catch(function(err){toast(errMsg(err),true);});});
   $('v-inicio').addEventListener('click',function(e){var b=e.target.closest('[data-home-nav]');if(b)ir(b.dataset.homeNav);});
   $('my-videos-refresh').addEventListener('click',function(){loadMyVideos();});
