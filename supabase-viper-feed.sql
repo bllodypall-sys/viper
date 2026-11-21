@@ -1,7 +1,7 @@
 -- VIPER FEED: publicaciones de texto, fotos y videos de hasta 60 segundos.
 -- Migracion aditiva. Ejecutar en Supabase SQL Editor.
--- El bucket es publico para reproducir medios del feed; NO se concede SELECT
--- sobre storage.objects. Los usuarios solo pueden subir/modificar/borrar su carpeta.
+-- El bucket es privado. El acceso al contenido del feed se concede mediante
+-- enlaces temporales y una política SELECT que respeta los bloqueos.
 
 create table if not exists public.viper_posts (
   id uuid primary key default gen_random_uuid(),
@@ -126,7 +126,7 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values (
   'viper-feed',
   'viper-feed',
-  true,
+  false,
   104857600,
   array['image/jpeg','image/png','image/webp','video/mp4','video/webm']
 )
@@ -141,6 +141,18 @@ create policy "viper_feed_owner_upload" on storage.objects
   with check (
     bucket_id = 'viper-feed'
     and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "viper_feed_visible_media_read" on storage.objects;
+create policy "viper_feed_visible_media_read" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'viper-feed'
+    and exists (
+      select 1 from public.viper_posts p
+      where p.media_path = storage.objects.name
+        and not public.is_blocked_between(auth.uid(), p.user_id)
+    )
   );
 
 drop policy if exists "viper_feed_owner_update" on storage.objects;
@@ -163,5 +175,5 @@ create policy "viper_feed_owner_delete" on storage.objects
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
--- No se crea política SELECT en storage.objects: el bucket público
--- permite servir archivos por URL sin exponer el listado de objetos.
+-- El bucket privado no permite URLs públicas permanentes. La aplicación
+-- genera enlaces firmados de corta duración tras comprobar esta política.
