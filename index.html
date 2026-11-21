@@ -1769,7 +1769,7 @@ async function handleFeedSubmit(e){
 
 function ir(v){
   if (v === 'boxeo'){ location.href = 'boxeo.html'; return; }
-  ['inicio', 'hoy', 'evolucion', 'temporada', 'ranking', 'amigos', 'feed', 'perfil', 'public-profile', 'notificaciones'].forEach(function(n){
+  ['inicio', 'hoy', 'evolucion', 'temporada', 'ranking', 'amigos', 'feed', 'perfil', 'public-profile', 'notificaciones', 'seguridad'].forEach(function(n){
     $('v-' + n).hidden = n !== v;
     var b = document.querySelector('[data-nav="' + n + '"]');
     if (b){
@@ -1786,6 +1786,7 @@ function ir(v){
   if (v === 'perfil') renderPerfil();
   if (v === 'feed') loadFeed().catch(function(e){toast(errMsg(e),true);});
   if (v === 'notificaciones') loadNotifications().catch(function(e){toast(errMsg(e),true);});
+  if (v === 'seguridad') loadAccountActivity().catch(function(e){toast(errMsg(e),true);});
 }
 
 /* ---------- Chat privado entre amigos ---------- */
