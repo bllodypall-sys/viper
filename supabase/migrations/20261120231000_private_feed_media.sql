@@ -1,11 +1,9 @@
--- VIPER: make feed media private while preserving authenticated feed access.
--- Existing posts and files remain in place. The UI now requests expiring signed URLs.
+-- VIPER: prepare authenticated signed access to feed media.
+-- Keep the bucket public temporarily to avoid breaking the currently deployed UI.
+-- Deploy the signed-URL frontend, then apply the follow-up migration that makes
+-- the bucket private. Existing posts and files remain in place.
 
 begin;
-
-update storage.buckets
-set public = false
-where id = 'viper-feed';
 
 drop policy if exists "viper_feed_visible_media_read" on storage.objects;
 create policy "viper_feed_visible_media_read" on storage.objects
