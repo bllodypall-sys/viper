@@ -517,7 +517,6 @@ main{padding-block:12px 40px}
           <span class="v">15 XP</span>
         </button>
       </div>
-      <input id="foto-in" class="vh" type="file" accept="image/*" capture="environment">
       <p class="note">La foto debe hacerse hoy. Solo cuenta un gym por día. Racha: 5 XP por día seguido, tope +50.</p>
       <div id="protein-shake-evidence" class="fotobox"></div>
       <div class="total"><span>XP de hoy</span><b id="hoyxp">0</b></div>
@@ -1167,9 +1166,52 @@ function fotoHTML(){
     return (T.signed ? '<img class="thumb" alt="Foto de hoy" src="' + esc(T.signed) + '">' : '') + '<p class="note">Foto de hoy guardada.</p>';
   }
   if (T.blob){
-    return '<img class="thumb" alt="Foto lista" src="' + esc(T.blobUrl) + '"><p class="note">Foto lista. Guarda el día para que cuente.</p><label class="btn sm" for="foto-in">Cambiar foto</label>';
+    return '<img class="thumb" alt="Foto lista" src="' + esc(T.blobUrl) + '"><p class="note">Foto capturada con la cámara. Guarda el día para que cuente.</p><button class="btn sm" type="button" data-gym-camera>Cambiar foto</button>';
   }
-  return '<label class="btn" for="foto-in">Hacer foto del gym</label>';
+  return '<button class="btn" type="button" data-gym-camera>Hacer foto del gym</button>';
+}
+async function abrirCamaraGym(){
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast('Tu navegador no permite abrir la cámara. Usa VIPER desde HTTPS y permite el acceso a la cámara.', true); return;
+  }
+  var overlay=document.createElement('div');
+  overlay.id='gym-camera-overlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML='<div style="width:min(100%,560px);background:#111820;border:1px solid #35d07f;border-radius:14px;padding:16px;color:white;display:grid;gap:12px"><h2 style="margin:0">Foto del entrenamiento en tiempo real</h2><p style="margin:0;color:#b8c4c9">Colócate frente a la cámara y captura la foto ahora. No se permite elegir una imagen de la galería.</p><video id="gym-camera-video" autoplay playsinline muted style="width:100%;max-height:65vh;object-fit:contain;background:#000;border-radius:9px"></video><canvas id="gym-camera-canvas" style="display:none"></canvas><div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button type="button" id="gym-camera-close" class="btn">Cancelar</button><button type="button" id="gym-camera-capture" class="btn" style="background:#35d07f;color:#07120c">Tomar foto</button></div></div>';
+  document.body.appendChild(overlay);
+  var video=overlay.querySelector('#gym-camera-video'),stream=null,closed=false;
+  function cerrar(){
+    if(closed)return;closed=true;
+    if(stream)stream.getTracks().forEach(function(track){track.stop();});
+    overlay.remove();
+  }
+  overlay.querySelector('#gym-camera-close').addEventListener('click',cerrar);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)cerrar();});
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1600},height:{ideal:1200}},audio:false});
+    if(closed){stream.getTracks().forEach(function(track){track.stop();});return;}
+    video.srcObject=stream;
+    await video.play();
+  }catch(e){
+    cerrar();
+    toast('No se pudo abrir la cámara. Revisa los permisos del navegador y vuelve a intentarlo.',true);
+    return;
+  }
+  overlay.querySelector('#gym-camera-capture').addEventListener('click',function(){
+    if(!video.videoWidth||!video.videoHeight){toast('La cámara todavía está iniciando. Espera un momento.',true);return;}
+    var canvas=overlay.querySelector('#gym-camera-canvas');
+    var scale=Math.min(1,1600/video.videoWidth);
+    canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);
+    canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+    canvas.toBlob(function(blob){
+      if(!blob){toast('No se pudo capturar la foto. Inténtalo otra vez.',true);return;}
+      cerrar();
+      if(T.blobUrl)URL.revokeObjectURL(T.blobUrl);
+      T.blob=blob;
+      T.blobUrl=URL.createObjectURL(blob);
+      renderHoy();
+    },'image/jpeg',0.9);
+  });
 }
 function renderRank(){
   var t = P.xp_total, i = idxOf(t), cur = LV[i], nx = LV[i + 1], color = RANKS[cur.ri].plate;
@@ -2616,17 +2658,9 @@ async function guardarEvoFoto(e){
     if (!button) return;
     await abrirCamaraComida(Number(button.dataset.slot));
   });
-  $('foto-in').addEventListener('change', async function(e){
-    var f = e.target.files && e.target.files[0];
-    if (!f) return;
-    try {
-      var b = await comprimir(f);
-      if (T.blobUrl) URL.revokeObjectURL(T.blobUrl);
-      T.blob = b;
-      T.blobUrl = URL.createObjectURL(b);
-      renderHoy();
-    } catch (err) { toast(errMsg(err), true); }
-    e.target.value = '';
+  $('fotobox').addEventListener('click',function(e){
+    var button=e.target.closest('[data-gym-camera]');
+    if(button)abrirCamaraGym();
   });
   $('guardar').addEventListener('click', guardar);
 

@@ -28,6 +28,17 @@ function safeNumber(value: unknown, max: number) {
   return Number.isFinite(n) ? Math.min(max, Math.max(0, n)) : 0;
 }
 
+async function takeQuota(admin: any, userId: string, feature: string, limit: number, windowSeconds: number) {
+  const { data, error } = await admin.rpc("viper_consume_ai_quota", {
+    p_user_id: userId,
+    p_feature: feature,
+    p_limit: limit,
+    p_window_seconds: windowSeconds,
+  });
+  if (error) throw error;
+  return data === true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Método no permitido" }, 405);
@@ -112,6 +123,12 @@ Deno.serve(async (req) => {
     const prompt = `Analiza esta fotografía de una comida. Devuelve ÚNICAMENTE JSON válido con esta forma:
 {"contains_food":boolean,"confidence":number,"food_name":string,"calories":number,"protein_g":number,"carbs_g":number,"fat_g":number,"notes":string}
 Determina si se ve comida real y reconocible. No aceptes fotos de personas, gimnasios, envases vacíos, capturas de pantalla ni imágenes sin alimentos visibles. Estima macros y calorías solo a partir de lo visible; si no puedes reconocer comida, contains_food=false. confidence entre 0 y 1. No inventes precisión: notes debe indicar que son estimaciones visuales. `;
+
+    const withinHour = await takeQuota(admin, userId, "meal_hour", 6, 3600);
+    const withinDay = await takeQuota(admin, userId, "meal_day", 12, 86400);
+    if (!withinHour || !withinDay) {
+      return json({ error: "Alcanzaste el límite de análisis de comidas. Inténtalo más tarde." }, 429);
+    }
 
     const aiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${encodeURIComponent(geminiKey)}`,

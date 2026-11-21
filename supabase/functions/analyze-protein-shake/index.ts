@@ -27,6 +27,17 @@ function safeNumber(value: unknown, max: number) {
   return Number.isFinite(n) ? Math.min(max, Math.max(0, n)) : 0;
 }
 
+async function takeQuota(admin: any, userId: string, feature: string, limit: number, windowSeconds: number) {
+  const { data, error } = await admin.rpc("viper_consume_ai_quota", {
+    p_user_id: userId,
+    p_feature: feature,
+    p_limit: limit,
+    p_window_seconds: windowSeconds,
+  });
+  if (error) throw error;
+  return data === true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Método no permitido" }, 405);
@@ -102,6 +113,12 @@ Deno.serve(async (req) => {
     const prompt = `Analiza esta imagen para validar el consumo de un BATIDO DE PROTEÍNA ya preparado. Devuelve ÚNICAMENTE JSON válido:
 {"contains_protein_shake":boolean,"confidence":number,"protein_g":number,"drink_name":string,"notes":string}
 Aprueba solo si la foto muestra claramente un batido líquido preparado dentro de un vaso o shaker. Rechaza envases de proteína, bolsas, tarros, cucharas de polvo, polvo seco, vasos vacíos, agua sola, otras bebidas sin evidencia de batido proteico, comidas, personas, gimnasios, capturas de pantalla o imágenes no relacionadas. No asumas que una bebida es proteína solo porque aparece un envase cerca. Estima gramos de proteína de forma conservadora; si no se puede identificar razonablemente un batido de proteína o la estimación es inferior a 10 g, contains_protein_shake=false. confidence debe estar entre 0 y 1. notes debe explicar brevemente la decisión.`;
+
+    const withinHour = await takeQuota(admin, userId, "shake_hour", 3, 3600);
+    const withinDay = await takeQuota(admin, userId, "shake_day", 3, 86400);
+    if (!withinHour || !withinDay) {
+      return json({ error: "Alcanzaste el límite de validaciones de batido. Inténtalo mañana." }, 429);
+    }
 
     const aiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${encodeURIComponent(geminiKey)}`,

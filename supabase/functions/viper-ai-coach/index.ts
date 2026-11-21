@@ -19,14 +19,26 @@ function compact(value: unknown, max = 180) {
   return String(value ?? "").replace(/[<>]/g, "").slice(0, max);
 }
 
+async function takeQuota(admin: any, userId: string, feature: string, limit: number, windowSeconds: number) {
+  const { data, error } = await admin.rpc("viper_consume_ai_quota", {
+    p_user_id: userId,
+    p_feature: feature,
+    p_limit: limit,
+    p_window_seconds: windowSeconds,
+  });
+  if (error) throw error;
+  return data === true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Método no permitido" }, 405);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const geminiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!supabaseUrl || !anonKey || !geminiKey) {
+  if (!supabaseUrl || !anonKey || !serviceKey || !geminiKey) {
     return json({ error: "Falta configurar una clave del servidor" }, 500);
   }
 
@@ -41,6 +53,10 @@ Deno.serve(async (req) => {
   const { data: auth, error: authError } = await sb.auth.getUser();
   if (authError || !auth.user) return json({ error: "Tu sesión no es válida. Vuelve a iniciar sesión." }, 401);
 
+  const admin = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
   try {
     let question = "";
     try {
@@ -50,7 +66,13 @@ Deno.serve(async (req) => {
       return json({ error: "Solicitud no válida" }, 400);
     }
 
-    // Every query uses the signed-in user's JWT and RLS. No service-role access.
+    const withinHour = await takeQuota(admin, auth.user.id, "coach_hour", 10, 3600);
+    const withinDay = await takeQuota(admin, auth.user.id, "coach_day", 30, 86400);
+    if (!withinHour || !withinDay) {
+      return json({ error: "Alcanzaste el límite de consultas de VIPER Coach. Inténtalo más tarde." }, 429);
+    }
+
+    // User data queries continue using the signed-in user's JWT and RLS.
     const { data: sessions, error: sessionsError } = await sb
       .from("viper_workout_sessions")
       .select("id,session_date,notes")
