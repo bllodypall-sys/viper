@@ -1249,7 +1249,7 @@ async function analizarComida(slot, file){
     toast(errMsg(e), true);
   }
 }
-async async function abrirCamaraBatido(){
+async function abrirCamaraBatido(){
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
     toast('Tu navegador no permite abrir la cámara. Usa VIPER desde HTTPS y permite el acceso a la cámara.', true); return;
   }
