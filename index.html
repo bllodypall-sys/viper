@@ -13,6 +13,8 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap">
+<script>window.viperTurnstileToken=null;window.viperTurnstileSuccess=function(token){window.viperTurnstileToken=token;};window.viperTurnstileExpired=function(){window.viperTurnstileToken=null;};window.viperTurnstileError=function(){window.viperTurnstileToken=null;};</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
 /* Layout VIPER: navegación lateral adaptable y colores de rango. */
 :root{
@@ -390,6 +392,7 @@ main{padding-block:12px 40px}
       <div class="onboarding-field full"><label for="ob-muscle">¿Qué grupo muscular quieres priorizar? (opcional)</label><select id="ob-muscle"><option value="">Sin preferencia</option><option value="chest">Pecho</option><option value="back">Espalda</option><option value="shoulders">Hombros</option><option value="arms">Brazos</option><option value="legs">Piernas</option><option value="glutes">Glúteos</option><option value="abs">Abdominales</option><option value="full_body">Cuerpo completo</option></select></div>
       <p class="note" style="grid-column:1/-1">Estos datos se guardarán en tu cuenta y podrás modificarlos después desde tu perfil.</p>
     </fieldset>
+    <div class="cf-turnstile" data-sitekey="0x4AAAAAAGLN0WR9K70bRI3J" data-callback="viperTurnstileSuccess" data-expired-callback="viperTurnstileExpired" data-error-callback="viperTurnstileError" data-theme="auto"></div>
     <button class="btn primary wide" id="auth-submit" type="submit">Iniciar sesión</button>
   </form>
   <button class="mini" id="auth-toggle" type="button">¿No tienes cuenta? Regístrate</button>
@@ -2042,6 +2045,11 @@ function eventos(){
       $('login-msg').textContent = 'La contraseña debe tener al menos 8 caracteres.';
       return;
     }
+    var captchaToken = window.viperTurnstileToken;
+    if (!captchaToken){
+      $('login-msg').textContent = 'Completa la verificación CAPTCHA antes de continuar.';
+      return;
+    }
     submit.disabled = true;
     submit.textContent = authMode === 'signup' ? 'Creando cuenta…' : 'Ingresando…';
     try {
@@ -2057,7 +2065,7 @@ function eventos(){
         };
         result = await sb.auth.signUp({
           email: email, password: password,
-          options: { emailRedirectTo: location.origin + location.pathname, data: athleteData }
+          options: { emailRedirectTo: location.origin + location.pathname, data: athleteData, captchaToken: captchaToken }
         });
         if (result.error) throw result.error;
         if (result.data.session) {
@@ -2066,12 +2074,14 @@ function eventos(){
           $('login-msg').innerHTML = '<div class="auth-success-notice" role="alert" aria-live="assertive"><strong>📩 ¡Revisa tu correo para activar tu cuenta!</strong><p>Enviamos un enlace de confirmación a:</p><p class="auth-mail">'+esc(email)+'</p><p>Abre ese correo y pulsa <b>Confirmar correo</b> para activar tu cuenta. Después podrás iniciar sesión en VIPER.</p><p>Si no lo encuentras, revisa la carpeta de spam o correo no deseado.</p></div>';
         }
       } else {
-        result = await sb.auth.signInWithPassword({email: email, password: password});
+        result = await sb.auth.signInWithPassword({email: email, password: password, options: {captchaToken: captchaToken}});
         if (result.error) throw result.error;
       }
     } catch (err) {
       $('login-msg').textContent = errMsg(err);
     } finally {
+      window.viperTurnstileToken = null;
+      if (window.turnstile) window.turnstile.reset();
       submit.disabled = false;
       submit.textContent = authMode === 'signup' ? 'Registrarme' : 'Iniciar sesión';
     }
