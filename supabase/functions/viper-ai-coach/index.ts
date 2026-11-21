@@ -85,7 +85,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    const [{ data: measurements, error: measurementsError }, { data: goals, error: goalsError }] = await Promise.all([
+    const [
+      { data: athleteProfile, error: athleteError },
+      { data: measurements, error: measurementsError },
+      { data: goals, error: goalsError },
+    ] = await Promise.all([
+      sb.from("viper_onboarding_profiles")
+        .select("country,age,goal,experience,training_days,training_type,height_cm,weight_kg,priority_muscle")
+        .eq("user_id", auth.user.id)
+        .maybeSingle(),
       sb.from("viper_body_measurements")
         .select("measured_on,weight_kg,chest_cm,waist_cm,hips_cm,left_arm_cm,right_arm_cm,left_thigh_cm,right_thigh_cm")
         .eq("user_id", auth.user.id)
@@ -97,6 +105,7 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: false })
         .limit(30),
     ]);
+    if (athleteError) throw athleteError;
     if (measurementsError) throw measurementsError;
     if (goalsError) throw goalsError;
 
@@ -114,6 +123,7 @@ Deno.serve(async (req) => {
     });
 
     const context = {
+      athlete_profile: athleteProfile || null,
       recent_workouts: workoutData,
       body_measurements: measurements || [],
       goals: goals || [],
@@ -121,6 +131,7 @@ Deno.serve(async (req) => {
     };
 
     const prompt = `Eres VIPER Coach, un entrenador virtual de fuerza e hipertrofia. Responde en español claro, motivador y conciso.
+Personaliza tus consejos con el perfil del atleta: país y edad solo como contexto, objetivo principal, experiencia, días disponibles por semana, tipo de entrenamiento y músculo prioritario. Adapta el volumen y la dificultad al nivel y a los días disponibles; si entrena en casa, no presupongas máquinas; si practica boxeo o entrenamiento combinado, contempla su carga y recuperación. Usa altura y peso solo si están registrados.
 Usa únicamente los datos del usuario incluidos abajo. No inventes marcas, pesos, medidas, lesiones ni resultados. Si faltan datos, dilo y recomienda qué registrar.
 Prioriza progresión gradual, técnica correcta, recuperación, constancia y objetivos realistas. No recomiendes dopaje, esteroides, fármacos, dietas extremas ni entrenar con dolor. No diagnostiques ni sustituyas a un profesional de salud. Si menciona dolor, lesión, enfermedad o síntomas, recomienda detener el ejercicio que lo provoca y consultar a un profesional cualificado.
 No cambies ni prometas cambiar registros, objetivos o XP: solo asesora.
@@ -162,6 +173,7 @@ ${JSON.stringify(context)}`;
       workouts: sessionRows.length,
       measurements: measurements?.length || 0,
       goals: goals?.length || 0,
+      athlete_profile: !!athleteProfile,
     } });
   } catch (error) {
     console.error("viper-ai-coach error", error);
