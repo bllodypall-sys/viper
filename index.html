@@ -1791,7 +1791,7 @@ async function loadReminderSettings(){
   var p=r.data||{};
   $('meal-reminders-enabled').checked=p.meal_reminders!==false;
   $('workout-reminders-enabled').checked=p.workout_reminders!==false;
-  var reminderInputIds={breakfast_reminder_time:'meal-breakfast-time',lunch_reminder_time:'meal-lunch-time',dinner_reminder_time:'meal-dinner-time',workout_reminder_time:'workout-reminder-time'};Object.keys(REMINDER_DEFAULTS).forEach(function(k){var el=$(reminderInputIds[k]);if(el)el.value=p[k]||REMINDER_DEFAULTS[k];});
+  var reminderInputIds={breakfast_reminder_time:'meal-breakfast-time',lunch_reminder_time:'meal-lunch-time',dinner_reminder_time:'meal-dinner-time',workout_reminder_time:'workout-reminder-time'};Object.keys(REMINDER_DEFAULTS).forEach(function(k){var el=$(reminderInputIds[k]);if(el)el.value=String(p[k]||REMINDER_DEFAULTS[k]).slice(0,5);});
   if(status)status.textContent='Horarios en hora de Perú (Lima). Guarda los cambios para activarlos.';
 }
 async function saveReminderSettings(e){
