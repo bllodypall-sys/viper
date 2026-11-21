@@ -1436,8 +1436,13 @@ async function loadMyVideos(){
     if(r.error)throw r.error;
     var videos=r.data||[];
     if(!videos.length){box.innerHTML='<div class="my-videos-empty">Todavía no has publicado videos. Cuando compartas uno en VIPER Feed, aparecerá aquí.</div>';return;}
+    await Promise.all(videos.map(async function(v){
+      var signed=await sb.storage.from('viper-feed').createSignedUrl(v.media_path,3600);
+      if(signed.error)throw signed.error;
+      v.signedUrl=signed.data.signedUrl;
+    }));
     box.innerHTML=videos.map(function(v){
-      var url=sb.storage.from('viper-feed').getPublicUrl(v.media_path).data.publicUrl;
+      var url=v.signedUrl;
       var date=new Date(v.created_at).toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'});
       return '<article class="my-video-card"><video controls playsinline preload="metadata" src="'+esc(url)+'"></video>'+(v.caption?'<p class="my-video-caption">'+esc(v.caption)+'</p>':'')+'<time class="my-video-date" datetime="'+esc(new Date(v.created_at).toISOString())+'">'+esc(date)+'</time></article>';
     }).join('');
@@ -1734,6 +1739,12 @@ async function loadFeed(){
   if(p.error) throw p.error;
   FEED_POSTS=p.data||[];
   if(!FEED_POSTS.length){$('feed-list').innerHTML='<div class="feed-empty">Aún no hay publicaciones. ¡Sé el primero en compartir tu entrenamiento!</div>';return;}
+  await Promise.all(FEED_POSTS.map(async function(post){
+    if(!post.media_path)return;
+    var signed=await sb.storage.from('viper-feed').createSignedUrl(post.media_path,3600);
+    if(signed.error)throw signed.error;
+    post.signedUrl=signed.data.signedUrl;
+  }));
   var ids=[...new Set(FEED_POSTS.map(function(x){return x.user_id;}))];
   var postIds=FEED_POSTS.map(function(x){return x.id;});
   var results=await Promise.all([
@@ -1755,7 +1766,7 @@ async function loadFeed(){
     var avatar=profile.avatar_path?sb.storage.from('avatars').getPublicUrl(profile.avatar_path).data.publicUrl:'';
     var media='';
     if(post.media_path){
-      var url=sb.storage.from('viper-feed').getPublicUrl(post.media_path).data.publicUrl;
+      var url=post.signedUrl;
       media=post.media_type==='video'
         ? '<video class="feed-media" controls playsinline preload="metadata" src="'+esc(url)+'"></video>'
         : '<img class="feed-media" loading="lazy" src="'+esc(url)+'" alt="Publicación de '+esc(username)+'">';
