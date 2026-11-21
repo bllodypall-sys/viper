@@ -210,6 +210,23 @@ button.act{cursor:pointer}
 .evo-muscle-part:hover,.evo-muscle-part:focus{fill:#8eea3d;filter:drop-shadow(0 0 5px #8eea3d)}
 .evo-muscle-part.active{fill:#a5ff52;filter:drop-shadow(0 0 7px #8eea3d)}
 .evo-anatomy-hint{margin:8px 0 0}.evo-anatomy-hint b{color:var(--fg)}
+.evo-three-stage{position:relative;max-width:520px;margin:12px auto 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at 50% 38%,#263b32 0%,#111a17 58%,#0b100e 100%)}
+.evo-three-stage[hidden]{display:none}.evo-three-stage canvas{display:block;width:100%;height:390px;touch-action:pan-y;cursor:grab}.evo-three-stage canvas:active{cursor:grabbing}
+.evo-three-controls{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border-top:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18)}
+.evo-three-controls .note{color:#c2d2c9;font-size:.75rem}
+.evo-muscle-info,.evo-exercise-library{display:grid;gap:12px;margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.evo-muscle-info-head,.evo-library-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.evo-muscle-info h3,.evo-library-head h3{margin:0;font:800 1.35rem var(--display);text-transform:uppercase;letter-spacing:.04em}
+.evo-muscle-info-head .eyebrow,.evo-library-head .eyebrow{margin:0 0 3px}.evo-muscle-chip{padding:5px 9px;border-radius:20px;background:color-mix(in srgb,var(--surface) 70%,#35d07f 30%);font-size:.75rem;font-weight:700}
+.evo-muscle-info>p:not(.note){color:var(--fg);line-height:1.55}.evo-muscle-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.evo-muscle-facts>div{display:grid;gap:4px;padding:10px;border-radius:8px;background:var(--bg)}.evo-muscle-facts b{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}.evo-muscle-facts span{font-size:.88rem;color:var(--muted)}
+.evo-library-head{align-items:flex-start}.evo-library-head .note{margin-top:3px}.evo-library-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.evo-library-filters label{display:grid;gap:5px;font-size:.78rem;color:var(--muted);font-weight:700}
+.evo-library-filters select{min-height:42px;width:100%;min-width:0;border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--bg);color:var(--fg);font:inherit}
+.evo-exercise-list{display:grid;gap:9px}.evo-exercise-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
+.evo-exercise-card h4{margin:0;font:700 1rem var(--display);text-transform:uppercase;letter-spacing:.03em}.evo-exercise-card p{font-size:.83rem;color:var(--muted);line-height:1.4}
+.evo-exercise-tags{display:flex;gap:5px;flex-wrap:wrap;align-items:center}.evo-exercise-tags span{font-size:.7rem;padding:3px 7px;border-radius:20px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+.evo-exercise-card .btn{grid-column:2;grid-row:1 / span 3;align-self:center;white-space:nowrap}
+@media(max-width:480px){.evo-three-stage canvas{height:330px}.evo-muscle-facts,.evo-library-filters{grid-template-columns:1fr}.evo-exercise-card{grid-template-columns:minmax(0,1fr)}.evo-exercise-card .btn{grid-column:1;grid-row:auto;width:100%}}
+
 .evo-month-bar{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:150px;padding:12px}
 .evo-month-item{display:grid;gap:6px;text-align:center;color:var(--muted);font-size:.8rem}
 .evo-month-bars{height:105px;display:flex;align-items:end;justify-content:center;gap:9px;border-bottom:1px solid var(--line)}
@@ -544,6 +561,10 @@ main{padding-block:12px 40px}
         </div>
         <div class="evo-anatomy">
           <div class="evo-anatomy-head"><strong>MAPA MUSCULAR</strong><span>Toca un músculo para ver su progreso</span></div>
+          <div class="evo-three-stage" id="evo-three-stage" hidden>
+            <canvas id="evo-three-canvas" aria-label="Modelo anatómico 3D interactivo. Arrastra para girar y toca un músculo para seleccionarlo."></canvas>
+            <div class="evo-three-controls"><button type="button" class="btn sm" id="evo-three-view">Vista posterior</button><span class="note">Arrastra para girar · Toca una zona muscular</span></div>
+          </div>
           <div class="evo-anatomy-views">
             <div class="evo-anatomy-panel"><span>FRENTE</span>
               <svg viewBox="0 0 220 390" role="group" aria-label="Mapa muscular vista frontal">
@@ -582,6 +603,20 @@ main{padding-block:12px 40px}
           </div>
           <p class="evo-anatomy-hint">Seleccionado: <b id="evo-anatomy-selected">Pecho</b></p>
         </div>
+        <section class="evo-muscle-info" id="evo-muscle-info" aria-live="polite">
+          <div class="evo-muscle-info-head"><div><p class="eyebrow">MÚSCULO SELECCIONADO</p><h3 id="evo-muscle-title">Pectoral mayor</h3></div><span class="evo-muscle-chip">Anatomía</span></div>
+          <p id="evo-muscle-location">Se encuentra en la parte anterior del tórax.</p>
+          <div class="evo-muscle-facts"><div><b>Función</b><span id="evo-muscle-function">Ayuda a acercar los brazos al centro del cuerpo y participa en empujes.</span></div><div><b>Músculos que colaboran</b><span id="evo-muscle-secondary">Deltoides anterior y tríceps.</span></div></div>
+          <p class="note">Información educativa general. La anatomía y la técnica pueden variar entre personas.</p>
+        </section>
+        <section class="evo-exercise-library" aria-label="Ejercicios recomendados">
+          <div class="evo-library-head"><div><p class="eyebrow">BIBLIOTECA VIPER</p><h3>Ejercicios recomendados</h3><p class="note" id="evo-exercise-count">Elige un ejercicio para registrarlo.</p></div></div>
+          <div class="evo-library-filters">
+            <label>Equipamiento<select id="evo-equipment-filter"><option value="all">Todos</option><option value="none">Sin equipo</option><option value="weights">Pesas</option><option value="machines">Máquinas</option><option value="bands">Bandas</option></select></label>
+            <label>Dificultad<select id="evo-level-filter"><option value="all">Todos los niveles</option><option value="Principiante">Principiante</option><option value="Intermedio">Intermedio</option><option value="Avanzado">Avanzado</option></select></label>
+          </div>
+          <div id="evo-exercise-list" class="evo-exercise-list"><p class="note">Selecciona un músculo para ver ejercicios.</p></div>
+        </section>
       </div>
       <div class="grid-two">
         <div class="evo-stat"><span>Sesiones registradas</span><b id="evo-sessions">0</b></div>
@@ -2470,12 +2505,126 @@ async function guardarEvoObjetivo(e){
  try{var r=await sb.from('viper_training_goals').insert(row);if(r.error)throw r.error;$('evo-goal-form').reset();$('evo-goal-start').value='0';$('evo-goal-unit').value='kg';await cargarEvolucion();toast('Objetivo creado.');}
  catch(err){toast(errMsg(err),true);}finally{if(btn)btn.disabled=false;}
 }
+var EVO_MUSCLE_INFO={
+ pectoral_mayor:{label:'Pectoral mayor',location:'Está en la parte anterior del tórax, a ambos lados del esternón.',func:'Acerca el brazo al centro del cuerpo y participa en empujes y movimientos de rotación interna del hombro.',secondary:'Deltoides anterior y tríceps.'},
+ deltoide_anterior:{label:'Deltoides anterior',location:'Se encuentra en la parte frontal del hombro.',func:'Eleva el brazo hacia delante y ayuda en los movimientos de empuje.',secondary:'Pectoral mayor y tríceps.'},
+ deltoide_posterior:{label:'Deltoides posterior',location:'Está en la parte posterior del hombro.',func:'Lleva el brazo hacia atrás y participa en la apertura horizontal del hombro.',secondary:'Trapecio y romboides.'},
+ biceps_braquial:{label:'Bíceps braquial',location:'Se encuentra en la parte anterior del brazo, entre el hombro y el codo.',func:'Flexiona el codo y ayuda a girar la palma de la mano hacia arriba.',secondary:'Braquial y braquiorradial.'},
+ braquiorradial:{label:'Braquiorradial',location:'Está en el lado externo del antebrazo, cerca del pulgar.',func:'Ayuda a flexionar el codo, especialmente con la mano en posición neutra.',secondary:'Bíceps braquial y braquial.'},
+ recto_abdominal:{label:'Recto abdominal',location:'Se extiende por la zona frontal del abdomen.',func:'Flexiona el tronco y ayuda a estabilizar la pelvis y la columna.',secondary:'Oblicuos y transverso abdominal.'},
+ oblicuos:{label:'Oblicuos',location:'Se encuentran a los lados del abdomen.',func:'Ayudan a rotar e inclinar el tronco y estabilizan el abdomen.',secondary:'Recto abdominal y transverso abdominal.'},
+ recto_femoral:{label:'Recto femoral',location:'Está en la parte frontal del muslo y forma parte del cuádriceps.',func:'Extiende la rodilla y también ayuda a flexionar la cadera.',secondary:'Vasto lateral, vasto medial y vasto intermedio.'},
+ vasto_lateral:{label:'Vasto lateral',location:'Se encuentra en la parte externa del muslo.',func:'Extiende la rodilla y participa en acciones como levantarse o saltar.',secondary:'Resto de músculos del cuádriceps.'},
+ gastrocnemio:{label:'Gastrocnemio',location:'Es el músculo superficial y prominente de la pantorrilla.',func:'Ayuda a elevar el talón y participa en la flexión de la rodilla.',secondary:'Sóleo y músculos del pie.'},
+ dorsal_ancho:{label:'Dorsal ancho',location:'Ocupa gran parte de los lados de la espalda.',func:'Lleva el brazo hacia el cuerpo y hacia atrás; participa en dominadas y remos.',secondary:'Bíceps, redondo mayor y trapecio.'},
+ triceps_braquial:{label:'Tríceps braquial',location:'Está en la parte posterior del brazo.',func:'Extiende el codo y ayuda a los movimientos de empuje.',secondary:'Deltoides y músculos estabilizadores del hombro.'},
+ extensores_antebrazo:{label:'Extensores del antebrazo',location:'Se ubican principalmente en la parte posterior del antebrazo.',func:'Extienden la muñeca y los dedos y ayudan a estabilizar el agarre.',secondary:'Músculos flexores y braquiorradial.'},
+ gluteo_mayor:{label:'Glúteo mayor',location:'Es el músculo más grande de la región de los glúteos.',func:'Extiende y rota externamente la cadera; participa al subir escaleras y levantarse.',secondary:'Glúteo medio e isquiotibiales.'},
+ gluteo_medio:{label:'Glúteo medio',location:'Está en la zona lateral superior de la cadera.',func:'Ayuda a separar la pierna y estabiliza la pelvis al caminar o correr.',secondary:'Glúteo menor y tensor de la fascia lata.'},
+ biceps_femoral:{label:'Bíceps femoral',location:'Se encuentra en la parte posterior y externa del muslo; forma parte de los isquiotibiales.',func:'Flexiona la rodilla y ayuda a extender la cadera.',secondary:'Semitendinoso y semimembranoso.'},
+ trapecio:{label:'Trapecio',location:'Ocupa la zona superior y central de la espalda, desde el cuello hasta la parte media.',func:'Mueve y estabiliza las escápulas y ayuda a controlar el cuello.',secondary:'Romboides y elevador de la escápula.'},
+ erectores_espinales:{label:'Erectores espinales',location:'Son un conjunto de músculos a ambos lados de la columna vertebral.',func:'Ayudan a extender la columna y mantener el tronco erguido.',secondary:'Multífidos y músculos abdominales.'},
+ soleo:{label:'Sóleo',location:'Está debajo del gastrocnemio, en la parte posterior de la pierna.',func:'Ayuda a elevar el talón y mantener la postura de pie.',secondary:'Gastrocnemio y músculos del tobillo.'}
+};
+var EVO_EXERCISES={
+ pectoral_mayor:[['Press de banca','weights','Intermedio','Empuja la barra desde el pecho manteniendo los pies firmes.','Tríceps y deltoides anterior.'],['Flexiones','none','Principiante','Mantén el cuerpo alineado y baja el pecho de forma controlada.','Tríceps y abdomen.'],['Press de pecho en máquina','machines','Principiante','Ajusta el asiento y empuja sin bloquear los codos.','Tríceps y deltoides anterior.'],['Aperturas con banda','bands','Principiante','Abre los brazos con control y evita encoger los hombros.','Deltoides anterior.']],
+ deltoide_anterior:[['Press militar con mancuernas','weights','Intermedio','Empuja las mancuernas sobre la cabeza sin arquear la espalda.','Tríceps y abdomen.'],['Flexión pike','none','Avanzado','Eleva la cadera y flexiona los codos llevando la cabeza hacia el suelo.','Trapecio y tríceps.'],['Press de hombros en máquina','machines','Principiante','Ajusta las empuñaduras a la altura de los hombros y empuja.','Tríceps.']],
+ deltoide_posterior:[['Pájaros con mancuernas','weights','Principiante','Inclina el torso y abre los brazos sin impulso.','Trapecio y romboides.'],['Apertura inversa en máquina','machines','Principiante','Abre los brazos hacia atrás manteniendo el pecho apoyado.','Romboides.'],['Face pull con banda','bands','Principiante','Lleva la banda hacia el rostro con los codos abiertos.','Trapecio y rotadores externos.']],
+ biceps_braquial:[['Curl con mancuernas','weights','Principiante','Flexiona los codos sin balancear el torso.','Braquial y braquiorradial.'],['Dominadas supinas','none','Avanzado','Sube con las palmas hacia ti y baja de forma controlada.','Dorsal ancho.'],['Curl de bíceps en máquina','machines','Principiante','Apoya los brazos y flexiona sin despegar los codos.','Braquial.']],
+ braquiorradial:[['Curl martillo','weights','Principiante','Mantén las palmas enfrentadas durante todo el movimiento.','Bíceps y braquial.'],['Curl inverso','weights','Intermedio','Sujeta la barra con palmas hacia abajo y flexiona las muñecas.','Extensores del antebrazo.'],['Curl martillo en polea','machines','Principiante','Usa cuerda y conserva las muñecas neutras.','Bíceps y braquial.']],
+ recto_abdominal:[['Crunch abdominal','none','Principiante','Eleva los hombros sin tirar del cuello.','Oblicuos.'],['Dead bug','none','Principiante','Extiende brazo y pierna contrarios manteniendo la zona lumbar estable.','Transverso abdominal.'],['Crunch en máquina','machines','Intermedio','Flexiona el tronco con un recorrido cómodo y controlado.','Oblicuos.']],
+ oblicuos:[['Plancha lateral','none','Principiante','Mantén el cuerpo alineado apoyado sobre un antebrazo.','Transverso abdominal y glúteo medio.'],['Giro ruso','weights','Intermedio','Rota el tronco de forma controlada sin forzar la zona lumbar.','Recto abdominal.'],['Rotación en polea','machines','Intermedio','Gira el tronco manteniendo la cadera estable.','Recto abdominal.']],
+ recto_femoral:[['Sentadilla','weights','Intermedio','Desciende con control y mantén las rodillas alineadas con los pies.','Glúteos y resto del cuádriceps.'],['Sentadilla dividida','none','Principiante','Realiza una zancada estable y baja verticalmente.','Glúteos.'],['Extensión de piernas','machines','Principiante','Extiende las rodillas sin impulso y baja lentamente.','Vasto lateral y medial.']],
+ vasto_lateral:[['Sentadilla con mancuernas','weights','Intermedio','Mantén el tronco firme y controla la bajada.','Glúteos y cuádriceps.'],['Sentadilla isométrica','none','Principiante','Mantén la posición sin dolor y con la espalda apoyada.','Glúteos.'],['Extensión de piernas','machines','Principiante','Extiende las rodillas con un movimiento suave.','Resto del cuádriceps.']],
+ gastrocnemio:[['Elevación de talones de pie','weights','Principiante','Sube los talones y baja lentamente con recorrido cómodo.','Sóleo.'],['Elevación de talones sin peso','none','Principiante','Apóyate si hace falta y eleva los talones de forma controlada.','Sóleo.'],['Gemelos en máquina','machines','Principiante','Ajusta el apoyo y evita rebotes.','Sóleo.']],
+ dorsal_ancho:[['Jalón al pecho','machines','Principiante','Lleva la barra hacia la parte alta del pecho sin balancearte.','Bíceps y redondo mayor.'],['Dominadas','none','Avanzado','Eleva el cuerpo con control y evita impulsarte.','Bíceps y trapecio.'],['Remo con mancuerna','weights','Intermedio','Lleva el codo hacia la cadera manteniendo el tronco estable.','Bíceps y romboides.']],
+ triceps_braquial:[['Extensión en polea','machines','Principiante','Extiende los codos manteniéndolos cerca del cuerpo.','Deltoides y músculos del antebrazo.'],['Flexión diamante','none','Avanzado','Coloca las manos juntas y mantén el cuerpo alineado.','Pectoral y deltoides anterior.'],['Extensión sobre la cabeza','weights','Intermedio','Baja la mancuerna detrás de la cabeza sin abrir demasiado los codos.','Deltoides.']],
+ extensores_antebrazo:[['Extensión de muñeca','weights','Principiante','Apoya el antebrazo y eleva la mano lentamente.','Braquiorradial.'],['Extensión de dedos con banda','bands','Principiante','Abre los dedos contra una banda suave.','Músculos intrínsecos de la mano.'],['Extensión de muñeca en polea','machines','Intermedio','Usa poco peso y controla el recorrido.','Braquiorradial.']],
+ gluteo_mayor:[['Hip thrust','weights','Intermedio','Extiende la cadera sin hiperextender la zona lumbar.','Glúteo medio e isquiotibiales.'],['Puente de glúteos','none','Principiante','Eleva la pelvis apretando los glúteos y mantén el abdomen activo.','Isquiotibiales.'],['Patada de glúteo en máquina','machines','Principiante','Empuja hacia atrás sin girar la pelvis.','Glúteo medio.']],
+ gluteo_medio:[['Abducción lateral de cadera','none','Principiante','Eleva la pierna hacia un lado sin inclinar el tronco.','Glúteo mayor.'],['Caminata lateral con banda','bands','Principiante','Da pasos cortos manteniendo tensión en la banda.','Glúteo mayor.'],['Abducción de cadera en máquina','machines','Principiante','Abre las piernas sin usar impulso.','Glúteo mayor.']],
+ biceps_femoral:[['Peso muerto rumano','weights','Intermedio','Lleva la cadera atrás con la espalda neutra y rodillas suaves.','Glúteo mayor y resto de isquiotibiales.'],['Curl nórdico asistido','none','Avanzado','Desciende lentamente con apoyo y rango adaptado.','Semitendinoso y semimembranoso.'],['Curl femoral','machines','Principiante','Flexiona las rodillas sin despegar la cadera del apoyo.','Resto de isquiotibiales.']],
+ trapecio:[['Encogimientos con mancuernas','weights','Principiante','Eleva los hombros verticalmente sin hacer círculos.','Elevador de la escápula.'],['Face pull','machines','Intermedio','Lleva la cuerda hacia el rostro con control.','Deltoides posterior y romboides.'],['Encogimientos en máquina','machines','Principiante','Eleva los hombros manteniendo el cuello relajado.','Elevador de la escápula.']],
+ erectores_espinales:[['Bird dog','none','Principiante','Extiende brazo y pierna contrarios sin rotar la pelvis.','Abdominales y glúteos.'],['Extensión lumbar','none','Principiante','Extiende el tronco dentro de un rango cómodo y sin hiperextender.','Glúteos e isquiotibiales.'],['Extensión de espalda en máquina','machines','Intermedio','Realiza el movimiento suave y sin forzar la zona lumbar.','Glúteos.']],
+ soleo:[['Elevación de talones sentado','weights','Principiante','Eleva los talones con rodillas flexionadas y baja lentamente.','Gastrocnemio.'],['Elevación sentado sin peso','none','Principiante','Realiza elevaciones controladas sentado en una silla.','Gastrocnemio.'],['Gemelo sentado en máquina','machines','Principiante','Ajusta el apoyo sobre los muslos y controla el recorrido.','Gastrocnemio.']]
+};
+var EVO_MUSCLE_CANONICAL={pecho:'pectoral_mayor',espalda:'dorsal_ancho',hombros:'deltoide_anterior',biceps:'biceps_braquial',triceps:'triceps_braquial',antebrazos:'braquiorradial',abdomen:'recto_abdominal',cuadriceps:'recto_femoral',isquiotibiales:'biceps_femoral',gluteos:'gluteo_mayor',pantorrillas:'gastrocnemio'};
+function evoCanonicalMuscle(key){return EVO_MUSCLE_INFO[key]?key:(EVO_MUSCLE_CANONICAL[key]||'pectoral_mayor');}
+function renderEvoMuscleLibrary(){
+ var key=evoCanonicalMuscle(EVO.muscle),info=EVO_MUSCLE_INFO[key]||EVO_MUSCLE_INFO.pectoral_mayor;
+ $('evo-muscle-title').textContent=info.label;$('evo-muscle-location').textContent=info.location;$('evo-muscle-function').textContent=info.func;$('evo-muscle-secondary').textContent=info.secondary;
+ var equipment=$('evo-equipment-filter').value,level=$('evo-level-filter').value,items=EVO_EXERCISES[key]||[];
+ var filtered=items.filter(function(x){return (equipment==='all'||x[1]===equipment)&&(level==='all'||x[2]===level);});
+ $('evo-exercise-count').textContent=filtered.length+' ejercicios disponibles · selecciona uno para registrarlo';
+ var eqLabels={none:'Sin equipo',weights:'Pesas',machines:'Máquinas',bands:'Bandas'};
+ $('evo-exercise-list').innerHTML=filtered.length?filtered.map(function(x){return '<article class="evo-exercise-card"><h4>'+esc(x[0])+'</h4><p>'+esc(x[3])+'</p><div class="evo-exercise-tags"><span>'+eqLabels[x[1]]+'</span><span>'+esc(x[2])+'</span><span>Secundarios: '+esc(x[4])+'</span></div><button type="button" class="btn primary sm" data-evo-record="'+esc(x[0])+'" data-evo-muscle="'+key+'">Registrar</button></article>';}).join(''):'<p class="note">No hay ejercicios con esos filtros. Prueba otra combinación.</p>';
+}
+var EVO3D={ready:false,loading:false,scene:null,camera:null,renderer:null,controls:null,group:null,parts:[],back:false,frame:0};
+function evoLoadScript(src){return new Promise(function(resolve,reject){var sc=document.createElement('script');sc.src=src;sc.async=true;sc.onload=resolve;sc.onerror=function(){reject(new Error('No se pudo cargar el visor 3D'));};document.head.appendChild(sc);});}
+function evoAddMesh(key,x,y,z,sx,sy,sz,rz){
+ var geo=new THREE.SphereGeometry(1,24,18),mat=new THREE.MeshStandardMaterial({color:0x65766d,roughness:.72,metalness:.02,emissive:0x000000});
+ var mesh=new THREE.Mesh(geo,mat);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);mesh.rotation.z=rz||0;mesh.userData.muscle=key;EVO3D.group.add(mesh);EVO3D.parts.push(mesh);return mesh;
+}
+function evoAddBase(x,y,z,sx,sy,sz,rz){
+ var mesh=new THREE.Mesh(new THREE.SphereGeometry(1,24,18),new THREE.MeshStandardMaterial({color:0x263b32,roughness:.8,metalness:.02}));mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);mesh.rotation.z=rz||0;EVO3D.group.add(mesh);return mesh;
+}
+function evoRefresh3D(){
+ if(!EVO3D.ready)return;
+ var key=evoCanonicalMuscle(EVO.muscle);
+ EVO3D.parts.forEach(function(m){var active=m.userData.muscle===key;m.material.color.setHex(active?0x8eea3d:0x65766d);m.material.emissive.setHex(active?0x244d12:0x000000);});
+}
+function evoBuild3D(){
+ var stage=$('evo-three-stage'),canvas=$('evo-three-canvas');if(!stage||!canvas||!window.THREE||!THREE.OrbitControls)return;
+ var w=Math.max(280,stage.clientWidth),h=390;
+ EVO3D.scene=new THREE.Scene();EVO3D.camera=new THREE.PerspectiveCamera(34,w/h,.1,100);EVO3D.camera.position.set(0,.65,5.6);
+ EVO3D.renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true});EVO3D.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));EVO3D.renderer.setSize(w,h,false);EVO3D.renderer.outputEncoding=THREE.sRGBEncoding;
+ EVO3D.scene.add(new THREE.HemisphereLight(0xdfffea,0x15231b,1.7));
+ var light=new THREE.DirectionalLight(0xffffff,2.1);light.position.set(3,4,5);EVO3D.scene.add(light);
+ var rim=new THREE.DirectionalLight(0x35d07f,1.1);rim.position.set(-3,1,-4);EVO3D.scene.add(rim);
+ EVO3D.group=new THREE.Group();EVO3D.scene.add(EVO3D.group);
+ evoAddBase(0,1.35,0,.39,.57,.22);evoAddBase(0,.73,0,.31,.28,.19);evoAddBase(0,2.02,0,.17,.2,.16);
+ evoAddBase(-.48,1.33,0,.15,.25,.15,-.15);evoAddBase(.48,1.33,0,.15,.25,.15,.15);
+ evoAddBase(-.63,.98,0,.105,.28,.105,-.12);evoAddBase(.63,.98,0,.105,.28,.105,.12);
+ evoAddBase(-.2,.15,0,.16,.55,.16,-.04);evoAddBase(.2,.15,0,.16,.55,.16,.04);
+ evoAddBase(-.21,-.52,0,.12,.48,.12,.02);evoAddBase(.21,-.52,0,.12,.48,.12,-.02);
+ evoAddBase(-.21,-.93,.07,.14,.1,.23);evoAddBase(.21,-.93,.07,.14,.1,.23);
+ evoAddMesh('deltoide_anterior',-.48,1.53,.14,.18,.19,.12,-.25);evoAddMesh('deltoide_anterior',.48,1.53,.14,.18,.19,.12,.25);
+ evoAddMesh('pectoral_mayor',-.2,1.48,.205,.2,.22,.075,-.08);evoAddMesh('pectoral_mayor',.2,1.48,.205,.2,.22,.075,.08);
+ evoAddMesh('biceps_braquial',-.59,1.18,.12,.105,.23,.09,-.12);evoAddMesh('biceps_braquial',.59,1.18,.12,.105,.23,.09,.12);
+ evoAddMesh('braquiorradial',-.68,.91,.12,.08,.24,.08,-.08);evoAddMesh('braquiorradial',.68,.91,.12,.08,.24,.08,.08);
+ evoAddMesh('recto_abdominal',-.105,1.02,.2,.095,.28,.045);evoAddMesh('recto_abdominal',.105,1.02,.2,.095,.28,.045);
+ evoAddMesh('oblicuos',-.255,1.04,.13,.09,.25,.08,-.2);evoAddMesh('oblicuos',.255,1.04,.13,.09,.25,.08,.2);
+ evoAddMesh('recto_femoral',-.2,.15,.14,.105,.42,.09,-.04);evoAddMesh('recto_femoral',.2,.15,.14,.105,.42,.09,.04);
+ evoAddMesh('vasto_lateral',-.29,.08,.095,.075,.36,.075,-.08);evoAddMesh('vasto_lateral',.29,.08,.095,.075,.36,.075,.08);
+ evoAddMesh('gastrocnemio',-.21,-.53,.075,.105,.23,.09);evoAddMesh('gastrocnemio',.21,-.53,.075,.105,.23,.09);
+ evoAddMesh('deltoide_posterior',-.48,1.53,-.13,.17,.19,.1,-.25);evoAddMesh('deltoide_posterior',.48,1.53,-.13,.17,.19,.1,.25);
+ evoAddMesh('trapecio',0,1.7,-.17,.25,.3,.07);
+ evoAddMesh('dorsal_ancho',-.22,1.28,-.15,.18,.37,.08,-.12);evoAddMesh('dorsal_ancho',.22,1.28,-.15,.18,.37,.08,.12);
+ evoAddMesh('triceps_braquial',-.59,1.17,-.12,.1,.24,.09,-.1);evoAddMesh('triceps_braquial',.59,1.17,-.12,.1,.24,.09,.1);
+ evoAddMesh('extensores_antebrazo',-.68,.91,-.11,.08,.24,.08,-.08);evoAddMesh('extensores_antebrazo',.68,.91,-.11,.08,.24,.08,.08);
+ evoAddMesh('gluteo_mayor',-.17,.68,-.18,.17,.19,.1);evoAddMesh('gluteo_mayor',.17,.68,-.18,.17,.19,.1);
+ evoAddMesh('gluteo_medio',-.3,.78,-.13,.11,.15,.08,-.2);evoAddMesh('gluteo_medio',.3,.78,-.13,.11,.15,.08,.2);
+ evoAddMesh('biceps_femoral',-.2,.13,-.13,.11,.4,.08,-.04);evoAddMesh('biceps_femoral',.2,.13,-.13,.11,.4,.08,.04);
+ evoAddMesh('erectores_espinales',-.07,1.2,-.23,.055,.43,.045);evoAddMesh('erectores_espinales',.07,1.2,-.23,.055,.43,.045);
+ evoAddMesh('soleo',-.21,-.58,-.1,.085,.2,.07);evoAddMesh('soleo',.21,-.58,-.1,.085,.2,.07);
+ EVO3D.controls=new THREE.OrbitControls(EVO3D.camera,canvas);EVO3D.controls.enablePan=false;EVO3D.controls.enableZoom=false;EVO3D.controls.target.set(0,.55,0);EVO3D.controls.minPolarAngle=.45;EVO3D.controls.maxPolarAngle=2.55;
+ var raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
+ canvas.addEventListener('pointerup',function(e){var r=canvas.getBoundingClientRect();pointer.x=((e.clientX-r.left)/r.width)*2-1;pointer.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(pointer,EVO3D.camera);var hits=raycaster.intersectObjects(EVO3D.parts,false);if(hits.length){EVO.muscle=hits[0].object.userData.muscle;renderEvolucion();}});
+ $('evo-three-view').addEventListener('click',function(){EVO3D.back=!EVO3D.back;EVO3D.group.rotation.y=EVO3D.back?Math.PI:0;$('evo-three-view').textContent=EVO3D.back?'Vista frontal':'Vista posterior';});
+ EVO3D.ready=true;stage.hidden=false;$('evo-anatomy-views').hidden=true;evoRefresh3D();
+ function animate(){if(!EVO3D.ready)return;EVO3D.frame=requestAnimationFrame(animate);EVO3D.controls.update();EVO3D.renderer.render(EVO3D.scene,EVO3D.camera);}animate();
+ window.addEventListener('resize',function(){if(!EVO3D.ready)return;var width=Math.max(280,stage.clientWidth);EVO3D.camera.aspect=width/390;EVO3D.camera.updateProjectionMatrix();EVO3D.renderer.setSize(width,390,false);});
+}
+function setupEvo3D(){
+ if(EVO3D.ready||EVO3D.loading)return;EVO3D.loading=true;
+ evoLoadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js').then(function(){return evoLoadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js');}).then(evoBuild3D).catch(function(){var stage=$('evo-three-stage');if(stage)stage.hidden=true;var fallback=$('evo-anatomy-views');if(fallback)fallback.hidden=false;}).finally(function(){EVO3D.loading=false;});
+}
 function renderEvolucion(){
   var buttons=document.querySelectorAll('.evo-muscle');
   buttons.forEach(function(b){b.classList.toggle('selected',b.dataset.muscle===EVO.muscle);});
   document.querySelectorAll('.evo-muscle-part').forEach(function(p){p.classList.toggle('active',p.dataset.muscle===EVO.muscle);});
   var selectedButton=Array.from(buttons).find(function(b){return b.dataset.muscle===EVO.muscle;});
   if($('evo-anatomy-selected'))$('evo-anatomy-selected').textContent=EVO_MUSCLE_LABELS[EVO.muscle]||(selectedButton?selectedButton.textContent:EVO.muscle);
+  renderEvoMuscleLibrary();evoRefresh3D();
   var legacy=EVO_LEGACY_MUSCLES[EVO.muscle]||[];var ex=EVO.exercises.filter(function(e){return e.muscle_group===EVO.muscle||legacy.indexOf(e.muscle_group)>=0;});
   var exIds=ex.map(function(e){return e.id;});
   var sets=EVO.sets.filter(function(s){return exIds.indexOf(s.exercise_id)>=0;});
@@ -2486,7 +2635,7 @@ function renderEvolucion(){
   $('evo-volume').textContent=Math.round(volume).toLocaleString('es-PE')+' kg';
   $('evo-pr').textContent=pr.toLocaleString('es-PE')+' kg';
   $('evo-sets').textContent=sets.length;
-  var muscleLabel=buttons.length?((Array.from(buttons).find(function(b){return b.dataset.muscle===EVO.muscle;})||{}).textContent||EVO.muscle):EVO.muscle;
+  var muscleLabel=EVO_MUSCLE_LABELS[EVO.muscle]||(buttons.length?((Array.from(buttons).find(function(b){return b.dataset.muscle===EVO.muscle;})||{}).textContent||EVO.muscle):EVO.muscle);
   $('evo-chart-caption').textContent='Mostrando datos de '+muscleLabel+'. Selecciona otro grupo muscular para comparar su progreso.';
   var byDate={};
   ex.forEach(function(e){
@@ -2629,6 +2778,15 @@ async function guardarEvoFoto(e){
   $('v-evolucion').addEventListener('keydown',function(e){
     if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('evo-muscle-part')){e.preventDefault();EVO.muscle=e.target.dataset.muscle;renderEvolucion();}
   });
+  $('evo-equipment-filter').addEventListener('change',renderEvoMuscleLibrary);
+  $('evo-level-filter').addEventListener('change',renderEvoMuscleLibrary);
+  $('evo-exercise-list').addEventListener('click',function(e){
+    var b=e.target.closest('[data-evo-record]');if(!b)return;
+    EVO.muscle=b.dataset.evoMuscle;renderEvolucion();$('evo-exercise').value=b.dataset.evoRecord;
+    $('evo-workout-form').scrollIntoView({behavior:'smooth',block:'center'});$('evo-exercise').focus({preventScroll:true});
+    toast('Ejercicio listo para registrar. Completa series, repeticiones y peso.');
+  });
+  setupEvo3D();
   $('viper-coach-fab').addEventListener('click',function(){
     var panel=$('viper-coach-window'),opening=panel.hidden;
     panel.hidden=!opening;
