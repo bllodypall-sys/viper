@@ -377,6 +377,19 @@ main{padding-block:12px 40px}
     <input id="auth-email" type="email" autocomplete="email" required placeholder="tu@correo.com">
     <label class="lbl" for="auth-password">Contraseña</label>
     <input id="auth-password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mínimo 8 caracteres">
+    <fieldset id="signup-profile-fields" class="onboarding-grid" disabled hidden style="border:0;padding:0;margin:8px 0 0">
+      <legend class="lbl" style="margin-bottom:8px">Datos para crear tu perfil de atleta</legend>
+      <div class="onboarding-field"><label for="ob-country">¿De qué país eres?</label><input id="ob-country" type="text" maxlength="80" placeholder="Ej. Perú" autocomplete="country-name" required></div>
+      <div class="onboarding-field"><label for="ob-age">¿Cuántos años tienes?</label><input id="ob-age" type="number" min="13" max="100" step="1" placeholder="Ej. 22" required></div>
+      <div class="onboarding-field full"><label for="ob-goal">¿Cuál es tu principal objetivo?</label><select id="ob-goal" required><option value="">Selecciona tu objetivo</option><option value="muscle_gain">Ganar masa muscular</option><option value="fat_loss">Perder grasa</option><option value="strength">Aumentar fuerza</option><option value="endurance">Mejorar resistencia</option><option value="general_fitness">Mantenerme en forma</option><option value="boxing">Mejorar en boxeo</option><option value="other">Otro</option></select></div>
+      <div class="onboarding-field"><label for="ob-experience">¿Cuánto tiempo llevas entrenando?</label><select id="ob-experience" required><option value="">Selecciona</option><option value="beginner">Aún no empiezo</option><option value="under_6_months">Menos de 6 meses</option><option value="6_12_months">6 a 12 meses</option><option value="1_2_years">1 a 2 años</option><option value="over_2_years">Más de 2 años</option></select></div>
+      <div class="onboarding-field"><label for="ob-days">¿Cuántos días entrenas por semana?</label><select id="ob-days" required><option value="">Selecciona</option><option value="1">1 día</option><option value="2">2 días</option><option value="3">3 días</option><option value="4">4 días</option><option value="5">5 días</option><option value="6">6 días</option><option value="7">Todos los días</option></select></div>
+      <div class="onboarding-field full"><label for="ob-type">¿Dónde o cómo entrenas?</label><select id="ob-type" required><option value="">Selecciona</option><option value="gym">Gimnasio</option><option value="home">En casa</option><option value="boxing">Boxeo</option><option value="mixed">Combinación de varios</option></select></div>
+      <div class="onboarding-field"><label for="ob-height">Altura en cm (opcional)</label><input id="ob-height" type="number" min="100" max="250" step="0.1" placeholder="Ej. 175"></div>
+      <div class="onboarding-field"><label for="ob-weight">Peso en kg (opcional)</label><input id="ob-weight" type="number" min="25" max="350" step="0.1" placeholder="Ej. 70"></div>
+      <div class="onboarding-field full"><label for="ob-muscle">¿Qué grupo muscular quieres priorizar? (opcional)</label><select id="ob-muscle"><option value="">Sin preferencia</option><option value="chest">Pecho</option><option value="back">Espalda</option><option value="shoulders">Hombros</option><option value="arms">Brazos</option><option value="legs">Piernas</option><option value="glutes">Glúteos</option><option value="abs">Abdominales</option><option value="full_body">Cuerpo completo</option></select></div>
+      <p class="note" style="grid-column:1/-1">Estos datos se guardarán en tu cuenta y podrás modificarlos después desde tu perfil.</p>
+    </fieldset>
     <button class="btn primary wide" id="auth-submit" type="submit">Iniciar sesión</button>
   </form>
   <button class="mini" id="auth-toggle" type="button">¿No tienes cuenta? Regístrate</button>
@@ -719,6 +732,22 @@ main{padding-block:12px 40px}
         <p class="note">El borde cambia según tu rango.</p>
       </div>
       <p class="note" id="p-email"></p>
+      <section class="season-card" aria-label="Datos de atleta">
+        <div class="sec-head"><h2>Mis datos de atleta</h2></div>
+        <p class="note">Completa o actualiza esta información cuando quieras. Es privada y personaliza tu experiencia en VIPER.</p>
+        <form id="athlete-profile-form" class="stack" style="margin-top:12px">
+          <label class="lbl" for="pf-country">País</label><input id="pf-country" type="text" maxlength="80" required>
+          <label class="lbl" for="pf-age">Edad</label><input id="pf-age" type="number" min="13" max="100" step="1" required>
+          <label class="lbl" for="pf-goal">Objetivo principal</label><select id="pf-goal" required><option value="">Selecciona</option><option value="muscle_gain">Ganar masa muscular</option><option value="fat_loss">Perder grasa</option><option value="strength">Aumentar fuerza</option><option value="endurance">Mejorar resistencia</option><option value="general_fitness">Mantenerme en forma</option><option value="boxing">Mejorar en boxeo</option><option value="other">Otro</option></select>
+          <label class="lbl" for="pf-experience">Tiempo entrenando</label><select id="pf-experience" required><option value="">Selecciona</option><option value="beginner">Aún no empiezo</option><option value="under_6_months">Menos de 6 meses</option><option value="6_12_months">6 a 12 meses</option><option value="1_2_years">1 a 2 años</option><option value="over_2_years">Más de 2 años</option></select>
+          <label class="lbl" for="pf-days">Días por semana</label><select id="pf-days" required><option value="">Selecciona</option><option value="1">1 día</option><option value="2">2 días</option><option value="3">3 días</option><option value="4">4 días</option><option value="5">5 días</option><option value="6">6 días</option><option value="7">Todos los días</option></select>
+          <label class="lbl" for="pf-type">Tipo de entrenamiento</label><select id="pf-type" required><option value="">Selecciona</option><option value="gym">Gimnasio</option><option value="home">En casa</option><option value="boxing">Boxeo</option><option value="mixed">Combinación de varios</option></select>
+          <label class="lbl" for="pf-height">Altura en cm (opcional)</label><input id="pf-height" type="number" min="100" max="250" step="0.1">
+          <label class="lbl" for="pf-weight">Peso en kg (opcional)</label><input id="pf-weight" type="number" min="25" max="350" step="0.1">
+          <label class="lbl" for="pf-muscle">Grupo muscular prioritario (opcional)</label><select id="pf-muscle"><option value="">Sin preferencia</option><option value="chest">Pecho</option><option value="back">Espalda</option><option value="shoulders">Hombros</option><option value="arms">Brazos</option><option value="legs">Piernas</option><option value="glutes">Glúteos</option><option value="abs">Abdominales</option><option value="full_body">Cuerpo completo</option></select>
+          <button class="btn primary" type="submit">Guardar datos de atleta</button>
+        </form>
+      </section>
       <form id="p-form" class="stack">
         <label class="lbl" for="p-user">Nombre de usuario (es público)</label>
         <input id="p-user" type="text" maxlength="20" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false">
@@ -822,29 +851,6 @@ main{padding-block:12px 40px}
 </div>
 
 
-<div id="onboarding-backdrop" class="onboarding-backdrop" hidden>
-  <section class="onboarding-card" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
-    <p class="eyebrow">VIPER · Configura tu atleta</p>
-    <h2 id="onboarding-title">¡Empecemos con tus objetivos!</h2>
-    <p>Cuéntanos un poco sobre ti para adaptar tus estadísticas, retos y recomendaciones de VIPER Coach.</p>
-    <form id="onboarding-form">
-      <div class="onboarding-grid">
-        <div class="onboarding-field"><label for="ob-country">¿De qué país eres?</label><input id="ob-country" name="country" type="text" maxlength="80" placeholder="Ej. Perú" autocomplete="country-name" required></div>
-        <div class="onboarding-field"><label for="ob-age">¿Cuántos años tienes?</label><input id="ob-age" name="age" type="number" min="13" max="100" step="1" placeholder="Ej. 22" required></div>
-        <div class="onboarding-field full"><label for="ob-goal">¿Cuál es tu principal objetivo?</label><select id="ob-goal" name="goal" required><option value="">Selecciona tu objetivo</option><option value="muscle_gain">Ganar masa muscular</option><option value="fat_loss">Perder grasa</option><option value="strength">Aumentar fuerza</option><option value="endurance">Mejorar resistencia</option><option value="general_fitness">Mantenerme en forma</option><option value="boxing">Mejorar en boxeo</option><option value="other">Otro</option></select></div>
-        <div class="onboarding-field"><label for="ob-experience">¿Cuánto tiempo llevas entrenando?</label><select id="ob-experience" name="experience" required><option value="">Selecciona</option><option value="beginner">Aún no empiezo</option><option value="under_6_months">Menos de 6 meses</option><option value="6_12_months">6 a 12 meses</option><option value="1_2_years">1 a 2 años</option><option value="over_2_years">Más de 2 años</option></select></div>
-        <div class="onboarding-field"><label for="ob-days">¿Cuántos días entrenas por semana?</label><select id="ob-days" name="training_days" required><option value="">Selecciona</option><option value="1">1 día</option><option value="2">2 días</option><option value="3">3 días</option><option value="4">4 días</option><option value="5">5 días</option><option value="6">6 días</option><option value="7">Todos los días</option></select></div>
-        <div class="onboarding-field full"><label for="ob-type">¿Dónde o cómo entrenas?</label><select id="ob-type" name="training_type" required><option value="">Selecciona</option><option value="gym">Gimnasio</option><option value="home">En casa</option><option value="boxing">Boxeo</option><option value="mixed">Combinación de varios</option></select></div>
-        <div class="onboarding-field"><label for="ob-height">Altura en cm (opcional)</label><input id="ob-height" name="height_cm" type="number" min="100" max="250" step="0.1" placeholder="Ej. 175"></div>
-        <div class="onboarding-field"><label for="ob-weight">Peso en kg (opcional)</label><input id="ob-weight" name="weight_kg" type="number" min="25" max="350" step="0.1" placeholder="Ej. 70"></div>
-        <div class="onboarding-field full"><label for="ob-muscle">¿Qué grupo muscular quieres priorizar? (opcional)</label><select id="ob-muscle" name="priority_muscle"><option value="">Sin preferencia</option><option value="chest">Pecho</option><option value="back">Espalda</option><option value="shoulders">Hombros</option><option value="arms">Brazos</option><option value="legs">Piernas</option><option value="glutes">Glúteos</option><option value="abs">Abdominales</option><option value="full_body">Cuerpo completo</option></select></div>
-      </div>
-      <button class="onboarding-submit" id="onboarding-submit" type="submit">Guardar y comenzar</button>
-      <p class="note onboarding-hint">Tus datos se guardan de forma privada en tu cuenta. La altura, el peso y el grupo muscular son opcionales.</p>
-    </form>
-  </section>
-</div>
-
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <div id="welcome-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 
@@ -910,6 +916,7 @@ function addDays(iso, n){
 }
 
 var sb = null, user = null, P = null, T = null, F = [], U = {}, iniciado = false, toastT = null, welcomeT = null, welcomeHideT = null, authMode = 'login', chatFriend = null, chatChannel = null;
+var ATHLETE = null;
 var IDLE_TIMEOUT_MS = 60 * 60 * 1000, idleTimer = null, lastActivityAt = 0, lastActivitySavedAt = 0, idleStorageKey = null;
 var EVO = {muscle:'pectoral_mayor',sessions:[],exercises:[],sets:[],measurements:[],photos:[],goals:[]};
 
@@ -1438,9 +1445,28 @@ async function loadMyVideos(){
     box.innerHTML='<div class="my-videos-empty">No se pudieron cargar tus videos. Pulsa Actualizar para intentarlo de nuevo.</div>';
   }
 }
+async function cargarDatosAtleta(){
+  var r=await sb.from('viper_onboarding_profiles').select('country,age,goal,experience,training_days,training_type,height_cm,weight_kg,priority_muscle').eq('user_id',user.id).maybeSingle();
+  if(r.error)throw r.error;
+  ATHLETE=r.data||{};
+}
+async function guardarDatosAtleta(e){
+  e.preventDefault();
+  var btn=e.submitter;if(btn)btn.disabled=true;
+  var payload={user_id:user.id,country:$('pf-country').value.trim(),age:Number($('pf-age').value),goal:$('pf-goal').value,experience:$('pf-experience').value,training_days:Number($('pf-days').value),training_type:$('pf-type').value,height_cm:$('pf-height').value?Number($('pf-height').value):null,weight_kg:$('pf-weight').value?Number($('pf-weight').value):null,priority_muscle:$('pf-muscle').value||null,updated_at:new Date().toISOString()};
+  try{
+    var r=await sb.from('viper_onboarding_profiles').upsert(payload,{onConflict:'user_id'});
+    if(r.error)throw r.error;
+    ATHLETE=payload;renderPerfil();toast('Datos de atleta actualizados.');
+  }catch(err){toast(errMsg(err),true);}
+  finally{if(btn)btn.disabled=false;}
+}
 function renderPerfil(){
   $('p-email').textContent = user.email || '';
   if (document.activeElement !== $('p-user')) $('p-user').value = P.username;
+  if(ATHLETE){
+    [['pf-country','country'],['pf-age','age'],['pf-goal','goal'],['pf-experience','experience'],['pf-days','training_days'],['pf-type','training_type'],['pf-height','height_cm'],['pf-weight','weight_kg'],['pf-muscle','priority_muscle']].forEach(function(pair){var el=$(pair[0]);if(el&&document.activeElement!==el)el.value=ATHLETE[pair[1]]==null?'':ATHLETE[pair[1]];});
+  }
   [['p-instagram','instagram_url'],['p-tiktok','tiktok_url'],['p-facebook','facebook_url'],['p-x','x_url']].forEach(function(pair){ if(document.activeElement !== $(pair[0])) $(pair[0]).value = P[pair[1]] || ''; });
   var li = LV[idxOf(P.xp_total)], color = RANKS[li.ri].plate;
   setAvatarFrame($('avatar-ring'),li.ri);
@@ -1946,7 +1972,18 @@ async function start(){
     if(sharedProfile) await abrirPerfilPublico(sharedProfile);
     var onboardingResult = await sb.from('viper_onboarding_profiles').select('user_id').eq('user_id',user.id).maybeSingle();
     if (onboardingResult.error) throw onboardingResult.error;
-    if (!onboardingResult.data) { $('onboarding-backdrop').hidden=false; $('ob-country').focus(); return; }
+    if (!onboardingResult.data) {
+      var meta=user.user_metadata||{};
+      if(meta.country&&meta.age&&meta.goal&&meta.experience&&meta.training_days&&meta.training_type){
+        var savedAthlete=await sb.from('viper_onboarding_profiles').upsert({
+          user_id:user.id,country:meta.country,age:Number(meta.age),goal:meta.goal,
+          experience:meta.experience,training_days:Number(meta.training_days),training_type:meta.training_type,
+          height_cm:meta.height_cm||null,weight_kg:meta.weight_kg||null,priority_muscle:meta.priority_muscle||null
+        },{onConflict:'user_id'});
+        if(savedAthlete.error)throw savedAthlete.error;
+      }
+    }
+    await cargarDatosAtleta();
     showWelcome();
   } catch (e) {
     iniciado = false;
@@ -1965,6 +2002,8 @@ function eventos(){
     $('auth-submit').textContent = authMode === 'signup' ? 'Registrarme' : 'Iniciar sesión';
     $('auth-password').autocomplete = authMode === 'signup' ? 'new-password' : 'current-password';
     $('auth-toggle').textContent = authMode === 'signup' ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate';
+    $('signup-profile-fields').disabled = authMode !== 'signup';
+    $('signup-profile-fields').hidden = authMode !== 'signup';
     $('login-msg').textContent = '';
   });
   $('auth-form').addEventListener('submit', async function(e){
@@ -1982,10 +2021,17 @@ function eventos(){
     try {
       var result;
       if (authMode === 'signup'){
+        var athleteData = {
+          country: $('ob-country').value.trim(), age: Number($('ob-age').value),
+          goal: $('ob-goal').value, experience: $('ob-experience').value,
+          training_days: Number($('ob-days').value), training_type: $('ob-type').value,
+          height_cm: $('ob-height').value ? Number($('ob-height').value) : null,
+          weight_kg: $('ob-weight').value ? Number($('ob-weight').value) : null,
+          priority_muscle: $('ob-muscle').value || null
+        };
         result = await sb.auth.signUp({
-          email: email,
-          password: password,
-          options: { emailRedirectTo: location.origin + location.pathname }
+          email: email, password: password,
+          options: { emailRedirectTo: location.origin + location.pathname, data: athleteData }
         });
         if (result.error) throw result.error;
         if (result.data.session) {
@@ -2003,17 +2049,6 @@ function eventos(){
       submit.disabled = false;
       submit.textContent = authMode === 'signup' ? 'Registrarme' : 'Iniciar sesión';
     }
-  });
-  $('onboarding-form').addEventListener('submit',async function(e){
-    e.preventDefault();
-    var btn=$('onboarding-submit');btn.disabled=true;btn.textContent='Guardando…';
-    var payload={user_id:user.id,country:$('ob-country').value.trim(),age:Number($('ob-age').value),goal:$('ob-goal').value,experience:$('ob-experience').value,training_days:Number($('ob-days').value),training_type:$('ob-type').value,height_cm:$('ob-height').value?Number($('ob-height').value):null,weight_kg:$('ob-weight').value?Number($('ob-weight').value):null,priority_muscle:$('ob-muscle').value||null,updated_at:new Date().toISOString()};
-    try{
-      var saved=await sb.from('viper_onboarding_profiles').upsert(payload,{onConflict:'user_id'});
-      if(saved.error)throw saved.error;
-      $('onboarding-backdrop').hidden=true;toast('¡Perfil de atleta guardado! Bienvenido a VIPER.');showWelcome();
-    }catch(err){toast(errMsg(err),true);}
-    finally{btn.disabled=false;btn.textContent='Guardar y comenzar';}
   });
   $('salir').addEventListener('click', async function(){ await sb.auth.signOut(); });
   $('security-password-form').addEventListener('submit',changeVipPassword);
@@ -2432,6 +2467,7 @@ async function guardarEvoFoto(e){
     } catch(err){ toast(errMsg(err),true); }
   });
 
+  $('athlete-profile-form').addEventListener('submit',guardarDatosAtleta);
   $('p-form').addEventListener('submit', async function(e){
     e.preventDefault();
     var u = $('p-user').value.trim().toLowerCase();
