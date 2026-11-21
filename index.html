@@ -254,6 +254,16 @@ button.act{cursor:pointer}
 .profile-link:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
 .mini{border:0;background:none;color:var(--muted);font:inherit;font-size:.8rem;text-decoration:underline;padding:0;cursor:pointer}
 
+/* Nube de confirmación para recuperación de contraseña. */
+.password-mail-cloud{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr);align-items:center;gap:10px;margin:8px 0 4px;padding:14px 16px;border:1px solid #35d07f;border-radius:24px 24px 20px 24px;background:color-mix(in srgb,var(--surface) 88%,#35d07f 12%);color:var(--fg);box-shadow:0 9px 25px rgba(0,0,0,.12);opacity:0;transform:translateY(8px) scale(.98);transition:opacity .28s ease,transform .28s ease}
+.password-mail-cloud::after{content:"";position:absolute;left:27px;bottom:-8px;width:15px;height:15px;background:color-mix(in srgb,var(--surface) 88%,#35d07f 12%);border-right:1px solid #35d07f;border-bottom:1px solid #35d07f;transform:rotate(45deg)}
+.password-mail-cloud.show{opacity:1;transform:translateY(0) scale(1)}
+.password-mail-cloud[hidden]{display:none}
+.password-mail-cloud .cloud-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:50%;background:#35d07f;color:#07120c;font-size:1.55rem}
+.password-mail-cloud strong{display:block;font:800 1.05rem var(--display);letter-spacing:.04em;text-transform:uppercase}
+.password-mail-cloud span{display:block;color:var(--muted);font-size:.84rem;line-height:1.35}
+@media(prefers-reduced-motion:reduce){.password-mail-cloud{transition:none}}
+
 input[type=text],input[type=email],input[type=password]{min-height:44px;width:100%;min-width:0;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:0 12px;font:inherit}
 .addrow{display:flex;flex-wrap:wrap;gap:8px}
 .addrow input{flex:1;min-width:170px}
@@ -403,6 +413,10 @@ main{padding-block:12px 40px}
     <button class="btn primary wide" id="auth-submit" type="submit">Iniciar sesión</button>
   </form>
   <button class="mini" id="forgot-password" type="button">¿Olvidaste tu contraseña?</button>
+  <div id="password-mail-cloud" class="password-mail-cloud" hidden role="status" aria-live="polite">
+    <div class="cloud-icon" aria-hidden="true">☁️</div>
+    <div><strong>¡Revisa tu correo!</strong><span>Te enviamos un enlace para restablecer tu contraseña. Si no aparece, revisa la carpeta de spam.</span></div>
+  </div>
   <section id="password-recovery-panel" class="stack" hidden aria-labelledby="password-recovery-title">
     <h2 id="password-recovery-title">Crear nueva contraseña</h2>
     <p class="note">Estás recuperando el acceso a tu cuenta VIPER.</p>
@@ -2054,6 +2068,8 @@ function eventos(){
   });
   $('forgot-password').addEventListener('click', async function(){
     var email=$('auth-email').value.trim().toLowerCase();
+    var cloud=$('password-mail-cloud');
+    cloud.hidden=true;cloud.classList.remove('show');
     $('login-msg').textContent='';
     if(!email){$('login-msg').textContent='Escribe tu correo electrónico para enviarte el enlace.';$('auth-email').focus();return;}
     var captchaToken=window.viperTurnstileToken;
@@ -2062,8 +2078,16 @@ function eventos(){
     try{
       var result=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname+location.search,captchaToken:captchaToken});
       if(result.error)throw result.error;
-      $('login-msg').textContent='Si existe una cuenta con ese correo, recibirás un enlace para restablecer tu contraseña. Revisa también spam.';
+      $('login-msg').textContent='';
+      cloud.hidden=false;
+      requestAnimationFrame(function(){cloud.classList.add('show');});
+      if(window.viperRecoveryNoticeTimer)clearTimeout(window.viperRecoveryNoticeTimer);
+      window.viperRecoveryNoticeTimer=setTimeout(function(){
+        cloud.classList.remove('show');
+        setTimeout(function(){cloud.hidden=true;},300);
+      },9000);
     }catch(err){
+      cloud.hidden=true;cloud.classList.remove('show');
       $('login-msg').textContent=errMsg(err);
     }finally{
       window.viperTurnstileToken=null;
