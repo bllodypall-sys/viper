@@ -34,9 +34,10 @@ declare
   v_count integer;
 begin
   if p_user_id is null
+     or p_feature is null
      or p_feature not in ('meal_hour','meal_day','shake_hour','shake_day','coach_hour','coach_day')
-     or p_limit < 1 or p_limit > 1000
-     or p_window_seconds < 60 or p_window_seconds > 86400 then
+     or p_limit is null or p_limit < 1 or p_limit > 1000
+     or p_window_seconds is null or p_window_seconds < 60 or p_window_seconds > 86400 then
     raise exception 'Parámetros de límite de IA no válidos';
   end if;
 
