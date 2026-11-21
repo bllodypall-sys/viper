@@ -292,7 +292,18 @@ form.stack{display:grid;gap:8px}
 .nav button[aria-current="page"]{color:var(--fg);border-left-color:var(--fg);background:var(--bg)}
 
 
-/* Bienvenida flotante VIPER: solo el saludo desaparece; la pantalla Hoy permanece. */
+/* Inicio VIPER: panel principal y accesos rápidos. */
+.home-hero{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:24px;background:linear-gradient(125deg,#18231e 0%,#111817 62%,#202b25 100%);border:1px solid #355443;border-radius:16px;color:#f2f5ef;box-shadow:0 12px 32px rgba(0,0,0,.16)}
+.home-hero:after{content:"V";position:absolute;right:18px;bottom:-48px;font:800 12rem/.8 var(--display);color:rgba(141,234,61,.07);pointer-events:none}
+.home-kicker{color:#8eea3d;font-size:.75rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
+.home-title{font:800 clamp(2rem,6vw,3.25rem)/.98 var(--display);text-transform:uppercase;letter-spacing:.02em;margin:7px 0}
+.home-subtitle{color:#b8c4bc;max-width:480px;font-size:.95rem}
+.home-rank{position:relative;z-index:1;display:grid;justify-items:center;gap:5px;min-width:90px}.home-rank svg{width:64px;height:64px}.home-rank strong{font:800 .9rem var(--display);text-transform:uppercase;text-align:center}
+.home-progress{grid-column:1/-1;position:relative;z-index:1;display:grid;gap:7px;margin-top:6px}.home-progress-top{display:flex;justify-content:space-between;gap:8px;color:#d5ddd6;font-size:.82rem}.home-progress-track{height:9px;border-radius:9px;background:#35423a;overflow:hidden}.home-progress-track i{display:block;height:100%;background:#8eea3d;border-radius:9px}
+.home-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.home-stat{display:grid;gap:5px;padding:15px;background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}.home-stat span{font-size:.78rem;color:var(--muted)}.home-stat strong{font:800 clamp(1.35rem,4vw,1.9rem)/1 var(--display);overflow-wrap:anywhere}.home-section-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:5px}.home-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.home-shortcut{display:flex;align-items:center;gap:12px;min-height:76px;padding:13px;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--fg);text-align:left;cursor:pointer;font:inherit}.home-shortcut:hover{border-color:#35d07f}.home-shortcut-icon{width:42px;height:42px;display:grid;place-items:center;flex:none;border-radius:11px;background:var(--bg);font-size:1.35rem}.home-shortcut b{display:block;font:800 1rem var(--display);text-transform:uppercase;letter-spacing:.04em}.home-shortcut small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}
+@media(max-width:520px){.home-hero{padding:18px;grid-template-columns:minmax(0,1fr) 72px}.home-rank{min-width:68px}.home-rank svg{width:52px;height:52px}.home-stats{gap:7px}.home-stat{padding:12px 10px}.home-shortcuts{gap:8px}.home-shortcut{padding:10px;gap:9px;min-height:72px}.home-shortcut-icon{width:36px;height:36px}}
+
+/* Bienvenida flotante VIPER: solo el saludo desaparece; el inicio permanece. */
 #welcome-toast{position:fixed;z-index:10030;top:calc(76px + env(safe-area-inset-top,0px));left:50%;width:min( min(430px, calc(100vw - 28px)), 430px);display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:12px;padding:13px 16px;background:var(--surface);color:var(--fg);border:1px solid #35d07f;border-radius:16px;box-shadow:0 14px 42px rgba(0,0,0,.28);transform:translate(-50%,-18px);opacity:0;pointer-events:none;transition:opacity .35s ease,transform .35s ease}
 #welcome-toast::after{content:"";position:absolute;top:-7px;left:50%;width:12px;height:12px;background:var(--surface);border-left:1px solid #35d07f;border-top:1px solid #35d07f;transform:translateX(-50%) rotate(45deg)}
 #welcome-toast.show{opacity:1;transform:translate(-50%,0)}
@@ -364,7 +375,8 @@ main{padding-block:12px 40px}
   </header>
   <div class="app-layout">
   <nav class="nav" id="sidebar" aria-label="Secciones">
-    <button type="button" data-nav="hoy" aria-current="page"><span class="nav-icon">⌂</span><span class="nav-label">Hoy</span></button>
+    <button type="button" data-nav="inicio" aria-current="page"><span class="nav-icon">⌂</span><span class="nav-label">Inicio</span></button>
+    <button type="button" data-nav="hoy"><span class="nav-icon">✓</span><span class="nav-label">Mi día</span></button>
     <button type="button" data-nav="boxeo"><span class="nav-icon">🥊</span><span class="nav-label">Boxeo</span></button>
     <button type="button" data-nav="evolucion"><span class="nav-icon">💪</span><span class="nav-label">Evolución muscular</span></button>
     <button type="button" data-nav="temporada"><span class="nav-icon">⚡</span><span class="nav-label">Temporada</span></button>
@@ -375,6 +387,22 @@ main{padding-block:12px 40px}
     <button type="button" data-nav="perfil"><span class="nav-icon">◉</span><span class="nav-label">Perfil</span></button>
   </nav>
   <main>
+    <section id="v-inicio" class="view" aria-label="Inicio">
+      <div class="home-hero">
+        <div><p class="home-kicker">VIPER · Centro de entrenamiento</p><h1 class="home-title">Tu progreso<br>no se detiene.</h1><p class="home-subtitle">Sigue entrenando, cumple tus objetivos y gana experiencia para subir de rango.</p></div>
+        <div class="home-rank"><div id="home-rank-icon"></div><strong id="home-rank-name">Novato</strong></div>
+        <div class="home-progress"><div class="home-progress-top"><span id="home-level">Nivel 1</span><b id="home-xp">0 XP</b></div><div class="home-progress-track"><i id="home-fill" style="width:0%"></i></div><span id="home-next" class="note" style="color:#b8c4bc">Comienza a sumar XP</span></div>
+      </div>
+      <div class="home-section-title"><h2>Resumen de hoy</h2><span id="home-date" class="note"></span></div>
+      <div class="home-stats"><div class="home-stat"><span>XP de hoy</span><strong id="home-today-xp">0</strong></div><div class="home-stat"><span>Comidas registradas</span><strong id="home-meals">0/4</strong></div><div class="home-stat"><span>Racha actual</span><strong id="home-streak">0 días</strong></div></div>
+      <div class="home-section-title"><h2>Accesos rápidos</h2><span class="note">Todo VIPER en un toque</span></div>
+      <div class="home-shortcuts">
+        <button type="button" class="home-shortcut" data-home-nav="hoy"><span class="home-shortcut-icon">✓</span><span><b>Mi día</b><small>Registra gym y comidas</small></span></button>
+        <button type="button" class="home-shortcut" data-home-nav="evolucion"><span class="home-shortcut-icon">💪</span><span><b>Evolución</b><small>Revisa tus avances</small></span></button>
+        <button type="button" class="home-shortcut" data-home-nav="feed"><span class="home-shortcut-icon">▶</span><span><b>VIPER Feed</b><small>Comparte tu progreso</small></span></button>
+        <button type="button" class="home-shortcut" data-home-nav="ranking"><span class="home-shortcut-icon">🏆</span><span><b>Ranking</b><small>Compite con la comunidad</small></span></button>
+      </div>
+    </section>
     <section id="v-feed" class="view" aria-label="VIPER Feed" hidden>
       <div class="sec-head"><h2>VIPER FEED</h2><span class="note">Comunidad fitness</span></div>
       <form id="feed-composer" class="feed-composer">
@@ -1431,6 +1459,22 @@ function renderAll(){
   renderRank();
   renderHoy();
   renderPerfil();
+  renderInicio();
+}
+function renderInicio(){
+  if(!P||!T)return;
+  var total=Number(P.xp_total)||0,index=idxOf(total),level=LV[index],next=LV[index+1],color=RANKS[level.ri].plate;
+  $('home-rank-icon').innerHTML=plate(color,64);
+  $('home-rank-name').textContent=level.label;
+  $('home-level').textContent='Nivel '+(index+1);
+  $('home-xp').textContent=fmt(total)+' XP';
+  $('home-fill').style.width=(next?Math.max(0,Math.min(100,(total-level.x)/(next.x-level.x)*100)):100).toFixed(1)+'%';
+  $('home-next').textContent=next?'Te faltan '+fmt(next.x-total)+' XP para '+next.label:'¡Has alcanzado el rango máximo!';
+  var preview=previewXP();
+  $('home-today-xp').textContent=fmt(preview.xp);
+  $('home-meals').textContent=mealsN()+'/4';
+  $('home-streak').textContent=String(Math.max(Number(P.racha)||0,Number(T.rachaAyer)||0))+' días';
+  $('home-date').textContent=new Date(T.hoy+'T12:00:00').toLocaleDateString('es-PE',{weekday:'short',day:'numeric',month:'short'});
 }
 
 /* ---------- Navegación ---------- */
@@ -1546,7 +1590,7 @@ async function handleFeedSubmit(e){
 
 function ir(v){
   if (v === 'boxeo'){ location.href = 'boxeo.html'; return; }
-  ['hoy', 'evolucion', 'temporada', 'ranking', 'amigos', 'feed', 'perfil', 'public-profile', 'notificaciones'].forEach(function(n){
+  ['inicio', 'hoy', 'evolucion', 'temporada', 'ranking', 'amigos', 'feed', 'perfil', 'public-profile', 'notificaciones'].forEach(function(n){
     $('v-' + n).hidden = n !== v;
     var b = document.querySelector('[data-nav="' + n + '"]');
     if (b){
@@ -1555,6 +1599,7 @@ function ir(v){
   });
   window.scrollTo(0, 0);
   $('app').classList.remove('sidebar-open');
+  if (v === 'inicio') renderInicio();
   if (v === 'evolucion') cargarEvolucion();
   if (v === 'temporada') cargarTemporada();
   if (v === 'ranking') cargarRanking();
@@ -1616,7 +1661,7 @@ async function start(){
     renderAll();
     await loadNotifications();
     subscribeNotifications();
-    ir('hoy');
+    ir('inicio');
     var sharedProfile=new URLSearchParams(location.search).get('profile');
     if(sharedProfile) await abrirPerfilPublico(sharedProfile);
     showWelcome();
@@ -1678,6 +1723,7 @@ function eventos(){
   $('notify-bell').addEventListener('click',function(){ir('notificaciones');});
   $('notify-read-all').addEventListener('click',function(){markAllNotificationsRead().catch(function(e){toast(errMsg(e),true);});});
   $('notify-list').addEventListener('click',function(e){var b=e.target.closest('[data-notify-id]');if(!b)return;markNotificationRead(b.dataset.notifyId).catch(function(err){toast(errMsg(err),true);});});
+  $('v-inicio').addEventListener('click',function(e){var b=e.target.closest('[data-home-nav]');if(b)ir(b.dataset.homeNav);});
   $('nav-toggle').addEventListener('click', function(){
     if (window.matchMedia('(max-width:700px)').matches){ $('app').classList.toggle('sidebar-open'); $('nav-toggle').setAttribute('aria-expanded', $('app').classList.contains('sidebar-open') ? 'true' : 'false'); }
     else { $('app').classList.toggle('nav-collapsed'); }
