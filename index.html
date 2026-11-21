@@ -1757,6 +1757,7 @@ function eventos(){
   $('notify-read-all').addEventListener('click',function(){markAllNotificationsRead().catch(function(e){toast(errMsg(e),true);});});
   $('notify-list').addEventListener('click',function(e){var b=e.target.closest('[data-notify-id]');if(!b)return;markNotificationRead(b.dataset.notifyId).catch(function(err){toast(errMsg(err),true);});});
   $('v-inicio').addEventListener('click',function(e){var b=e.target.closest('[data-home-nav]');if(b)ir(b.dataset.homeNav);});
+  $('home-activity-refresh').addEventListener('click',function(){loadHomeActivity();});
   $('nav-toggle').addEventListener('click', function(){
     if (window.matchMedia('(max-width:700px)').matches){ $('app').classList.toggle('sidebar-open'); $('nav-toggle').setAttribute('aria-expanded', $('app').classList.contains('sidebar-open') ? 'true' : 'false'); }
     else { $('app').classList.toggle('nav-collapsed'); }
