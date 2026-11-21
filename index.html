@@ -69,6 +69,10 @@ h2{font:700 1.2rem/1.2 var(--display);text-transform:uppercase;letter-spacing:.0
 .coach-meta{font-size:.78rem;color:var(--muted)}
 @media(max-width:520px){.coach-fab{right:16px;bottom:max(16px,env(safe-area-inset-bottom));width:58px;height:58px}.coach-window{right:10px;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 68px);width:calc(100vw - 20px);max-height:calc(100dvh - 105px)}.coach-result{max-height:36vh}}
 /* Login */
+.password-field{position:relative;display:flex;align-items:center}
+.password-field input{width:100%;padding-right:92px}
+.password-toggle{position:absolute;right:8px;min-height:34px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--fg);font:600 .82rem var(--body);cursor:pointer}
+.password-toggle:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 .center{min-height:100vh;min-height:100dvh;max-width:420px;margin:0 auto;display:flex;flex-direction:column;justify-content:center;gap:16px;padding-block:32px}
 .logo-big{font:800 clamp(4rem,22vw,6rem)/.9 var(--display);text-transform:uppercase;letter-spacing:.02em}
 .lead{font-size:1.1rem}
@@ -378,7 +382,10 @@ main{padding-block:12px 40px}
     <label class="lbl" for="auth-email">Correo electrónico</label>
     <input id="auth-email" type="email" autocomplete="email" required placeholder="tu@correo.com">
     <label class="lbl" for="auth-password">Contraseña</label>
-    <input id="auth-password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mínimo 8 caracteres">
+    <div class="password-field">
+      <input id="auth-password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mínimo 8 caracteres">
+      <button class="password-toggle" id="auth-password-toggle" type="button" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
+    </div>
     <fieldset id="signup-profile-fields" class="onboarding-grid" disabled hidden style="border:0;padding:0;margin:8px 0 0">
       <legend class="lbl" style="margin-bottom:8px">Datos para crear tu perfil de atleta</legend>
       <div class="onboarding-field"><label for="ob-country">¿De qué país eres?</label><input id="ob-country" type="text" maxlength="80" placeholder="Ej. Perú" autocomplete="country-name" required></div>
@@ -2025,6 +2032,14 @@ function eventos(){
     var r = await sb.auth.signInWithOAuth({provider: 'google', options: {redirectTo: location.origin + location.pathname + location.search}});
     if (r.error) $('login-msg').textContent = errMsg(r.error);
   });
+  $('auth-password-toggle').addEventListener('click', function(){
+    var field = $('auth-password');
+    var showing = field.type === 'password';
+    field.type = showing ? 'text' : 'password';
+    this.textContent = showing ? 'Ocultar' : 'Mostrar';
+    this.setAttribute('aria-label', showing ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    this.setAttribute('aria-pressed', showing ? 'true' : 'false');
+  });
   $('auth-toggle').addEventListener('click', function(){
     authMode = authMode === 'login' ? 'signup' : 'login';
     $('auth-title').textContent = authMode === 'signup' ? 'Crear cuenta' : 'Iniciar sesión';
@@ -2078,7 +2093,9 @@ function eventos(){
         if (result.error) throw result.error;
       }
     } catch (err) {
-      $('login-msg').textContent = errMsg(err);
+      $('login-msg').textContent = authMode === 'login'
+        ? 'Correo o contraseña incorrectos. Verifica tus datos e inténtalo de nuevo.'
+        : errMsg(err);
     } finally {
       window.viperTurnstileToken = null;
       if (window.turnstile) window.turnstile.reset();
