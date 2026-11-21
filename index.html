@@ -977,6 +977,13 @@ function scheduleIdleLogout(){
   if(remaining<=0){
     idleTimer=setTimeout(async function(){
       if(!user)return;
+      // Revisa la marca compartida antes de cerrar: otra pestaña pudo registrar actividad.
+      var sharedActivity=readLastActivity();
+      if(sharedActivity>lastActivityAt)lastActivityAt=sharedActivity;
+      if(Date.now()-lastActivityAt<IDLE_TIMEOUT_MS){
+        scheduleIdleLogout();
+        return;
+      }
       try{
         var result=await sb.auth.signOut({scope:'local'});
         if(result.error)throw result.error;
@@ -993,12 +1000,19 @@ function registerSessionActivity(){
   saveLastActivity(false);
   scheduleIdleLogout();
 }
-function startIdleSession(){
+function startIdleSession(resetActivity){
   if(!user)return;
   stopIdleSession();
   idleStorageKey='viper_last_activity_'+user.id;
   var saved=readLastActivity();
-  lastActivityAt=saved||Date.now();
+  // Un inicio de sesión nuevo debe empezar un periodo limpio, no heredar
+  // una marca antigua de una sesión anterior que ya expiró.
+  if(resetActivity||!saved){
+    lastActivityAt=Date.now();
+    saveLastActivity(true);
+  }else{
+    lastActivityAt=saved;
+  }
   if(Date.now()-lastActivityAt>=IDLE_TIMEOUT_MS){
     scheduleIdleLogout();
     return;
@@ -2531,7 +2545,7 @@ async function boot(){
       pantalla('login');
     } else if (ev === 'SIGNED_IN' && session && session.user){
       user = session.user;
-      startIdleSession();
+      startIdleSession(true);
       setTimeout(function(){if(user&&user.id===session.user.id)logAccountActivity('login',{provider:session.user.app_metadata&&session.user.app_metadata.provider||'unknown'}).catch(function(){});},0);
       if(iniciado)return;
       // Espera a que Supabase termine su callback de autenticación antes de consultar datos.
