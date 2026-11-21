@@ -354,7 +354,7 @@ main{padding-block:12px 40px}
 .feed-actions button,.feed-delete{border:0;background:none;color:var(--fg);font:inherit;cursor:pointer}.feed-actions button[aria-pressed=true]{color:#8bdc28;font-weight:700}
 .feed-comment-form{display:flex;gap:8px;margin-top:10px}.feed-comment-form input{flex:1;min-width:0;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:9px;padding:10px}
 .feed-comment{font-size:.9rem;padding:7px 0;border-bottom:1px solid var(--line)}.feed-empty{padding:20px;text-align:center;color:var(--muted)}
-</style>
+\n.auth-success-notice{margin:14px 0;padding:16px;border:1px solid #65b82e;background:rgba(101,184,46,.12);border-radius:12px;color:var(--fg);text-align:left}.auth-success-notice strong{display:block;font-size:1rem;margin-bottom:6px}.auth-success-notice p{margin:5px 0;font-size:.9rem}.auth-success-notice .auth-mail{font-weight:700;overflow-wrap:anywhere}\n</style>
 </head>
 <body>
 
@@ -1953,9 +1953,11 @@ function eventos(){
           options: { emailRedirectTo: location.origin + location.pathname }
         });
         if (result.error) throw result.error;
-        $('login-msg').textContent = result.data.session
-          ? 'Cuenta creada. Entrando a VIPER…'
-          : 'Cuenta creada. Revisa tu correo y confirma tu dirección para poder iniciar sesión.';
+        if (result.data.session) {
+          $('login-msg').textContent = 'Cuenta creada. Entrando a VIPER…';
+        } else {
+          $('login-msg').innerHTML = '<div class="auth-success-notice" role="alert" aria-live="assertive"><strong>📩 ¡Revisa tu correo para activar tu cuenta!</strong><p>Enviamos un enlace de confirmación a:</p><p class="auth-mail">'+esc(email)+'</p><p>Abre ese correo y pulsa <b>Confirmar correo</b> para activar tu cuenta. Después podrás iniciar sesión en VIPER.</p><p>Si no lo encuentras, revisa la carpeta de spam o correo no deseado.</p></div>';
+        }
       } else {
         result = await sb.auth.signInWithPassword({email: email, password: password});
         if (result.error) throw result.error;
