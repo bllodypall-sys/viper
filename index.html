@@ -393,6 +393,7 @@ main{padding-block:12px 40px}
     <button type="button" data-nav="feed"><span class="nav-icon">▶</span><span class="nav-label">VIPER Feed</span></button>
     <button type="button" data-nav="notificaciones"><span class="nav-icon">🔔</span><span class="nav-label">Notificaciones</span><span class="notify-count nav-notify-count" id="nav-notify-count" hidden>0</span></button>
     <button type="button" data-nav="perfil"><span class="nav-icon">◉</span><span class="nav-label">Perfil</span></button>
+    <button type="button" data-nav="seguridad"><span class="nav-icon">🛡️</span><span class="nav-label">Seguridad</span></button>
   </nav>
   <main>
     <section id="v-inicio" class="view" aria-label="Inicio">
@@ -750,6 +751,43 @@ main{padding-block:12px 40px}
       <details class="public-menu"><summary class="btn sm">⋮ Más opciones</summary><div class="public-menu-items"><button class="btn sm" id="public-block" type="button">Bloquear usuario</button><button class="btn sm" id="public-report" type="button">Reportar usuario</button></div></details>
       <div class="season-card"><h2>Redes sociales</h2><div id="public-socials" class="social-links"><p class="note">Este usuario aún no agregó sus redes.</p></div></div>
       <p class="note">Los datos privados y las fotos de check-in no se muestran aquí.</p>
+    </section>
+    <section id="v-seguridad" class="view" aria-label="Centro de seguridad" hidden>
+      <div class="sec-head"><h2>Centro de seguridad</h2><span class="note">Protege tu cuenta VIPER</span></div>
+      <section class="season-card">
+        <h3>Contraseña</h3>
+        <p class="note">Crea una contraseña segura de al menos 8 caracteres. Si entras con Google, también puedes configurar una contraseña para VIPER.</p>
+        <form id="security-password-form" class="stack">
+          <label class="lbl" for="security-new-password">Nueva contraseña</label>
+          <input id="security-new-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
+          <label class="lbl" for="security-confirm-password">Confirmar contraseña</label>
+          <input id="security-confirm-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
+          <button class="btn primary" id="security-password-submit" type="submit">Actualizar contraseña</button>
+        </form>
+      </section>
+      <section class="season-card">
+        <h3>Sesiones abiertas</h3>
+        <p class="note">Puedes cerrar las sesiones de VIPER en todos tus dispositivos. Por seguridad, tendrás que iniciar sesión nuevamente. Los tokens de acceso ya emitidos pueden seguir vigentes hasta que expiren.</p>
+        <button class="btn" id="security-global-signout" type="button">Cerrar sesiones en todos los dispositivos</button>
+      </section>
+      <section class="season-card">
+        <div class="sec-head"><h3>Historial de actividad</h3><button class="btn sm" id="security-activity-refresh" type="button">Actualizar</button></div>
+        <p class="note">Aquí verás inicios de sesión y cambios de seguridad recientes.</p>
+        <div id="security-activity-list"><p class="note">Cargando historial…</p></div>
+      </section>
+      <section class="season-card">
+        <h3>Reportar un problema</h3>
+        <p class="note">Cuéntanos qué falló. Se enviará información técnica básica para ayudar a revisar el problema.</p>
+        <form id="error-report-form" class="stack">
+          <label class="lbl" for="error-report-category">¿En qué apartado ocurrió?</label>
+          <select id="error-report-category" required>
+            <option value="other">Otro</option><option value="login">Inicio de sesión</option><option value="checkin">Mi día / comidas</option><option value="training">Entrenamientos / evolución</option><option value="feed">VIPER Feed</option><option value="chat">Chat</option><option value="notifications">Notificaciones</option>
+          </select>
+          <label class="lbl" for="error-report-description">Describe el problema</label>
+          <textarea id="error-report-description" rows="4" maxlength="1500" minlength="10" required placeholder="¿Qué estabas haciendo y qué ocurrió?"></textarea>
+          <button class="btn primary" id="error-report-submit" type="submit">Enviar reporte</button>
+        </form>
+      </section>
     </section>
     <section id="v-notificaciones" class="view" aria-label="Notificaciones" hidden>
       <div class="sec-head"><h2>Notificaciones</h2><span id="notify-subtitle">Tu actividad en VIPER</span></div>
@@ -1791,6 +1829,71 @@ async function cargarMensajes(){
   box.scrollTop=box.scrollHeight;
 }
 
+/* ---------- Centro de seguridad ---------- */
+async function logAccountActivity(eventType, details){
+  if(!user)return;
+  var r=await sb.from('viper_account_activity').insert({
+    user_id:user.id,event_type:eventType,details:details||{}
+  });
+  if(r.error)throw r.error;
+}
+function renderAccountActivity(rows){
+  var box=$('security-activity-list');if(!box)return;
+  if(!rows||!rows.length){box.innerHTML='<p class="note">Todavía no hay actividad registrada.</p>';return;}
+  var labels={login:'Inicio de sesión',password_changed:'Contraseña actualizada',global_signout:'Solicitud de cierre de todas las sesiones'};
+  box.innerHTML=rows.map(function(x){
+    var date=new Date(x.created_at).toLocaleString('es-PE',{dateStyle:'medium',timeStyle:'short'});
+    return '<article class="home-activity-item"><span class="home-activity-icon">🛡️</span><div class="home-activity-copy"><strong>'+esc(labels[x.event_type]||'Actividad de cuenta')+'</strong><small>'+esc(date)+'</small></div></article>';
+  }).join('');
+}
+async function loadAccountActivity(){
+  if(!user)return;
+  $('security-activity-list').innerHTML='<p class="note">Cargando historial…</p>';
+  var r=await sb.from('viper_account_activity').select('id,event_type,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(30);
+  if(r.error)throw r.error;
+  renderAccountActivity(r.data||[]);
+}
+async function reportVipError(e){
+  e.preventDefault();
+  var description=$('error-report-description').value.trim();
+  if(description.length<10){toast('Describe el problema con al menos 10 caracteres.',true);return;}
+  var btn=$('error-report-submit');btn.disabled=true;btn.textContent='Enviando…';
+  try{
+    var r=await sb.from('viper_error_reports').insert({
+      user_id:user.id,category:$('error-report-category').value,description:description,
+      page:location.pathname,user_agent:String(navigator.userAgent||'').slice(0,500)
+    });
+    if(r.error)throw r.error;
+    $('error-report-form').reset();
+    toast('Reporte enviado. Gracias por ayudarnos a mejorar VIPER.');
+  }catch(err){toast(errMsg(err),true);}
+  finally{btn.disabled=false;btn.textContent='Enviar reporte';}
+}
+async function changeVipPassword(e){
+  e.preventDefault();
+  var password=$('security-new-password').value,confirmPassword=$('security-confirm-password').value;
+  if(password.length<8||password.length>72){toast('La contraseña debe tener entre 8 y 72 caracteres.',true);return;}
+  if(password!==confirmPassword){toast('Las contraseñas no coinciden.',true);return;}
+  var btn=$('security-password-submit');btn.disabled=true;btn.textContent='Actualizando…';
+  try{
+    var r=await sb.auth.updateUser({password:password});if(r.error)throw r.error;
+    try{await logAccountActivity('password_changed',{method:'user_update'});}catch(logError){}
+    $('security-password-form').reset();
+    toast('Contraseña actualizada correctamente.');
+    await loadAccountActivity();
+  }catch(err){toast(errMsg(err),true);}
+  finally{btn.disabled=false;btn.textContent='Actualizar contraseña';}
+}
+async function signOutAllVipSessions(){
+  if(!confirm('¿Cerrar las sesiones de VIPER en todos tus dispositivos? Tendrás que iniciar sesión nuevamente.'))return;
+  var btn=$('security-global-signout');btn.disabled=true;btn.textContent='Cerrando sesiones…';
+  try{
+    try{await logAccountActivity('global_signout',{scope:'global'});}catch(logError){}
+    var r=await sb.auth.signOut({scope:'global'});if(r.error)throw r.error;
+    toast('Se solicitó el cierre de todas las sesiones. Inicia sesión nuevamente.');
+  }catch(err){toast(errMsg(err),true);btn.disabled=false;btn.textContent='Cerrar sesiones en todos los dispositivos';}
+}
+
 /* ---------- Arranque ---------- */
 async function start(){
   if (iniciado) return;
@@ -1802,6 +1905,7 @@ async function start(){
     await signPhoto();
     renderAll();
     loadHomeActivity();
+    loadAccountActivity().catch(function(e){console.warn('No se pudo cargar el historial de seguridad',e);});
     await loadNotifications();
     subscribeNotifications();
     ir('inicio');
@@ -1863,6 +1967,10 @@ function eventos(){
     }
   });
   $('salir').addEventListener('click', async function(){ await sb.auth.signOut(); });
+  $('security-password-form').addEventListener('submit',changeVipPassword);
+  $('security-global-signout').addEventListener('click',signOutAllVipSessions);
+  $('security-activity-refresh').addEventListener('click',function(){loadAccountActivity().catch(function(e){toast(errMsg(e),true);});});
+  $('error-report-form').addEventListener('submit',reportVipError);
   $('notify-bell').addEventListener('click',function(){ir('notificaciones');});
   $('notify-read-all').addEventListener('click',function(){markAllNotificationsRead().catch(function(e){toast(errMsg(e),true);});});
   $('notify-list').addEventListener('click',function(e){var b=e.target.closest('[data-notify-id]');if(!b)return;markNotificationRead(b.dataset.notifyId).catch(function(err){toast(errMsg(err),true);});});
@@ -2327,6 +2435,7 @@ async function boot(){
     } else if (ev === 'SIGNED_IN' && session && session.user){
       user = session.user;
       startIdleSession();
+      setTimeout(function(){if(user&&user.id===session.user.id)logAccountActivity('login',{provider:session.user.app_metadata&&session.user.app_metadata.provider||'unknown'}).catch(function(){});},0);
       if(iniciado)return;
       // Espera a que Supabase termine su callback de autenticación antes de consultar datos.
       setTimeout(function(){ if(user && !iniciado) start(); }, 0);
