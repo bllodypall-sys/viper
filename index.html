@@ -300,6 +300,7 @@ form.stack{display:grid;gap:8px}
 .home-subtitle{color:#b8c4bc;max-width:480px;font-size:.95rem}
 .home-rank{position:relative;z-index:1;display:grid;justify-items:center;gap:5px;min-width:90px}.home-rank svg{width:64px;height:64px}.home-rank strong{font:800 .9rem var(--display);text-transform:uppercase;text-align:center}
 .home-progress{grid-column:1/-1;position:relative;z-index:1;display:grid;gap:7px;margin-top:6px}.home-progress-top{display:flex;justify-content:space-between;gap:8px;color:#d5ddd6;font-size:.82rem}.home-progress-track{height:9px;border-radius:9px;background:#35423a;overflow:hidden}.home-progress-track i{display:block;height:100%;background:#8eea3d;border-radius:9px}
+.home-activity{display:grid;gap:9px}.home-activity-item{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:11px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:11px}.home-activity-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:10px;background:var(--bg);font-size:1.2rem}.home-activity-copy{min-width:0}.home-activity-copy strong{display:block;font:800 1rem var(--display);text-transform:uppercase;letter-spacing:.03em}.home-activity-copy small{display:block;color:var(--muted);font-size:.78rem;overflow-wrap:anywhere}.home-activity-date{color:var(--muted);font-size:.72rem;text-align:right;white-space:nowrap}.home-activity-empty{padding:18px;text-align:center;border:1px dashed var(--line);border-radius:11px;color:var(--muted);font-size:.88rem}
 .home-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.home-stat{display:grid;gap:5px;padding:15px;background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}.home-stat span{font-size:.78rem;color:var(--muted)}.home-stat strong{font:800 clamp(1.35rem,4vw,1.9rem)/1 var(--display);overflow-wrap:anywhere}.home-section-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:5px}.home-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.home-shortcut{display:flex;align-items:center;gap:12px;min-height:76px;padding:13px;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--fg);text-align:left;cursor:pointer;font:inherit}.home-shortcut:hover{border-color:#35d07f}.home-shortcut-icon{width:42px;height:42px;display:grid;place-items:center;flex:none;border-radius:11px;background:var(--bg);font-size:1.35rem}.home-shortcut b{display:block;font:800 1rem var(--display);text-transform:uppercase;letter-spacing:.04em}.home-shortcut small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}
 @media(max-width:520px){.home-hero{padding:18px;grid-template-columns:minmax(0,1fr) 72px}.home-rank{min-width:68px}.home-rank svg{width:52px;height:52px}.home-stats{gap:7px}.home-stat{padding:12px 10px}.home-shortcuts{gap:8px}.home-shortcut{padding:10px;gap:9px;min-height:72px}.home-shortcut-icon{width:36px;height:36px}}
 
@@ -402,6 +403,8 @@ main{padding-block:12px 40px}
         <button type="button" class="home-shortcut" data-home-nav="feed"><span class="home-shortcut-icon">▶</span><span><b>VIPER Feed</b><small>Comparte tu progreso</small></span></button>
         <button type="button" class="home-shortcut" data-home-nav="ranking"><span class="home-shortcut-icon">🏆</span><span><b>Ranking</b><small>Compite con la comunidad</small></span></button>
       </div>
+      <div class="home-section-title"><h2>Tu actividad reciente</h2><button class="btn sm" id="home-activity-refresh" type="button">Actualizar</button></div>
+      <div id="home-activity-list" class="home-activity" aria-live="polite"><p class="note">Cargando tu actividad…</p></div>
     </section>
     <section id="v-feed" class="view" aria-label="VIPER Feed" hidden>
       <div class="sec-head"><h2>VIPER FEED</h2><span class="note">Comunidad fitness</span></div>
@@ -1461,6 +1464,35 @@ function renderAll(){
   renderPerfil();
   renderInicio();
 }
+async function loadHomeActivity(){
+  var box=$('home-activity-list');
+  if(!box||!user)return;
+  box.innerHTML='<p class="note">Cargando tu actividad…</p>';
+  try{
+    var results=await Promise.all([
+      sb.from('viper_workout_sessions').select('id,session_date,notes,created_at').eq('user_id',user.id).order('session_date',{ascending:false}).limit(5),
+      sb.from('viper_posts').select('id,caption,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(5)
+    ]);
+    results.forEach(function(r){if(r.error)throw r.error;});
+    var items=[];
+    (results[0].data||[]).forEach(function(x){
+      items.push({kind:'workout',title:'Entrenamiento registrado',detail:x.notes||'Sesión de evolución muscular',date:x.created_at||x.session_date+'T12:00:00'});
+    });
+    (results[1].data||[]).forEach(function(x){
+      items.push({kind:'post',title:'Publicaste en VIPER Feed',detail:x.caption||'Compartiste una foto o video',date:x.created_at});
+    });
+    items.sort(function(a,b){return new Date(b.date)-new Date(a.date);});
+    items=items.slice(0,6);
+    if(!items.length){box.innerHTML='<div class="home-activity-empty">Aún no tienes actividad reciente. Registra un entrenamiento o comparte tu progreso.</div>';return;}
+    box.innerHTML=items.map(function(x){
+      var icon=x.kind==='workout'?'💪':'▶';
+      var date=new Date(x.date).toLocaleString('es-PE',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+      return '<article class="home-activity-item"><span class="home-activity-icon" aria-hidden="true">'+icon+'</span><div class="home-activity-copy"><strong>'+esc(x.title)+'</strong><small>'+esc(x.detail)+'</small></div><time class="home-activity-date" datetime="'+esc(new Date(x.date).toISOString())+'">'+esc(date)+'</time></article>';
+    }).join('');
+  }catch(e){
+    box.innerHTML='<div class="home-activity-empty">No se pudo cargar tu actividad. Pulsa Actualizar para intentar de nuevo.</div>';
+  }
+}
 function renderInicio(){
   if(!P||!T)return;
   var total=Number(P.xp_total)||0,index=idxOf(total),level=LV[index],next=LV[index+1],color=RANKS[level.ri].plate;
@@ -1659,6 +1691,7 @@ async function start(){
     await Promise.all([loadProfile(), loadToday()]);
     await signPhoto();
     renderAll();
+    loadHomeActivity();
     await loadNotifications();
     subscribeNotifications();
     ir('inicio');
