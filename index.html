@@ -513,8 +513,8 @@ main{padding-block:12px 40px}
         <p class="note">Sube una foto clara de cada comida. La IA estimará los nutrientes; las cantidades son aproximadas.</p>
         <button class="act" id="prot" type="button" aria-pressed="false">
           <span class="chk" aria-hidden="true"></span>
-          <span class="t">Proteína en polvo</span>
-          <span class="v">+15</span>
+          <span class="t">Proteína en polvo<small>Registro personal · no otorga XP</small></span>
+          <span class="v">Registro</span>
         </button>
       </div>
       <input id="foto-in" class="vh" type="file" accept="image/*" capture="environment">
@@ -1130,7 +1130,7 @@ function previewXP(){
   var gym = !!(T.fotoPath || T.blob);
   var racha = gym ? T.rachaAyer + 1 : 0;
   var bonus = Math.min(racha, 10) * 5;
-  return {gym: gym, racha: racha, bonus: bonus, xp: (gym ? 50 + bonus : 0) + mealsN() * 10 + (T.prot ? 15 : 0)};
+  return {gym: gym, racha: racha, bonus: bonus, xp: (gym ? 50 + bonus : 0) + mealsN() * 10};
 }
 function dirty(){
   var n = T.saved ? T.saved.comidas : 0;
