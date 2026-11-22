@@ -211,7 +211,7 @@ button.act{cursor:pointer}
 .evo-muscle-part.active{fill:#a5ff52;filter:drop-shadow(0 0 7px #8eea3d)}
 .evo-anatomy-hint{margin:8px 0 0}.evo-anatomy-hint b{color:var(--fg)}
 .evo-three-stage{display:block;position:relative;max-width:520px;margin:12px auto 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at 50% 38%,#263b32 0%,#111a17 58%,#0b100e 100%)}
-.evo-three-stage[hidden]{display:none}.evo-three-stage canvas{display:block;width:100%;height:390px;touch-action:pan-y;cursor:grab}.evo-three-stage canvas:active{cursor:grabbing}
+.evo-three-stage[hidden]{display:none}.evo-three-stage canvas{display:block;width:100%;height:500px;touch-action:pan-y;cursor:grab}.evo-three-stage canvas:active{cursor:grabbing}
 .evo-three-controls{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border-top:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18)}
 .evo-three-controls .note{color:#c2d2c9;font-size:.75rem}
 .evo-muscle-info,.evo-exercise-library{display:grid;gap:12px;margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
@@ -225,7 +225,7 @@ button.act{cursor:pointer}
 .evo-exercise-card h4{margin:0;font:700 1rem var(--display);text-transform:uppercase;letter-spacing:.03em}.evo-exercise-card p{font-size:.83rem;color:var(--muted);line-height:1.4}
 .evo-exercise-tags{display:flex;gap:5px;flex-wrap:wrap;align-items:center}.evo-exercise-tags span{font-size:.7rem;padding:3px 7px;border-radius:20px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
 .evo-exercise-card .btn{grid-column:2;grid-row:1 / span 3;align-self:center;white-space:nowrap}
-@media(max-width:480px){.evo-three-stage canvas{height:330px}.evo-muscle-facts,.evo-library-filters{grid-template-columns:1fr}.evo-exercise-card{grid-template-columns:minmax(0,1fr)}.evo-exercise-card .btn{grid-column:1;grid-row:auto;width:100%}}
+@media(max-width:480px){.evo-three-stage canvas{height:430px}.evo-muscle-facts,.evo-library-filters{grid-template-columns:1fr}.evo-exercise-card{grid-template-columns:minmax(0,1fr)}.evo-exercise-card .btn{grid-column:1;grid-row:auto;width:100%}}
 
 .evo-month-bar{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:150px;padding:12px}
 .evo-month-item{display:grid;gap:6px;text-align:center;color:var(--muted);font-size:.8rem}
@@ -2639,6 +2639,12 @@ var EVO_MUSCLE_MODEL_IDS={
 };
 var EVO_MODEL_TO_UI={ 'pectoralis-major':'pectoral_mayor','deltoid':'deltoide_anterior','biceps-brachii':'biceps_braquial','brachialis':'braquial','triceps-brachii':'triceps_braquial','brachioradialis':'braquiorradial','rectus-abdominis':'recto_abdominal','external-oblique':'oblicuos','internal-oblique':'oblicuos','rectus-femoris':'recto_femoral','vastus-lateralis':'vasto_lateral','vastus-medialis':'cuadriceps','vastus-intermedius':'cuadriceps','adductor-longus':'aductores','adductor-brevis':'aductores','adductor-magnus':'aductores','adductor-minimus':'aductores','gluteus-maximus':'gluteo_mayor','gluteus-medius':'gluteo_medio','gluteus-minimus':'gluteo_menor','tensor-fasciae-latae':'abductores','gastrocnemius':'gastrocnemio','soleus':'soleo','latissimus-dorsi':'dorsal_ancho','trapezius':'trapecio','rhomboid-major':'espalda_alta','rhomboid-minor':'espalda_alta','iliocostalis':'espalda_baja','longissimus':'espalda_baja','spinalis':'espalda_baja','multifidus':'espalda_baja','biceps-femoris':'biceps_femoral','semitendinosus':'isquiotibiales','semimembranosus':'isquiotibiales','serratus-anterior':'serrato_anterior'};
 function evoLoadScript(src){return new Promise(function(resolve,reject){var sc=document.createElement('script');sc.src=src;sc.async=true;sc.onload=resolve;sc.onerror=function(){reject(new Error('No se pudo cargar el visor anatómico'));};document.head.appendChild(sc);});}
+function evoResize3D(){
+ if(!EVO3D.ready)return;
+ var stage=$('evo-three-stage'),width=stage?stage.clientWidth:0;if(width<100)return;
+ var height=window.matchMedia&&window.matchMedia('(max-width:480px)').matches?430:500;
+ EVO3D.camera.aspect=width/height;EVO3D.camera.updateProjectionMatrix();EVO3D.renderer.setSize(width,height,false);
+}
 function evoRefresh3D(){
  if(!EVO3D.ready)return;
  var key=EVO.muscle,ids=EVO_MUSCLE_MODEL_IDS[key]||EVO_MUSCLE_MODEL_IDS[evoCanonicalMuscle(key)]||[];
@@ -2651,7 +2657,7 @@ function evoRefresh3D(){
 }
 function evoBuild3D(){
  var stage=$('evo-three-stage'),canvas=$('evo-three-canvas');if(!stage||!canvas||!window.THREE||!THREE.OrbitControls||!THREE.GLTFLoader)return;
- var w=Math.max(280,stage.clientWidth||520),h=590;
+ var w=Math.max(280,stage.clientWidth||520),h=500;
  stage.hidden=false;
  EVO3D.scene=new THREE.Scene();
  EVO3D.camera=new THREE.PerspectiveCamera(34,w/h,.05,100);
@@ -2690,7 +2696,8 @@ function evoBuild3D(){
   stage.hidden=false;
   var fallback=$('evo-anatomy-views');if(fallback)fallback.hidden=true;
   if(status)status.textContent='Modelo anatómico real · 177 estructuras musculares · arrastra para girar y usa el zoom.';
-  evoRefresh3D();
+  evoRefresh3D();evoResize3D();
+  if(window.ResizeObserver){var evoObserver=new ResizeObserver(evoResize3D);evoObserver.observe(stage);}
   var raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
   canvas.addEventListener('pointerup',function(e){
    var r=canvas.getBoundingClientRect();pointer.x=((e.clientX-r.left)/r.width)*2-1;pointer.y=-((e.clientY-r.top)/r.height)*2+1;
@@ -2702,7 +2709,7 @@ function evoBuild3D(){
   if(view&&!view.dataset.bound){view.addEventListener('click',function(){EVO3D.back=!EVO3D.back;EVO3D.group.rotation.y=EVO3D.back?Math.PI:0;view.textContent=EVO3D.back?'Vista frontal':'Vista posterior';});view.dataset.bound='1';}
   function animate(){if(!EVO3D.ready)return;EVO3D.frame=requestAnimationFrame(animate);EVO3D.controls.update();EVO3D.renderer.render(EVO3D.scene,EVO3D.camera);}
   animate();
-  window.addEventListener('resize',function(){if(!EVO3D.ready)return;var width=Math.max(280,stage.clientWidth);EVO3D.camera.aspect=width/590;EVO3D.camera.updateProjectionMatrix();EVO3D.renderer.setSize(width,590,false);});
+  window.addEventListener('resize',function(){if(!EVO3D.ready)return;var width=Math.max(280,stage.clientWidth);EVO3D.camera.aspect=width/500;EVO3D.camera.updateProjectionMatrix();EVO3D.renderer.setSize(width,500,false);});
  },undefined,function(){
   if(status)status.textContent='No se pudo descargar el modelo 3D. Puedes seguir usando la selección y el registro muscular.';
   stage.hidden=true;
@@ -2725,7 +2732,7 @@ function renderEvolucion(){
   document.querySelectorAll('.evo-muscle-part').forEach(function(p){p.classList.toggle('active',p.dataset.muscle===EVO.muscle);});
   var selectedButton=Array.from(buttons).find(function(b){return b.dataset.muscle===EVO.muscle;});
   if($('evo-anatomy-selected'))$('evo-anatomy-selected').textContent=EVO_MUSCLE_LABELS[EVO.muscle]||(selectedButton?selectedButton.textContent:EVO.muscle);
-  renderEvoMuscleLibrary();evoRefresh3D();
+  renderEvoMuscleLibrary();evoRefresh3D();if(EVO3D.ready)requestAnimationFrame(evoResize3D);
   var legacy=EVO_LEGACY_MUSCLES[EVO.muscle]||[];var ex=EVO.exercises.filter(function(e){return e.muscle_group===EVO.muscle||legacy.indexOf(e.muscle_group)>=0;});
   var exIds=ex.map(function(e){return e.id;});
   var sets=EVO.sets.filter(function(s){return exIds.indexOf(s.exercise_id)>=0;});
