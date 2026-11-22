@@ -2650,7 +2650,7 @@ function evoRefresh3D(){
  var key=EVO.muscle,ids=EVO_MUSCLE_MODEL_IDS[key]||EVO_MUSCLE_MODEL_IDS[evoCanonicalMuscle(key)]||[];
  EVO3D.parts.forEach(function(m){
   var active=ids.indexOf(m.userData.structureId)>=0;
-  m.material.color.setHex(active?0x8df238:0x858b91);
+  m.material.color.setHex(active?0x8df238:0x777d83);
   m.material.emissive.setHex(active?0x285d13:0x101316);
   m.material.emissiveIntensity=active?.75:.08;
  });
@@ -2666,10 +2666,10 @@ function evoBuild3D(){
  EVO3D.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));
  EVO3D.renderer.setSize(w,h,false);
  EVO3D.renderer.outputEncoding=THREE.sRGBEncoding;
- EVO3D.scene.add(new THREE.HemisphereLight(0xe7fff0,0x1a211d,1.55));
- var keyLight=new THREE.DirectionalLight(0xffffff,2.25);keyLight.position.set(3,5,7);EVO3D.scene.add(keyLight);
- var fillLight=new THREE.DirectionalLight(0xb9d9ca,.85);fillLight.position.set(-4,1,4);EVO3D.scene.add(fillLight);
- var rim=new THREE.DirectionalLight(0x35d07f,1.15);rim.position.set(-3,2,-5);EVO3D.scene.add(rim);
+ EVO3D.scene.add(new THREE.HemisphereLight(0xe7fff0,0x1a211d,.65));
+ var keyLight=new THREE.DirectionalLight(0xffffff,.9);keyLight.position.set(3,5,7);EVO3D.scene.add(keyLight);
+ var fillLight=new THREE.DirectionalLight(0xb9d9ca,.28);fillLight.position.set(-4,1,4);EVO3D.scene.add(fillLight);
+ var rim=new THREE.DirectionalLight(0x35d07f,.35);rim.position.set(-3,2,-5);EVO3D.scene.add(rim);
  EVO3D.group=new THREE.Group();EVO3D.scene.add(EVO3D.group);
  EVO3D.controls=new THREE.OrbitControls(EVO3D.camera,canvas);
  EVO3D.controls.enableDamping=true;EVO3D.controls.dampingFactor=.065;
@@ -2686,7 +2686,7 @@ function evoBuild3D(){
    var id=obj.name||obj.parent&&obj.parent.name||'';
    if(!id)return;
    obj.userData.structureId=id;
-   obj.material=new THREE.MeshStandardMaterial({color:0x858b91,roughness:.66,metalness:0,side:THREE.DoubleSide,emissive:0x101316});
+   obj.material=new THREE.MeshStandardMaterial({color:0x777d83,roughness:.72,metalness:0,side:THREE.DoubleSide,emissive:0x101316});
    obj.castShadow=false;obj.receiveShadow=false;
    EVO3D.parts.push(obj);count++;
   });
