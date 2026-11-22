@@ -2650,8 +2650,8 @@ function evoRefresh3D(){
  var key=EVO.muscle,ids=EVO_MUSCLE_MODEL_IDS[key]||EVO_MUSCLE_MODEL_IDS[evoCanonicalMuscle(key)]||[];
  EVO3D.parts.forEach(function(m){
   var active=ids.indexOf(m.userData.structureId)>=0;
-  m.material.color.setHex(active?0x8df238:0xb87568);
-  m.material.emissive.setHex(active?0x285d13:0x120806);
+  m.material.color.setHex(active?0x8df238:0x858b91);
+  m.material.emissive.setHex(active?0x285d13:0x101316);
   m.material.emissiveIntensity=active?.75:.08;
  });
 }
@@ -2686,7 +2686,7 @@ function evoBuild3D(){
    var id=obj.name||obj.parent&&obj.parent.name||'';
    if(!id)return;
    obj.userData.structureId=id;
-   obj.material=new THREE.MeshStandardMaterial({color:0xb87568,roughness:.66,metalness:0,side:THREE.DoubleSide,emissive:0x120806});
+   obj.material=new THREE.MeshStandardMaterial({color:0x858b91,roughness:.66,metalness:0,side:THREE.DoubleSide,emissive:0x101316});
    obj.castShadow=false;obj.receiveShadow=false;
    EVO3D.parts.push(obj);count++;
   });
