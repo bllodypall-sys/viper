@@ -598,7 +598,7 @@ main{padding-block:12px 40px}
           <div class="evo-anatomy-head"><strong>MAPA MUSCULAR</strong><span>Toca un músculo para ver su progreso</span></div>
           <div class="evo-three-stage" id="evo-three-stage" hidden>
             <canvas id="evo-three-canvas" aria-label="Modelo anatómico 3D interactivo. Arrastra para girar y toca un músculo para seleccionarlo."></canvas>
-            <div class="evo-three-controls"><button type="button" class="btn sm" id="evo-three-view">Vista posterior</button><span class="note" id="evo-three-status">Preparando modelo anatómico humano…</span><small class="note">Modelo: BodyParts3D · CC BY-SA 2.1 Japan · <a href="https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en" target="_blank" rel="noopener">licencia y atribución</a></small></div>
+            <div class="evo-three-controls"><button type="button" class="btn sm" id="evo-three-view">Vista posterior</button><span class="note" id="evo-three-status">Preparando modelo anatómico humano…</span><small class="note">BodyParts3D, © The Database Center for Life Science · CC Attribution-Share Alike 2.1 Japan · <a href="https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en" target="_blank" rel="noopener">licencia</a></small></div>
           </div>
           <div class="evo-anatomy-views">
             <div class="evo-anatomy-panel"><span>FRENTE</span>
@@ -2711,11 +2711,10 @@ function evoBuild3D(){
 }
 function setupEvo3D(){
  if(EVO3D.ready||EVO3D.loading)return;EVO3D.loading=true;
- Promise.all([
-  evoLoadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'),
-  evoLoadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js'),
-  evoLoadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js')
- ]).then(evoBuild3D).catch(function(){
+ evoLoadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js')
+  .then(function(){return evoLoadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js');})
+  .then(function(){return evoLoadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js');})
+  .then(evoBuild3D).catch(function(){
   var stage=$('evo-three-stage');if(stage)stage.hidden=true;
   var status=$('evo-three-status');if(status)status.textContent='No se pudo iniciar el visor 3D. La selección muscular y el registro siguen disponibles.';
  }).finally(function(){EVO3D.loading=false;});
