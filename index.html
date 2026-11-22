@@ -569,16 +569,29 @@ main{padding-block:12px 40px}
       <div class="season-card">
         <p class="eyebrow">Selecciona un grupo muscular</p>
         <div id="evo-muscles" class="evo-muscles">
-          <button type="button" class="evo-muscle selected" data-muscle="pecho">Pecho</button>
-          <button type="button" class="evo-muscle" data-muscle="espalda">Espalda</button>
-          <button type="button" class="evo-muscle" data-muscle="hombros">Hombros</button>
-          <button type="button" class="evo-muscle" data-muscle="biceps">Bíceps</button>
-          <button type="button" class="evo-muscle" data-muscle="triceps">Tríceps</button>
-          <button type="button" class="evo-muscle" data-muscle="antebrazos">Antebrazos</button>
-          <button type="button" class="evo-muscle" data-muscle="abdomen">Abdomen</button>
+          <button type="button" class="evo-muscle selected" data-muscle="pectoral_superior">Pectoral superior</button>
+          <button type="button" class="evo-muscle" data-muscle="pectoral_medio">Pectoral medio</button>
+          <button type="button" class="evo-muscle" data-muscle="pectoral_inferior">Pectoral inferior</button>
+          <button type="button" class="evo-muscle" data-muscle="deltoide_anterior">Deltoides anterior</button>
+          <button type="button" class="evo-muscle" data-muscle="deltoide_lateral">Deltoides lateral</button>
+          <button type="button" class="evo-muscle" data-muscle="deltoide_posterior">Deltoides posterior</button>
+          <button type="button" class="evo-muscle" data-muscle="biceps_cabeza_larga">Bíceps · cabeza larga</button>
+          <button type="button" class="evo-muscle" data-muscle="biceps_cabeza_corta">Bíceps · cabeza corta</button>
+          <button type="button" class="evo-muscle" data-muscle="braquial">Braquial</button>
+          <button type="button" class="evo-muscle" data-muscle="triceps_cabeza_larga">Tríceps · cabeza larga</button>
+          <button type="button" class="evo-muscle" data-muscle="triceps_cabeza_lateral">Tríceps · cabeza lateral</button>
+          <button type="button" class="evo-muscle" data-muscle="triceps_cabeza_medial">Tríceps · cabeza medial</button>
+          <button type="button" class="evo-muscle" data-muscle="espalda_alta">Espalda alta / trapecio</button>
+          <button type="button" class="evo-muscle" data-muscle="dorsales">Dorsales</button>
+          <button type="button" class="evo-muscle" data-muscle="espalda_baja">Espalda baja</button>
+          <button type="button" class="evo-muscle" data-muscle="oblicuos">Oblicuos</button>
+          <button type="button" class="evo-muscle" data-muscle="gluteo_mayor">Glúteo mayor</button>
+          <button type="button" class="evo-muscle" data-muscle="gluteo_medio">Glúteo medio</button>
+          <button type="button" class="evo-muscle" data-muscle="gluteo_menor">Glúteo menor</button>
           <button type="button" class="evo-muscle" data-muscle="cuadriceps">Cuádriceps</button>
+          <button type="button" class="evo-muscle" data-muscle="aductores">Aductores</button>
+          <button type="button" class="evo-muscle" data-muscle="abductores">Abductores</button>
           <button type="button" class="evo-muscle" data-muscle="isquiotibiales">Isquiotibiales</button>
-          <button type="button" class="evo-muscle" data-muscle="gluteos">Glúteos</button>
           <button type="button" class="evo-muscle" data-muscle="pantorrillas">Pantorrillas</button>
         </div>
         <div class="evo-anatomy">
@@ -2448,8 +2461,8 @@ async function cargarEvolucion(){
     renderEvolucion();
   }catch(e){toast('No se pudo cargar Evolución muscular: '+errMsg(e),true);}
 }
-var EVO_MUSCLE_LABELS={deltoide_anterior:'Deltoides anterior',deltoide_posterior:'Deltoides posterior',pectoral_mayor:'Pectoral mayor',biceps_braquial:'Bíceps braquial',braquiorradial:'Braquiorradial',recto_abdominal:'Recto abdominal',oblicuos:'Oblicuos',recto_femoral:'Recto femoral',vasto_lateral:'Vasto lateral',gastrocnemio:'Gastrocnemio',dorsal_ancho:'Dorsal ancho',triceps_braquial:'Tríceps braquial',extensores_antebrazo:'Extensores del antebrazo',gluteo_mayor:'Glúteo mayor',gluteo_medio:'Glúteo medio',biceps_femoral:'Bíceps femoral',trapecio:'Trapecio',erectores_espinales:'Erectores espinales',soleo:'Sóleo'};
-var EVO_LEGACY_MUSCLES={pectoral_mayor:['pecho'],deltoide_anterior:['hombros'],deltoide_posterior:['hombros'],biceps_braquial:['biceps'],braquiorradial:['antebrazos'],extensores_antebrazo:['antebrazos'],recto_abdominal:['abdomen'],oblicuos:['abdomen'],recto_femoral:['cuadriceps'],vasto_lateral:['cuadriceps'],gastrocnemio:['pantorrillas'],soleo:['pantorrillas'],dorsal_ancho:['espalda'],trapecio:['espalda'],erectores_espinales:['espalda'],triceps_braquial:['triceps'],gluteo_mayor:['gluteos'],gluteo_medio:['gluteos'],biceps_femoral:['isquiotibiales']};
+var EVO_MUSCLE_LABELS={pectoral_superior:'Pectoral superior',pectoral_medio:'Pectoral medio',pectoral_inferior:'Pectoral inferior',deltoide_lateral:'Deltoides lateral',biceps_cabeza_larga:'Bíceps · cabeza larga',biceps_cabeza_corta:'Bíceps · cabeza corta',braquial:'Braquial',triceps_cabeza_larga:'Tríceps · cabeza larga',triceps_cabeza_lateral:'Tríceps · cabeza lateral',triceps_cabeza_medial:'Tríceps · cabeza medial',espalda_alta:'Espalda alta / trapecio',dorsales:'Dorsales',espalda_baja:'Espalda baja',gluteo_menor:'Glúteo menor',cuadriceps:'Cuádriceps',aductores:'Aductores',abductores:'Abductores',deltoide_anterior:'Deltoides anterior',deltoide_posterior:'Deltoides posterior',pectoral_mayor:'Pectoral mayor',biceps_braquial:'Bíceps braquial',braquiorradial:'Braquiorradial',recto_abdominal:'Recto abdominal',oblicuos:'Oblicuos',recto_femoral:'Recto femoral',vasto_lateral:'Vasto lateral',gastrocnemio:'Gastrocnemio',dorsal_ancho:'Dorsal ancho',triceps_braquial:'Tríceps braquial',extensores_antebrazo:'Extensores del antebrazo',gluteo_mayor:'Glúteo mayor',gluteo_medio:'Glúteo medio',biceps_femoral:'Bíceps femoral',trapecio:'Trapecio',erectores_espinales:'Erectores espinales',soleo:'Sóleo'};
+var EVO_LEGACY_MUSCLES={pectoral_superior:['pecho','pectoral_mayor'],pectoral_medio:['pecho','pectoral_mayor'],pectoral_inferior:['pecho','pectoral_mayor'],deltoide_lateral:['hombros','deltoide_anterior'],biceps_cabeza_larga:['biceps','biceps_braquial'],biceps_cabeza_corta:['biceps','biceps_braquial'],braquial:['biceps','biceps_braquial'],triceps_cabeza_larga:['triceps','triceps_braquial'],triceps_cabeza_lateral:['triceps','triceps_braquial'],triceps_cabeza_medial:['triceps','triceps_braquial'],espalda_alta:['espalda','trapecio'],dorsales:['espalda','dorsal_ancho'],espalda_baja:['espalda','erectores_espinales'],gluteo_menor:['gluteos','gluteo_medio'],cuadriceps:['cuadriceps','recto_femoral'],aductores:['cuadriceps','recto_femoral'],abductores:['gluteos','gluteo_medio'],pectoral_mayor:['pecho'],deltoide_anterior:['hombros'],deltoide_posterior:['hombros'],biceps_braquial:['biceps'],braquiorradial:['antebrazos'],extensores_antebrazo:['antebrazos'],recto_abdominal:['abdomen'],oblicuos:['abdomen'],recto_femoral:['cuadriceps'],vasto_lateral:['cuadriceps'],gastrocnemio:['pantorrillas'],soleo:['pantorrillas'],dorsal_ancho:['espalda'],trapecio:['espalda'],erectores_espinales:['espalda'],triceps_braquial:['triceps'],gluteo_mayor:['gluteos'],gluteo_medio:['gluteos'],biceps_femoral:['isquiotibiales']};
 function evoMonthName(ym){var p=ym.split('-');return new Date(Number(p[0]),Number(p[1])-1,1).toLocaleDateString('es-PE',{month:'long',year:'numeric'});}
 function evoMonthStats(ym){
  var ss=EVO.sessions.filter(function(s){return (s.session_date||'').slice(0,7)===ym;}),ids=ss.map(function(s){return s.id;}),legacy=EVO_LEGACY_MUSCLES[EVO.muscle]||[];
@@ -2569,7 +2582,7 @@ var EVO_EXERCISES={
  erectores_espinales:[['Bird dog','none','Principiante','Extiende brazo y pierna contrarios sin rotar la pelvis.','Abdominales y glúteos.'],['Extensión lumbar','none','Principiante','Extiende el tronco dentro de un rango cómodo y sin hiperextender.','Glúteos e isquiotibiales.'],['Extensión de espalda en máquina','machines','Intermedio','Realiza el movimiento suave y sin forzar la zona lumbar.','Glúteos.']],
  soleo:[['Elevación de talones sentado','weights','Principiante','Eleva los talones con rodillas flexionadas y baja lentamente.','Gastrocnemio.'],['Elevación sentado sin peso','none','Principiante','Realiza elevaciones controladas sentado en una silla.','Gastrocnemio.'],['Gemelo sentado en máquina','machines','Principiante','Ajusta el apoyo sobre los muslos y controla el recorrido.','Gastrocnemio.']]
 };
-var EVO_MUSCLE_CANONICAL={pecho:'pectoral_mayor',espalda:'dorsal_ancho',hombros:'deltoide_anterior',biceps:'biceps_braquial',triceps:'triceps_braquial',antebrazos:'braquiorradial',abdomen:'recto_abdominal',cuadriceps:'recto_femoral',isquiotibiales:'biceps_femoral',gluteos:'gluteo_mayor',pantorrillas:'gastrocnemio'};
+var EVO_MUSCLE_CANONICAL={pectoral_superior:'pectoral_mayor',pectoral_medio:'pectoral_mayor',pectoral_inferior:'pectoral_mayor',deltoide_lateral:'deltoide_anterior',biceps_cabeza_larga:'biceps_braquial',biceps_cabeza_corta:'biceps_braquial',braquial:'biceps_braquial',triceps_cabeza_larga:'triceps_braquial',triceps_cabeza_lateral:'triceps_braquial',triceps_cabeza_medial:'triceps_braquial',espalda_alta:'trapecio',dorsales:'dorsal_ancho',espalda_baja:'erectores_espinales',gluteo_menor:'gluteo_medio',cuadriceps:'recto_femoral',aductores:'recto_femoral',abductores:'gluteo_medio',pecho:'pectoral_mayor',espalda:'dorsal_ancho',hombros:'deltoide_anterior',biceps:'biceps_braquial',triceps:'triceps_braquial',antebrazos:'braquiorradial',abdomen:'recto_abdominal',cuadriceps:'recto_femoral',isquiotibiales:'biceps_femoral',gluteos:'gluteo_mayor',pantorrillas:'gastrocnemio'};
 function evoCanonicalMuscle(key){return EVO_MUSCLE_INFO[key]?key:(EVO_MUSCLE_CANONICAL[key]||'pectoral_mayor');}
 function renderEvoMuscleLibrary(){
  var key=evoCanonicalMuscle(EVO.muscle),info=EVO_MUSCLE_INFO[key]||EVO_MUSCLE_INFO.pectoral_mayor;
@@ -2632,7 +2645,7 @@ function evoBuild3D(){
  var raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
  canvas.addEventListener('pointerup',function(e){var r=canvas.getBoundingClientRect();pointer.x=((e.clientX-r.left)/r.width)*2-1;pointer.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(pointer,EVO3D.camera);var hits=raycaster.intersectObjects(EVO3D.parts,false);if(hits.length){EVO.muscle=hits[0].object.userData.muscle;renderEvolucion();}});
  $('evo-three-view').addEventListener('click',function(){EVO3D.back=!EVO3D.back;EVO3D.group.rotation.y=EVO3D.back?Math.PI:0;$('evo-three-view').textContent=EVO3D.back?'Vista frontal':'Vista posterior';});
- EVO3D.ready=true;stage.hidden=false;$('evo-anatomy-views').hidden=true;evoRefresh3D();
+ EVO3D.ready=true;stage.hidden=false;$('evo-anatomy-views').hidden=false;evoRefresh3D();
  function animate(){if(!EVO3D.ready)return;EVO3D.frame=requestAnimationFrame(animate);EVO3D.controls.update();EVO3D.renderer.render(EVO3D.scene,EVO3D.camera);}animate();
  window.addEventListener('resize',function(){if(!EVO3D.ready)return;var width=Math.max(280,stage.clientWidth);EVO3D.camera.aspect=width/590;EVO3D.camera.updateProjectionMatrix();EVO3D.renderer.setSize(width,590,false);});
 }
