@@ -224,8 +224,18 @@ button.act{cursor:pointer}
 .evo-exercise-list{display:grid;gap:9px}.evo-exercise-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
 .evo-exercise-card h4{margin:0;font:700 1rem var(--display);text-transform:uppercase;letter-spacing:.03em}.evo-exercise-card p{font-size:.83rem;color:var(--muted);line-height:1.4}
 .evo-exercise-tags{display:flex;gap:5px;flex-wrap:wrap;align-items:center}.evo-exercise-tags span{font-size:.7rem;padding:3px 7px;border-radius:20px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
-.evo-exercise-card .btn{grid-column:2;grid-row:1 / span 3;align-self:center;white-space:nowrap}
-@media(max-width:480px){.evo-three-stage canvas{height:430px}.evo-muscle-facts,.evo-library-filters{grid-template-columns:1fr}.evo-exercise-card{grid-template-columns:minmax(0,1fr)}.evo-exercise-card .btn{grid-column:1;grid-row:auto;width:100%}}
+.evo-exercise-card .btn{grid-column:3;grid-row:1 / span 3;align-self:center;white-space:nowrap}
+.evo-exercise-card{grid-template-columns:76px minmax(0,1fr) auto;align-items:center}
+.evo-exercise-visual{grid-column:1;grid-row:1 / span 4;width:76px;height:76px;display:grid;place-items:center;border-radius:9px;background:linear-gradient(145deg,#1b2922,#101815);border:1px solid #34483b;overflow:hidden}
+.evo-exercise-visual svg{width:100%;height:100%}
+.evo-set-editor-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
+.evo-set-rows{display:grid;gap:8px}
+.evo-set-row{display:grid;grid-template-columns:42px minmax(0,1fr) minmax(0,1fr) 34px;gap:7px;align-items:end;padding:9px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
+.evo-set-row>strong{align-self:center;color:var(--muted);font:700 1rem var(--display)}
+.evo-set-row label{display:grid;gap:4px;font-size:.72rem;color:var(--muted)}
+.evo-set-row input{width:100%;min-width:0;min-height:38px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--fg);font:inherit}
+.evo-set-remove{height:38px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--muted);cursor:pointer}
+@media(max-width:480px){.evo-three-stage canvas{height:430px}.evo-muscle-facts,.evo-library-filters{grid-template-columns:1fr}.evo-exercise-card{grid-template-columns:64px minmax(0,1fr)}.evo-exercise-visual{width:64px;height:64px;grid-column:1;grid-row:1 / span 4}.evo-exercise-card .btn{grid-column:1 / -1;grid-row:auto;width:100%}.evo-set-row{grid-template-columns:30px minmax(0,1fr) minmax(0,1fr) 32px;gap:5px;padding:7px}}
 
 .evo-month-bar{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:150px;padding:12px}
 .evo-month-item{display:grid;gap:6px;text-align:center;color:var(--muted);font-size:.8rem}
@@ -752,15 +762,15 @@ main{padding-block:12px 40px}
         <form id="evo-workout-form" class="stack">
           <label class="lbl" for="evo-exercise">Ejercicio</label>
           <input id="evo-exercise" type="text" maxlength="100" required placeholder="Ej. Press banca">
-          <div class="grid-two">
-            <div><label class="lbl" for="evo-sets-input">Series</label><input id="evo-sets-input" type="number" min="1" max="30" value="3" required></div>
-            <div><label class="lbl" for="evo-reps">Repeticiones por serie</label><input id="evo-reps" type="number" min="1" max="300" value="10" required></div>
-          </div>
-          <label class="lbl" for="evo-weight">Peso utilizado (kg)</label>
-          <input id="evo-weight" type="number" min="0" max="1500" step="0.25" value="0" required>
+          <label class="lbl" for="evo-session-date">Fecha del entrenamiento</label>
+          <input id="evo-session-date" type="date" required>
+          <div class="evo-set-editor-head"><strong>Detalle de cada serie</strong><button class="btn sm" id="evo-add-set" type="button">＋ Añadir serie</button></div>
+          <div id="evo-set-rows" class="evo-set-rows" aria-live="polite"></div>
+          <label class="lbl" for="evo-session-notes">Notas del entrenamiento (opcional)</label>
+          <input id="evo-session-notes" type="text" maxlength="300" placeholder="Ej. Buena técnica, última serie exigente">
           <button class="btn primary" type="submit">Guardar entrenamiento</button>
         </form>
-        <p class="note">Para empezar, registra el mismo peso y repeticiones en cada serie. Luego podrás llevar un detalle por serie.</p>
+        <p class="note">Cada serie guarda sus propias repeticiones y peso. Puedes añadir o quitar series antes de guardar.</p>
       </div>
       <div class="season-card">
         <h2>Mis medidas corporales</h2>
@@ -2609,6 +2619,10 @@ var EVO_EXERCISES={
 };
 var EVO_MUSCLE_CANONICAL={pectoral_superior:'pectoral_mayor',pectoral_medio:'pectoral_mayor',pectoral_inferior:'pectoral_mayor',deltoide_lateral:'deltoide_anterior',biceps_cabeza_larga:'biceps_braquial',biceps_cabeza_corta:'biceps_braquial',braquial:'biceps_braquial',triceps_cabeza_larga:'triceps_braquial',triceps_cabeza_lateral:'triceps_braquial',triceps_cabeza_medial:'triceps_braquial',espalda_alta:'trapecio',dorsales:'dorsal_ancho',espalda_baja:'erectores_espinales',gluteo_menor:'gluteo_medio',cuadriceps:'recto_femoral',aductores:'aductores',abductores:'gluteo_medio',pecho:'pectoral_mayor',espalda:'dorsal_ancho',hombros:'deltoide_anterior',biceps:'biceps_braquial',triceps:'triceps_braquial',antebrazos:'braquiorradial',abdomen:'recto_abdominal',cuadriceps:'recto_femoral',isquiotibiales:'biceps_femoral',gluteos:'gluteo_mayor',pantorrillas:'gastrocnemio'};
 function evoCanonicalMuscle(key){return EVO_MUSCLE_INFO[key]?key:(EVO_MUSCLE_CANONICAL[key]||'pectoral_mayor');}
+function evoExerciseVisual(equipment){
+ var equipmentMark=equipment==='weights'?'<path d="M18 31h10m-7-7v14m78-7H89m7-7v14M28 31h64" stroke="#a5ff52" stroke-width="4" stroke-linecap="round"/>':equipment==='machines'?'<path d="M22 17v43m0-4h76M34 17v20m0 0h32m0 0v23m0-23h22m0 0V17" stroke="#a5ff52" stroke-width="3" stroke-linecap="round" fill="none"/>':equipment==='bands'?'<path d="M24 48Q50 4 96 48M24 48Q58 70 96 48" stroke="#a5ff52" stroke-width="3" fill="none" stroke-linecap="round"/>':'<path d="M27 49h65M37 49l11-17 17 17 14-24 13 24" stroke="#a5ff52" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+ return '<svg viewBox="0 0 120 76" role="img" aria-label="Ilustración del equipamiento del ejercicio"><circle cx="60" cy="14" r="7" fill="#d8e5dc"/><path d="M60 22v20m0-13L42 39m18-10 18 10M60 42 47 61m13-19 13 19" stroke="#d8e5dc" stroke-width="4" stroke-linecap="round" fill="none"/>'+equipmentMark+'</svg>';
+}
 function renderEvoMuscleLibrary(){
  var key=evoCanonicalMuscle(EVO.muscle),info=EVO_MUSCLE_INFO[key]||EVO_MUSCLE_INFO.pectoral_mayor;
  $('evo-muscle-title').textContent=info.label;$('evo-muscle-location').textContent=info.location;$('evo-muscle-function').textContent=info.func;$('evo-muscle-secondary').textContent=info.secondary;
@@ -2616,7 +2630,7 @@ function renderEvoMuscleLibrary(){
  var filtered=items.filter(function(x){return (equipment==='all'||x[1]===equipment)&&(level==='all'||x[2]===level);});
  $('evo-exercise-count').textContent=filtered.length+' ejercicios disponibles · selecciona uno para registrarlo';
  var eqLabels={none:'Sin equipo',weights:'Pesas',machines:'Máquinas',bands:'Bandas'};
- $('evo-exercise-list').innerHTML=filtered.length?filtered.map(function(x){return '<article class="evo-exercise-card"><h4>'+esc(x[0])+'</h4><p>'+esc(x[3])+'</p><div class="evo-exercise-tags"><span>'+eqLabels[x[1]]+'</span><span>'+esc(x[2])+'</span><span>Secundarios: '+esc(x[4])+'</span></div><button type="button" class="btn primary sm" data-evo-record="'+esc(x[0])+'" data-evo-muscle="'+key+'">Registrar</button></article>';}).join(''):'<p class="note">No hay ejercicios con esos filtros. Prueba otra combinación.</p>';
+ $('evo-exercise-list').innerHTML=filtered.length?filtered.map(function(x){return '<article class="evo-exercise-card"><div class="evo-exercise-visual">'+evoExerciseVisual(x[1])+'</div><h4>'+esc(x[0])+'</h4><p>'+esc(x[3])+'</p><div class="evo-exercise-tags"><span>'+eqLabels[x[1]]+'</span><span>'+esc(x[2])+'</span><span>Secundarios: '+esc(x[4])+'</span></div><button type="button" class="btn primary sm" data-evo-record="'+esc(x[0])+'" data-evo-muscle="'+EVO.muscle+'">Registrar</button></article>';}).join(''):'<p class="note">No hay ejercicios con esos filtros. Prueba otra combinación.</p>';
 }
 var EVO3D={ready:false,loading:false,scene:null,camera:null,renderer:null,controls:null,group:null,parts:[],back:false,frame:0};
 var EVO_MUSCLE_MODEL_IDS={
@@ -2816,21 +2830,35 @@ async function consultarViperCoach(e){
   button.disabled=false;button.textContent='Consultar a VIPER Coach';
  }
 }
+function evoAddSetRow(reps,weight){
+ var host=$('evo-set-rows');if(!host||host.children.length>=30)return;
+ var n=host.children.length+1,row=document.createElement('div');row.className='evo-set-row';
+ row.innerHTML='<strong class="evo-set-number">S'+n+'</strong><label>Repeticiones<input type="number" min="1" max="300" step="1" value="'+(reps||10)+'" data-evo-reps required></label><label>Peso (kg)<input type="number" min="0" max="1500" step="0.25" value="'+(weight==null?0:weight)+'" data-evo-weight required></label><button class="evo-set-remove" type="button" data-evo-remove-set aria-label="Eliminar serie '+n+'">×</button>';
+ host.appendChild(row);
+}
+function evoRenumberSets(){
+ Array.from($('evo-set-rows').children).forEach(function(row,i){row.querySelector('.evo-set-number').textContent='S'+(i+1);row.querySelector('[data-evo-remove-set]').setAttribute('aria-label','Eliminar serie '+(i+1));});
+}
 async function guardarEvoEntrenamiento(e){
-  e.preventDefault();
-  var name=$('evo-exercise').value.trim(), count=Number($('evo-sets-input').value), reps=Number($('evo-reps').value), weight=Number($('evo-weight').value);
-  if(!name||!Number.isInteger(count)||count<1||count>30||!Number.isInteger(reps)||reps<1||reps>300||!Number.isFinite(weight)||weight<0){toast('Revisa los datos del entrenamiento.',true);return;}
-  var button=e.submitter;if(button)button.disabled=true;
-  try{
-    var session=await sb.from('viper_workout_sessions').insert({user_id:user.id,session_date:limaToday()}).select('id').single();
-    if(session.error)throw session.error;
-    var exercise=await sb.from('viper_workout_exercises').insert({session_id:session.data.id,muscle_group:EVO.muscle,exercise_name:name}).select('id').single();
-    if(exercise.error)throw exercise.error;
-    var rows=[];for(var i=1;i<=count;i++)rows.push({exercise_id:exercise.data.id,set_number:i,reps:reps,weight_kg:weight});
-    var saved=await sb.from('viper_workout_sets').insert(rows);if(saved.error)throw saved.error;
-    $('evo-workout-form').reset();$('evo-sets-input').value=3;$('evo-reps').value=10;$('evo-weight').value=0;
-    await cargarEvolucion();toast('Entrenamiento guardado.');
-  }catch(err){toast(errMsg(err),true);}finally{if(button)button.disabled=false;}
+ e.preventDefault();
+ var name=$('evo-exercise').value.trim(),date=$('evo-session-date').value,notes=$('evo-session-notes').value.trim()||null;
+ var rows=Array.from($('evo-set-rows').querySelectorAll('.evo-set-row')).map(function(row,i){return {set_number:i+1,reps:Number(row.querySelector('[data-evo-reps]').value),weight_kg:Number(row.querySelector('[data-evo-weight]').value)};});
+ if(!name||!date||!rows.length||rows.length>30||rows.some(function(x){return !Number.isInteger(x.reps)||x.reps<1||x.reps>300||!Number.isFinite(x.weight_kg)||x.weight_kg<0||x.weight_kg>1500;})){toast('Revisa el ejercicio y los datos de cada serie.',true);return;}
+ var button=e.submitter,sessionId=null,exerciseId=null;if(button)button.disabled=true;
+ try{
+  var session=await sb.from('viper_workout_sessions').insert({user_id:user.id,session_date:date,notes:notes}).select('id').single();
+  if(session.error)throw session.error;sessionId=session.data.id;
+  var exercise=await sb.from('viper_workout_exercises').insert({session_id:sessionId,muscle_group:EVO.muscle,exercise_name:name}).select('id').single();
+  if(exercise.error)throw exercise.error;exerciseId=exercise.data.id;
+  var saved=await sb.from('viper_workout_sets').insert(rows.map(function(x){return {exercise_id:exerciseId,set_number:x.set_number,reps:x.reps,weight_kg:x.weight_kg};}));
+  if(saved.error)throw saved.error;
+  $('evo-workout-form').reset();$('evo-session-date').value=limaToday();$('evo-session-notes').value='';$('evo-set-rows').innerHTML='';for(var i=0;i<3;i++)evoAddSetRow(10,0);
+  await cargarEvolucion();toast('Entrenamiento guardado con el detalle de cada serie.');
+ }catch(err){
+  if(exerciseId)await sb.from('viper_workout_exercises').delete().eq('id',exerciseId);
+  if(sessionId)await sb.from('viper_workout_sessions').delete().eq('id',sessionId);
+  toast(errMsg(err),true);
+ }finally{if(button)button.disabled=false;}
 }
 async function guardarEvoMedidas(e){
   e.preventDefault();
@@ -2859,6 +2887,14 @@ async function guardarEvoFoto(e){
 }
 
   $('evo-measure-date').value = limaToday();
+  $('evo-session-date').value = limaToday();
+  for(var evoInitialSet=0;evoInitialSet<3;evoInitialSet++)evoAddSetRow(10,0);
+  $('evo-add-set').addEventListener('click',function(){evoAddSetRow(10,0);});
+  $('evo-set-rows').addEventListener('click',function(e){
+    var remove=e.target.closest('[data-evo-remove-set]');if(!remove)return;
+    if($('evo-set-rows').children.length<=1){toast('Un entrenamiento debe tener al menos una serie.',true);return;}
+    remove.closest('.evo-set-row').remove();evoRenumberSets();
+  });
   $('evo-goal-form').addEventListener('submit',guardarEvoObjetivo);
   $('evo-goal-type').addEventListener('change',function(){
     var t=$('evo-goal-type').value;
