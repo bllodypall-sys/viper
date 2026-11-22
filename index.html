@@ -2645,7 +2645,7 @@ function evoExerciseVisual(equipment){
 }
 function renderEvoMuscleLibrary(){
  var key=evoCanonicalMuscle(EVO.muscle),info=EVO_MUSCLE_INFO[EVO.muscle]||EVO_MUSCLE_INFO[key]||EVO_MUSCLE_INFO.pectoral_mayor;
- $('evo-muscle-title').textContent=info.label;$('evo-muscle-location').textContent=info.location;$('evo-muscle-function').textContent=info.func;$('evo-muscle-secondary').textContent=info.secondary;
+ $('evo-muscle-title').textContent=EVO_MUSCLE_LABELS[EVO.muscle]||info.label;$('evo-muscle-location').textContent=info.location;$('evo-muscle-function').textContent=info.func;$('evo-muscle-secondary').textContent=info.secondary;
  var equipment=$('evo-equipment-filter').value,level=$('evo-level-filter').value,items=EVO_EXERCISES[key]||[];
  var filtered=items.filter(function(x){return (equipment==='all'||x[1]===equipment)&&(level==='all'||x[2]===level);});
  $('evo-exercise-count').textContent=filtered.length+' ejercicios disponibles · selecciona uno para registrarlo';
