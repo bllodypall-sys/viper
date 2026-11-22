@@ -210,7 +210,7 @@ button.act{cursor:pointer}
 .evo-muscle-part:hover,.evo-muscle-part:focus{fill:#8eea3d;filter:drop-shadow(0 0 5px #8eea3d)}
 .evo-muscle-part.active{fill:#a5ff52;filter:drop-shadow(0 0 7px #8eea3d)}
 .evo-anatomy-hint{margin:8px 0 0}.evo-anatomy-hint b{color:var(--fg)}
-.evo-three-stage{position:relative;max-width:520px;margin:12px auto 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at 50% 38%,#263b32 0%,#111a17 58%,#0b100e 100%)}
+.evo-three-stage{display:none!important;position:relative;max-width:520px;margin:12px auto 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at 50% 38%,#263b32 0%,#111a17 58%,#0b100e 100%)}
 .evo-three-stage[hidden]{display:none}.evo-three-stage canvas{display:block;width:100%;height:390px;touch-action:pan-y;cursor:grab}.evo-three-stage canvas:active{cursor:grabbing}
 .evo-three-controls{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border-top:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18)}
 .evo-three-controls .note{color:#c2d2c9;font-size:.75rem}
@@ -603,8 +603,10 @@ main{padding-block:12px 40px}
           <div class="evo-anatomy-views">
             <div class="evo-anatomy-panel"><span>FRENTE</span>
               <svg viewBox="0 0 220 390" role="group" aria-label="Mapa muscular vista frontal">
-                <g fill="#26302d" stroke="#718078" stroke-width="1.5">
-                  <circle cx="110" cy="27" r="19"/><path d="M96 47 L124 47 L132 67 L157 76 L174 112 L157 126 L148 103 L143 157 L138 199 L146 222 L141 250 L151 318 L139 365 L121 365 L117 292 L110 246 L103 292 L99 365 L81 365 L69 318 L79 250 L74 222 L82 199 L77 157 L72 103 L63 126 L46 112 L63 76 L88 67 Z"/>
+                <g fill="#bd8b78" stroke="#e6b5a0" stroke-width="1.7" stroke-linejoin="round">
+                  <path d="M96 45 Q92 35 94 20 Q96 5 110 5 Q124 5 126 20 Q128 35 124 45 L121 52 L99 52 Z"/>
+                  <path d="M99 49 Q95 55 88 59 Q73 61 60 70 Q49 78 47 94 L42 123 Q41 134 49 138 Q57 140 62 130 L72 104 Q76 91 87 88 L91 119 Q94 143 91 165 L84 190 Q79 205 83 219 L76 251 Q72 268 78 286 L83 326 Q85 343 80 365 L99 365 Q104 344 104 326 L109 278 L111 278 L116 326 Q116 344 121 365 L140 365 Q135 343 137 326 L142 286 Q148 268 144 251 L137 219 Q141 205 136 190 L129 165 Q126 143 129 119 L133 88 Q144 91 148 104 L158 130 Q163 140 171 138 Q179 134 178 123 L173 94 Q171 78 160 70 Q147 61 132 59 Q125 55 121 49 Z"/>
+                  <path d="M84 190 Q110 201 136 190 L142 219 Q110 232 78 219 Z"/>
                 </g>
                 <g class="evo-muscle-part" data-muscle="deltoide_anterior" tabindex="0" role="button" aria-label="Deltoides anterior" fill="#52645b"><path d="M88 68 Q67 64 59 84 L65 112 Q78 112 88 96 Z"/><path d="M132 68 Q153 64 161 84 L155 112 Q142 112 132 96 Z"/></g>
                 <g class="evo-muscle-part" data-muscle="pectoral_mayor" tabindex="0" role="button" aria-label="Pectoral mayor" fill="#52645b"><path d="M91 78 Q108 70 109 91 L107 119 Q91 124 78 111 L80 91 Z"/><path d="M129 78 Q112 70 111 91 L113 119 Q129 124 142 111 L140 91 Z"/></g>
@@ -638,8 +640,10 @@ main{padding-block:12px 40px}
             </div>
             <div class="evo-anatomy-panel"><span>ESPALDA</span>
               <svg viewBox="0 0 220 390" role="group" aria-label="Mapa muscular vista posterior">
-                <g fill="#26302d" stroke="#718078" stroke-width="1.5">
-                  <circle cx="110" cy="27" r="19"/><path d="M96 47 L124 47 L132 67 L157 76 L174 112 L157 126 L148 103 L143 157 L138 199 L146 222 L141 250 L151 318 L139 365 L121 365 L117 292 L110 246 L103 292 L99 365 L81 365 L69 318 L79 250 L74 222 L82 199 L77 157 L72 103 L63 126 L46 112 L63 76 L88 67 Z"/>
+                <g fill="#bd8b78" stroke="#e6b5a0" stroke-width="1.7" stroke-linejoin="round">
+                  <path d="M96 45 Q92 35 94 20 Q96 5 110 5 Q124 5 126 20 Q128 35 124 45 L121 52 L99 52 Z"/>
+                  <path d="M99 49 Q95 55 88 59 Q73 61 60 70 Q49 78 47 94 L42 123 Q41 134 49 138 Q57 140 62 130 L72 104 Q76 91 87 88 L91 119 Q94 143 91 165 L84 190 Q79 205 83 219 L76 251 Q72 268 78 286 L83 326 Q85 343 80 365 L99 365 Q104 344 104 326 L109 278 L111 278 L116 326 Q116 344 121 365 L140 365 Q135 343 137 326 L142 286 Q148 268 144 251 L137 219 Q141 205 136 190 L129 165 Q126 143 129 119 L133 88 Q144 91 148 104 L158 130 Q163 140 171 138 Q179 134 178 123 L173 94 Q171 78 160 70 Q147 61 132 59 Q125 55 121 49 Z"/>
+                  <path d="M84 190 Q110 201 136 190 L142 219 Q110 232 78 219 Z"/>
                 </g>
                 <g class="evo-muscle-part" data-muscle="deltoide_posterior" tabindex="0" role="button" aria-label="Deltoides posterior" fill="#52645b"><path d="M88 68 Q67 64 59 84 L65 112 Q78 112 88 96 Z"/><path d="M132 68 Q153 64 161 84 L155 112 Q142 112 132 96 Z"/></g>
                 <g class="evo-muscle-part" data-muscle="dorsal_ancho" tabindex="0" role="button" aria-label="Dorsal ancho" fill="#52645b"><path d="M89 76 L108 73 L108 157 L87 177 L76 126 Z"/><path d="M131 76 L112 73 L112 157 L133 177 L144 126 Z"/></g>
