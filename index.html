@@ -582,27 +582,29 @@ main{padding-block:12px 40px}
           <button type="button" class="evo-muscle selected" data-muscle="pectoral_superior">Pectoral superior</button>
           <button type="button" class="evo-muscle" data-muscle="pectoral_medio">Pectoral medio</button>
           <button type="button" class="evo-muscle" data-muscle="pectoral_inferior">Pectoral inferior</button>
-          <button type="button" class="evo-muscle" data-muscle="deltoide_anterior">Deltoides anterior</button>
-          <button type="button" class="evo-muscle" data-muscle="deltoide_lateral">Deltoides lateral</button>
-          <button type="button" class="evo-muscle" data-muscle="deltoide_posterior">Deltoides posterior</button>
           <button type="button" class="evo-muscle" data-muscle="biceps_cabeza_larga">Bíceps · cabeza larga</button>
           <button type="button" class="evo-muscle" data-muscle="biceps_cabeza_corta">Bíceps · cabeza corta</button>
-          <button type="button" class="evo-muscle" data-muscle="braquial">Braquial</button>
           <button type="button" class="evo-muscle" data-muscle="triceps_cabeza_larga">Tríceps · cabeza larga</button>
           <button type="button" class="evo-muscle" data-muscle="triceps_cabeza_lateral">Tríceps · cabeza lateral</button>
           <button type="button" class="evo-muscle" data-muscle="triceps_cabeza_medial">Tríceps · cabeza medial</button>
-          <button type="button" class="evo-muscle" data-muscle="espalda_alta">Espalda alta / trapecio</button>
-          <button type="button" class="evo-muscle" data-muscle="dorsales">Dorsales</button>
-          <button type="button" class="evo-muscle" data-muscle="espalda_baja">Espalda baja</button>
-          <button type="button" class="evo-muscle" data-muscle="oblicuos">Oblicuos</button>
           <button type="button" class="evo-muscle" data-muscle="gluteo_mayor">Glúteo mayor</button>
           <button type="button" class="evo-muscle" data-muscle="gluteo_medio">Glúteo medio</button>
           <button type="button" class="evo-muscle" data-muscle="gluteo_menor">Glúteo menor</button>
+          <button type="button" class="evo-muscle" data-muscle="deltoide_anterior">Deltoides anterior</button>
+          <button type="button" class="evo-muscle" data-muscle="deltoide_lateral">Deltoides lateral</button>
+          <button type="button" class="evo-muscle" data-muscle="deltoide_posterior">Deltoides posterior</button>
+          <button type="button" class="evo-muscle" data-muscle="braquial">Braquial</button>
           <button type="button" class="evo-muscle" data-muscle="cuadriceps">Cuádriceps</button>
           <button type="button" class="evo-muscle" data-muscle="aductores">Aductores</button>
           <button type="button" class="evo-muscle" data-muscle="abductores">Abductores</button>
-          <button type="button" class="evo-muscle" data-muscle="isquiotibiales">Isquiotibiales</button>
           <button type="button" class="evo-muscle" data-muscle="pantorrillas">Pantorrillas</button>
+          <button type="button" class="evo-muscle" data-muscle="isquiotibiales">Isquiotibiales</button>
+          <button type="button" class="evo-muscle" data-muscle="oblicuos">Oblicuos</button>
+          <button type="button" class="evo-muscle" data-muscle="espalda">Espalda</button>
+          <button type="button" class="evo-muscle" data-muscle="dorsales">Dorsales</button>
+          <button type="button" class="evo-muscle" data-muscle="espalda_baja">Espalda baja</button>
+          <button type="button" class="evo-muscle" data-muscle="espalda_alta">Espalda alta</button>
+          <button type="button" class="evo-muscle" data-muscle="trapecios">Trapecios</button>
         </div>
         <div class="evo-anatomy">
           <div class="evo-anatomy-head"><strong>MAPA MUSCULAR</strong><span>Toca un músculo para ver su progreso</span></div>
@@ -2494,8 +2496,18 @@ async function cargarEvolucion(){
     renderEvolucion();
   }catch(e){toast('No se pudo cargar Evolución muscular: '+errMsg(e),true);}
 }
-var EVO_MUSCLE_LABELS={pectoral_superior:'Pectoral superior',pectoral_medio:'Pectoral medio',pectoral_inferior:'Pectoral inferior',deltoide_lateral:'Deltoides lateral',biceps_cabeza_larga:'Bíceps · cabeza larga',biceps_cabeza_corta:'Bíceps · cabeza corta',braquial:'Braquial',triceps_cabeza_larga:'Tríceps · cabeza larga',triceps_cabeza_lateral:'Tríceps · cabeza lateral',triceps_cabeza_medial:'Tríceps · cabeza medial',espalda_alta:'Espalda alta / trapecio',dorsales:'Dorsales',espalda_baja:'Espalda baja',gluteo_menor:'Glúteo menor',cuadriceps:'Cuádriceps',aductores:'Aductores',abductores:'Abductores',deltoide_anterior:'Deltoides anterior',deltoide_posterior:'Deltoides posterior',pectoral_mayor:'Pectoral mayor',biceps_braquial:'Bíceps braquial',braquiorradial:'Braquiorradial',recto_abdominal:'Recto abdominal',oblicuos:'Oblicuos',recto_femoral:'Recto femoral',vasto_lateral:'Vasto lateral',gastrocnemio:'Gastrocnemio',dorsal_ancho:'Dorsal ancho',triceps_braquial:'Tríceps braquial',extensores_antebrazo:'Extensores del antebrazo',gluteo_mayor:'Glúteo mayor',gluteo_medio:'Glúteo medio',biceps_femoral:'Bíceps femoral',trapecio:'Trapecio',erectores_espinales:'Erectores espinales',soleo:'Sóleo'};
-var EVO_LEGACY_MUSCLES={pectoral_superior:['pecho','pectoral_mayor'],pectoral_medio:['pecho','pectoral_mayor'],pectoral_inferior:['pecho','pectoral_mayor'],deltoide_lateral:['hombros','deltoide_anterior'],biceps_cabeza_larga:['biceps','biceps_braquial'],biceps_cabeza_corta:['biceps','biceps_braquial'],braquial:['biceps','biceps_braquial'],triceps_cabeza_larga:['triceps','triceps_braquial'],triceps_cabeza_lateral:['triceps','triceps_braquial'],triceps_cabeza_medial:['triceps','triceps_braquial'],espalda_alta:['espalda','trapecio'],dorsales:['espalda','dorsal_ancho'],espalda_baja:['espalda','erectores_espinales'],gluteo_menor:['gluteos','gluteo_medio'],cuadriceps:['cuadriceps','recto_femoral'],aductores:['aductores'],abductores:['gluteos','gluteo_medio'],pectoral_mayor:['pecho'],deltoide_anterior:['hombros'],deltoide_posterior:['hombros'],biceps_braquial:['biceps'],braquiorradial:['antebrazos'],extensores_antebrazo:['antebrazos'],recto_abdominal:['abdomen'],oblicuos:['abdomen'],recto_femoral:['cuadriceps'],vasto_lateral:['cuadriceps'],gastrocnemio:['pantorrillas'],soleo:['pantorrillas'],dorsal_ancho:['espalda'],trapecio:['espalda'],erectores_espinales:['espalda'],triceps_braquial:['triceps'],gluteo_mayor:['gluteos'],gluteo_medio:['gluteos'],biceps_femoral:['isquiotibiales']};
+var EVO_MUSCLE_LABELS={pectoral_superior:'Pectoral superior',pectoral_medio:'Pectoral medio',pectoral_inferior:'Pectoral inferior',biceps_cabeza_larga:'Bíceps · cabeza larga',biceps_cabeza_corta:'Bíceps · cabeza corta',triceps_cabeza_larga:'Tríceps · cabeza larga',triceps_cabeza_lateral:'Tríceps · cabeza lateral',triceps_cabeza_medial:'Tríceps · cabeza medial',gluteo_mayor:'Glúteo mayor',gluteo_medio:'Glúteo medio',gluteo_menor:'Glúteo menor',deltoide_anterior:'Deltoides anterior',deltoide_lateral:'Deltoides lateral',deltoide_posterior:'Deltoides posterior',braquial:'Braquial',cuadriceps:'Cuádriceps',aductores:'Aductores',abductores:'Abductores',pantorrillas:'Pantorrillas',isquiotibiales:'Isquiotibiales',oblicuos:'Oblicuos',espalda:'Espalda',dorsales:'Dorsales',espalda_baja:'Espalda baja',espalda_alta:'Espalda alta',trapecios:'Trapecios'};
+var EVO_LEGACY_MUSCLES={
+ pectoral_superior:['pecho','pectoral_mayor'],pectoral_medio:['pecho','pectoral_mayor'],pectoral_inferior:['pecho','pectoral_mayor'],
+ biceps_cabeza_larga:['biceps','biceps_braquial'],biceps_cabeza_corta:['biceps','biceps_braquial'],
+ triceps_cabeza_larga:['triceps','triceps_braquial'],triceps_cabeza_lateral:['triceps','triceps_braquial'],triceps_cabeza_medial:['triceps','triceps_braquial'],
+ gluteo_mayor:['gluteos'],gluteo_medio:['gluteos','gluteo_medio'],gluteo_menor:['gluteos','gluteo_medio'],
+ deltoide_anterior:['hombros'],deltoide_lateral:['hombros','deltoide_anterior'],deltoide_posterior:['hombros'],
+ braquial:['biceps','biceps_braquial'],cuadriceps:['cuadriceps','recto_femoral'],aductores:['aductores'],abductores:['gluteos','gluteo_medio'],
+ pantorrillas:['pantorrillas','gastrocnemio','soleo'],isquiotibiales:['isquiotibiales','biceps_femoral'],
+ oblicuos:['abdomen'],espalda:['espalda','dorsal_ancho','trapecio','erectores_espinales'],dorsales:['espalda','dorsal_ancho'],
+ espalda_baja:['espalda','erectores_espinales'],espalda_alta:['espalda','trapecio'],trapecios:['espalda','trapecio']
+};
 function evoMonthName(ym){var p=ym.split('-');return new Date(Number(p[0]),Number(p[1])-1,1).toLocaleDateString('es-PE',{month:'long',year:'numeric'});}
 function evoMonthStats(ym){
  var ss=EVO.sessions.filter(function(s){return (s.session_date||'').slice(0,7)===ym;}),ids=ss.map(function(s){return s.id;}),legacy=EVO_LEGACY_MUSCLES[EVO.muscle]||[];
@@ -2617,14 +2629,22 @@ var EVO_EXERCISES={
  soleo:[['Elevación de talones sentado','weights','Principiante','Eleva los talones con rodillas flexionadas y baja lentamente.','Gastrocnemio.'],['Elevación sentado sin peso','none','Principiante','Realiza elevaciones controladas sentado en una silla.','Gastrocnemio.'],['Gemelo sentado en máquina','machines','Principiante','Ajusta el apoyo sobre los muslos y controla el recorrido.','Gastrocnemio.']],
  aductores:[['Aducción de cadera en máquina','machines','Principiante','Junta las piernas de forma controlada sin rebotes.','Glúteos y estabilizadores de cadera.'],['Sentadilla sumo','weights','Intermedio','Coloca los pies más abiertos y baja manteniendo las rodillas alineadas.','Glúteos y cuádriceps.'],['Zancada lateral','none','Intermedio','Da un paso lateral y flexiona una rodilla manteniendo la otra pierna extendida.','Glúteos y cuádriceps.']]
 };
-var EVO_MUSCLE_CANONICAL={pectoral_superior:'pectoral_mayor',pectoral_medio:'pectoral_mayor',pectoral_inferior:'pectoral_mayor',deltoide_lateral:'deltoide_anterior',biceps_cabeza_larga:'biceps_braquial',biceps_cabeza_corta:'biceps_braquial',braquial:'biceps_braquial',triceps_cabeza_larga:'triceps_braquial',triceps_cabeza_lateral:'triceps_braquial',triceps_cabeza_medial:'triceps_braquial',espalda_alta:'trapecio',dorsales:'dorsal_ancho',espalda_baja:'erectores_espinales',gluteo_menor:'gluteo_medio',cuadriceps:'recto_femoral',aductores:'aductores',abductores:'gluteo_medio',pecho:'pectoral_mayor',espalda:'dorsal_ancho',hombros:'deltoide_anterior',biceps:'biceps_braquial',triceps:'triceps_braquial',antebrazos:'braquiorradial',abdomen:'recto_abdominal',cuadriceps:'recto_femoral',isquiotibiales:'biceps_femoral',gluteos:'gluteo_mayor',pantorrillas:'gastrocnemio'};
+var EVO_MUSCLE_CANONICAL={
+ pectoral_superior:'pectoral_mayor',pectoral_medio:'pectoral_mayor',pectoral_inferior:'pectoral_mayor',
+ biceps_cabeza_larga:'biceps_braquial',biceps_cabeza_corta:'biceps_braquial',
+ triceps_cabeza_larga:'triceps_braquial',triceps_cabeza_lateral:'triceps_braquial',triceps_cabeza_medial:'triceps_braquial',
+ gluteo_menor:'gluteo_medio',deltoide_lateral:'deltoide_anterior',braquial:'biceps_braquial',
+ cuadriceps:'recto_femoral',abductores:'gluteo_medio',pantorrillas:'gastrocnemio',
+ isquiotibiales:'biceps_femoral',espalda:'dorsal_ancho',dorsales:'dorsal_ancho',
+ espalda_baja:'erectores_espinales',espalda_alta:'trapecio',trapecios:'trapecio'
+};
 function evoCanonicalMuscle(key){return EVO_MUSCLE_INFO[key]?key:(EVO_MUSCLE_CANONICAL[key]||'pectoral_mayor');}
 function evoExerciseVisual(equipment){
  var equipmentMark=equipment==='weights'?'<path d="M18 31h10m-7-7v14m78-7H89m7-7v14M28 31h64" stroke="#a5ff52" stroke-width="4" stroke-linecap="round"/>':equipment==='machines'?'<path d="M22 17v43m0-4h76M34 17v20m0 0h32m0 0v23m0-23h22m0 0V17" stroke="#a5ff52" stroke-width="3" stroke-linecap="round" fill="none"/>':equipment==='bands'?'<path d="M24 48Q50 4 96 48M24 48Q58 70 96 48" stroke="#a5ff52" stroke-width="3" fill="none" stroke-linecap="round"/>':'<path d="M27 49h65M37 49l11-17 17 17 14-24 13 24" stroke="#a5ff52" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
  return '<svg viewBox="0 0 120 76" role="img" aria-label="Ilustración del equipamiento del ejercicio"><circle cx="60" cy="14" r="7" fill="#d8e5dc"/><path d="M60 22v20m0-13L42 39m18-10 18 10M60 42 47 61m13-19 13 19" stroke="#d8e5dc" stroke-width="4" stroke-linecap="round" fill="none"/>'+equipmentMark+'</svg>';
 }
 function renderEvoMuscleLibrary(){
- var key=evoCanonicalMuscle(EVO.muscle),info=EVO_MUSCLE_INFO[key]||EVO_MUSCLE_INFO.pectoral_mayor;
+ var key=evoCanonicalMuscle(EVO.muscle),info=EVO_MUSCLE_INFO[EVO.muscle]||EVO_MUSCLE_INFO[key]||EVO_MUSCLE_INFO.pectoral_mayor;
  $('evo-muscle-title').textContent=info.label;$('evo-muscle-location').textContent=info.location;$('evo-muscle-function').textContent=info.func;$('evo-muscle-secondary').textContent=info.secondary;
  var equipment=$('evo-equipment-filter').value,level=$('evo-level-filter').value,items=EVO_EXERCISES[key]||[];
  var filtered=items.filter(function(x){return (equipment==='all'||x[1]===equipment)&&(level==='all'||x[2]===level);});
@@ -2634,24 +2654,32 @@ function renderEvoMuscleLibrary(){
 }
 var EVO3D={ready:false,loading:false,scene:null,camera:null,renderer:null,controls:null,group:null,parts:[],back:false,frame:0};
 var EVO_MUSCLE_MODEL_IDS={
- pectoral_superior:['pectoralis-major'],pectoral_medio:['pectoralis-major'],pectoral_inferior:['pectoralis-major'],pectoral_mayor:['pectoralis-major'],
+ pectoral_superior:['pectoralis-major'],pectoral_medio:['pectoralis-major'],pectoral_inferior:['pectoralis-major'],
+ biceps_cabeza_larga:['biceps-brachii'],biceps_cabeza_corta:['biceps-brachii'],
+ triceps_cabeza_larga:['triceps-brachii'],triceps_cabeza_lateral:['triceps-brachii'],triceps_cabeza_medial:['triceps-brachii'],
+ gluteo_mayor:['gluteus-maximus'],gluteo_medio:['gluteus-medius'],gluteo_menor:['gluteus-minimus'],
  deltoide_anterior:['deltoid'],deltoide_lateral:['deltoid'],deltoide_posterior:['deltoid'],
- biceps_cabeza_larga:['biceps-brachii'],biceps_cabeza_corta:['biceps-brachii'],biceps_braquial:['biceps-brachii'],braquial:['brachialis'],
- triceps_cabeza_larga:['triceps-brachii'],triceps_cabeza_lateral:['triceps-brachii'],triceps_cabeza_medial:['triceps-brachii'],triceps_braquial:['triceps-brachii'],
- braquiorradial:['brachioradialis'],extensores_antebrazo:['extensor-carpi-radialis-longus','extensor-carpi-radialis-brevis','extensor-digitorum','extensor-digiti-minimi','extensor-carpi-ulnaris'],
- recto_abdominal:['rectus-abdominis'],oblicuos:['external-oblique','internal-oblique'],
- recto_femoral:['rectus-femoris'],vasto_lateral:['vastus-lateralis'],cuadriceps:['rectus-femoris','vastus-lateralis','vastus-medialis','vastus-intermedius'],
+ braquial:['brachialis'],cuadriceps:['rectus-femoris','vastus-lateralis','vastus-medialis','vastus-intermedius'],
  aductores:['adductor-longus','adductor-brevis','adductor-magnus','adductor-minimus','gracilis','pectineus'],
  abductores:['gluteus-medius','gluteus-minimus','tensor-fasciae-latae'],
- gastrocnemio:['gastrocnemius'],soleo:['soleus'],pantorrillas:['gastrocnemius','soleus'],
- dorsal_ancho:['latissimus-dorsi'],dorsales:['latissimus-dorsi'],
- trapecio:['trapezius'],espalda_alta:['trapezius','rhomboid-major','rhomboid-minor'],
- erectores_espinales:['iliocostalis','longissimus','spinalis'],espalda_baja:['iliocostalis','longissimus','spinalis','multifidus'],
- gluteo_mayor:['gluteus-maximus'],gluteo_medio:['gluteus-medius'],gluteo_menor:['gluteus-minimus'],
- biceps_femoral:['biceps-femoris'],isquiotibiales:['biceps-femoris','semitendinosus','semimembranosus'],
- serrato_anterior:['serratus-anterior']
+ pantorrillas:['gastrocnemius','soleus'],isquiotibiales:['biceps-femoris','semitendinosus','semimembranosus'],
+ oblicuos:['external-oblique','internal-oblique'],
+ espalda:['latissimus-dorsi','trapezius','rhomboid-major','rhomboid-minor','iliocostalis','longissimus','spinalis','multifidus'],
+ dorsales:['latissimus-dorsi'],espalda_baja:['iliocostalis','longissimus','spinalis','multifidus'],
+ espalda_alta:['trapezius','rhomboid-major','rhomboid-minor'],trapecios:['trapezius']
 };
-var EVO_MODEL_TO_UI={ 'pectoralis-major':'pectoral_mayor','deltoid':'deltoide_anterior','biceps-brachii':'biceps_braquial','brachialis':'braquial','triceps-brachii':'triceps_braquial','brachioradialis':'braquiorradial','rectus-abdominis':'recto_abdominal','external-oblique':'oblicuos','internal-oblique':'oblicuos','rectus-femoris':'recto_femoral','vastus-lateralis':'vasto_lateral','vastus-medialis':'cuadriceps','vastus-intermedius':'cuadriceps','adductor-longus':'aductores','adductor-brevis':'aductores','adductor-magnus':'aductores','adductor-minimus':'aductores','gluteus-maximus':'gluteo_mayor','gluteus-medius':'gluteo_medio','gluteus-minimus':'gluteo_menor','tensor-fasciae-latae':'abductores','gastrocnemius':'gastrocnemio','soleus':'soleo','latissimus-dorsi':'dorsal_ancho','trapezius':'trapecio','rhomboid-major':'espalda_alta','rhomboid-minor':'espalda_alta','iliocostalis':'espalda_baja','longissimus':'espalda_baja','spinalis':'espalda_baja','multifidus':'espalda_baja','biceps-femoris':'biceps_femoral','semitendinosus':'isquiotibiales','semimembranosus':'isquiotibiales','serratus-anterior':'serrato_anterior'};
+var EVO_MODEL_TO_UI={
+ 'pectoralis-major':'pectoral_medio','deltoid':'deltoide_lateral','biceps-brachii':'biceps_cabeza_larga',
+ 'brachialis':'braquial','triceps-brachii':'triceps_cabeza_larga',
+ 'gluteus-maximus':'gluteo_mayor','gluteus-medius':'gluteo_medio','gluteus-minimus':'gluteo_menor',
+ 'rectus-femoris':'cuadriceps','vastus-lateralis':'cuadriceps','vastus-medialis':'cuadriceps','vastus-intermedius':'cuadriceps',
+ 'adductor-longus':'aductores','adductor-brevis':'aductores','adductor-magnus':'aductores','adductor-minimus':'aductores','gracilis':'aductores','pectineus':'aductores',
+ 'tensor-fasciae-latae':'abductores','gastrocnemius':'pantorrillas','soleus':'pantorrillas',
+ 'biceps-femoris':'isquiotibiales','semitendinosus':'isquiotibiales','semimembranosus':'isquiotibiales',
+ 'external-oblique':'oblicuos','internal-oblique':'oblicuos','latissimus-dorsi':'dorsales',
+ 'trapezius':'trapecios','rhomboid-major':'espalda_alta','rhomboid-minor':'espalda_alta',
+ 'iliocostalis':'espalda_baja','longissimus':'espalda_baja','spinalis':'espalda_baja','multifidus':'espalda_baja'
+};
 function evoLoadScript(src){return new Promise(function(resolve,reject){var sc=document.createElement('script');sc.src=src;sc.async=true;sc.onload=resolve;sc.onerror=function(){reject(new Error('No se pudo cargar el visor anatómico'));};document.head.appendChild(sc);});}
 function evoResize3D(){
  if(!EVO3D.ready)return;
