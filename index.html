@@ -203,14 +203,14 @@ button.act{cursor:pointer}
 .evo-muscles{display:none}
 .evo-anatomy{margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
 .evo-anatomy-head{display:grid;gap:4px;text-align:center}.evo-anatomy-head strong{font:800 .9rem var(--display);letter-spacing:.12em;color:var(--fg)}.evo-anatomy-head span,.evo-anatomy-hint{font-size:.8rem;color:var(--muted);text-align:center}
-.evo-anatomy-views{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:440px;margin:12px auto 0}
+.evo-anatomy-views{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:440px;margin:12px auto 0}
 .evo-anatomy-panel{min-width:0;text-align:center}.evo-anatomy-panel>span{font-size:.72rem;letter-spacing:.14em;color:var(--muted);font-weight:800}
 .evo-anatomy-panel svg{width:100%;height:auto;max-height:390px;display:block;margin:4px auto 0}
 .evo-muscle-part{cursor:pointer;stroke:#101613;stroke-width:1.2;transition:fill .15s,filter .15s;outline:none}
 .evo-muscle-part:hover,.evo-muscle-part:focus{fill:#8eea3d;filter:drop-shadow(0 0 5px #8eea3d)}
 .evo-muscle-part.active{fill:#a5ff52;filter:drop-shadow(0 0 7px #8eea3d)}
 .evo-anatomy-hint{margin:8px 0 0}.evo-anatomy-hint b{color:var(--fg)}
-.evo-three-stage{display:none!important;position:relative;max-width:520px;margin:12px auto 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at 50% 38%,#263b32 0%,#111a17 58%,#0b100e 100%)}
+.evo-three-stage{display:block;position:relative;max-width:520px;margin:12px auto 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at 50% 38%,#263b32 0%,#111a17 58%,#0b100e 100%)}
 .evo-three-stage[hidden]{display:none}.evo-three-stage canvas{display:block;width:100%;height:390px;touch-action:pan-y;cursor:grab}.evo-three-stage canvas:active{cursor:grabbing}
 .evo-three-controls{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border-top:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18)}
 .evo-three-controls .note{color:#c2d2c9;font-size:.75rem}
@@ -598,7 +598,7 @@ main{padding-block:12px 40px}
           <div class="evo-anatomy-head"><strong>MAPA MUSCULAR</strong><span>Toca un músculo para ver su progreso</span></div>
           <div class="evo-three-stage" id="evo-three-stage" hidden>
             <canvas id="evo-three-canvas" aria-label="Modelo anatómico 3D interactivo. Arrastra para girar y toca un músculo para seleccionarlo."></canvas>
-            <div class="evo-three-controls"><button type="button" class="btn sm" id="evo-three-view">Vista posterior</button><span class="note">Arrastra para girar · Toca una zona muscular</span></div>
+            <div class="evo-three-controls"><button type="button" class="btn sm" id="evo-three-view">Vista posterior</button><span class="note" id="evo-three-status">Preparando modelo anatómico humano…</span><small class="note">Modelo: BodyParts3D · CC BY-SA 2.1 Japan · <a href="https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en" target="_blank" rel="noopener">licencia y atribución</a></small></div>
           </div>
           <div class="evo-anatomy-views">
             <div class="evo-anatomy-panel"><span>FRENTE</span>
@@ -2619,64 +2619,106 @@ function renderEvoMuscleLibrary(){
  $('evo-exercise-list').innerHTML=filtered.length?filtered.map(function(x){return '<article class="evo-exercise-card"><h4>'+esc(x[0])+'</h4><p>'+esc(x[3])+'</p><div class="evo-exercise-tags"><span>'+eqLabels[x[1]]+'</span><span>'+esc(x[2])+'</span><span>Secundarios: '+esc(x[4])+'</span></div><button type="button" class="btn primary sm" data-evo-record="'+esc(x[0])+'" data-evo-muscle="'+key+'">Registrar</button></article>';}).join(''):'<p class="note">No hay ejercicios con esos filtros. Prueba otra combinación.</p>';
 }
 var EVO3D={ready:false,loading:false,scene:null,camera:null,renderer:null,controls:null,group:null,parts:[],back:false,frame:0};
-function evoLoadScript(src){return new Promise(function(resolve,reject){var sc=document.createElement('script');sc.src=src;sc.async=true;sc.onload=resolve;sc.onerror=function(){reject(new Error('No se pudo cargar el visor 3D'));};document.head.appendChild(sc);});}
-function evoAddMesh(key,x,y,z,sx,sy,sz,rz){
- var geo=new THREE.SphereGeometry(1,24,18),mat=new THREE.MeshStandardMaterial({color:0xb87568,roughness:.58,metalness:.01,emissive:0x170604});
- var mesh=new THREE.Mesh(geo,mat);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);mesh.rotation.z=rz||0;mesh.userData.muscle=key;EVO3D.group.add(mesh);EVO3D.parts.push(mesh);return mesh;
-}
-function evoAddBase(x,y,z,sx,sy,sz,rz){
- var mesh=new THREE.Mesh(new THREE.SphereGeometry(1,24,18),new THREE.MeshStandardMaterial({color:0x754c46,roughness:.76,metalness:.01}));mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);mesh.rotation.z=rz||0;EVO3D.group.add(mesh);return mesh;
-}
+var EVO_MUSCLE_MODEL_IDS={
+ pectoral_superior:['pectoralis-major'],pectoral_medio:['pectoralis-major'],pectoral_inferior:['pectoralis-major'],pectoral_mayor:['pectoralis-major'],
+ deltoide_anterior:['deltoid'],deltoide_lateral:['deltoid'],deltoide_posterior:['deltoid'],
+ biceps_cabeza_larga:['biceps-brachii'],biceps_cabeza_corta:['biceps-brachii'],biceps_braquial:['biceps-brachii'],braquial:['brachialis'],
+ triceps_cabeza_larga:['triceps-brachii'],triceps_cabeza_lateral:['triceps-brachii'],triceps_cabeza_medial:['triceps-brachii'],triceps_braquial:['triceps-brachii'],
+ braquiorradial:['brachioradialis'],extensores_antebrazo:['extensor-carpi-radialis-longus','extensor-carpi-radialis-brevis','extensor-digitorum','extensor-digiti-minimi','extensor-carpi-ulnaris'],
+ recto_abdominal:['rectus-abdominis'],oblicuos:['external-oblique','internal-oblique'],
+ recto_femoral:['rectus-femoris'],vasto_lateral:['vastus-lateralis'],cuadriceps:['rectus-femoris','vastus-lateralis','vastus-medialis','vastus-intermedius'],
+ aductores:['adductor-longus','adductor-brevis','adductor-magnus','adductor-minimus','gracilis','pectineus'],
+ abductores:['gluteus-medius','gluteus-minimus','tensor-fasciae-latae'],
+ gastrocnemio:['gastrocnemius'],soleo:['soleus'],pantorrillas:['gastrocnemius','soleus'],
+ dorsal_ancho:['latissimus-dorsi'],dorsales:['latissimus-dorsi'],
+ trapecio:['trapezius'],espalda_alta:['trapezius','rhomboid-major','rhomboid-minor'],
+ erectores_espinales:['iliocostalis','longissimus','spinalis'],espalda_baja:['iliocostalis','longissimus','spinalis','multifidus'],
+ gluteo_mayor:['gluteus-maximus'],gluteo_medio:['gluteus-medius'],gluteo_menor:['gluteus-minimus'],
+ biceps_femoral:['biceps-femoris'],isquiotibiales:['biceps-femoris','semitendinosus','semimembranosus'],
+ serrato_anterior:['serratus-anterior']
+};
+var EVO_MODEL_TO_UI={ 'pectoralis-major':'pectoral_mayor','deltoid':'deltoide_anterior','biceps-brachii':'biceps_braquial','brachialis':'braquial','triceps-brachii':'triceps_braquial','brachioradialis':'braquiorradial','rectus-abdominis':'recto_abdominal','external-oblique':'oblicuos','internal-oblique':'oblicuos','rectus-femoris':'recto_femoral','vastus-lateralis':'vasto_lateral','vastus-medialis':'cuadriceps','vastus-intermedius':'cuadriceps','adductor-longus':'aductores','adductor-brevis':'aductores','adductor-magnus':'aductores','adductor-minimus':'aductores','gluteus-maximus':'gluteo_mayor','gluteus-medius':'gluteo_medio','gluteus-minimus':'gluteo_menor','tensor-fasciae-latae':'abductores','gastrocnemius':'gastrocnemio','soleus':'soleo','latissimus-dorsi':'dorsal_ancho','trapezius':'trapecio','rhomboid-major':'espalda_alta','rhomboid-minor':'espalda_alta','iliocostalis':'espalda_baja','longissimus':'espalda_baja','spinalis':'espalda_baja','multifidus':'espalda_baja','biceps-femoris':'biceps_femoral','semitendinosus':'isquiotibiales','semimembranosus':'isquiotibiales','serratus-anterior':'serrato_anterior'};
+function evoLoadScript(src){return new Promise(function(resolve,reject){var sc=document.createElement('script');sc.src=src;sc.async=true;sc.onload=resolve;sc.onerror=function(){reject(new Error('No se pudo cargar el visor anatómico'));};document.head.appendChild(sc);});}
 function evoRefresh3D(){
  if(!EVO3D.ready)return;
- var key=evoCanonicalMuscle(EVO.muscle);
- EVO3D.parts.forEach(function(m){var active=m.userData.muscle===key;m.material.color.setHex(active?0x8df238:0xb87568);m.material.emissive.setHex(active?0x244d12:0x190806);});
+ var key=EVO.muscle,ids=EVO_MUSCLE_MODEL_IDS[key]||EVO_MUSCLE_MODEL_IDS[evoCanonicalMuscle(key)]||[];
+ EVO3D.parts.forEach(function(m){
+  var active=ids.indexOf(m.userData.structureId)>=0;
+  m.material.color.setHex(active?0x8df238:0xb87568);
+  m.material.emissive.setHex(active?0x285d13:0x120806);
+  m.material.emissiveIntensity=active?.75:.08;
+ });
 }
 function evoBuild3D(){
- var stage=$('evo-three-stage'),canvas=$('evo-three-canvas');if(!stage||!canvas||!window.THREE||!THREE.OrbitControls)return;
- var w=Math.max(280,stage.clientWidth),h=590;
- EVO3D.scene=new THREE.Scene();EVO3D.camera=new THREE.PerspectiveCamera(31,w/h,.1,100);EVO3D.camera.position.set(0,.55,5.15);
- EVO3D.renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true});EVO3D.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));EVO3D.renderer.setSize(w,h,false);EVO3D.renderer.outputEncoding=THREE.sRGBEncoding;
- EVO3D.scene.add(new THREE.HemisphereLight(0xdfffea,0x15231b,1.7));
- var light=new THREE.DirectionalLight(0xffffff,2.1);light.position.set(3,4,5);EVO3D.scene.add(light);
- var rim=new THREE.DirectionalLight(0x35d07f,1.1);rim.position.set(-3,1,-4);EVO3D.scene.add(rim);
+ var stage=$('evo-three-stage'),canvas=$('evo-three-canvas');if(!stage||!canvas||!window.THREE||!THREE.OrbitControls||!THREE.GLTFLoader)return;
+ var w=Math.max(280,stage.clientWidth||520),h=590;
+ stage.hidden=false;
+ EVO3D.scene=new THREE.Scene();
+ EVO3D.camera=new THREE.PerspectiveCamera(34,w/h,.05,100);
+ EVO3D.camera.position.set(0,0,12.4);
+ EVO3D.renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true,powerPreference:'low-power'});
+ EVO3D.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));
+ EVO3D.renderer.setSize(w,h,false);
+ EVO3D.renderer.outputEncoding=THREE.sRGBEncoding;
+ EVO3D.scene.add(new THREE.HemisphereLight(0xe7fff0,0x1a211d,1.55));
+ var keyLight=new THREE.DirectionalLight(0xffffff,2.25);keyLight.position.set(3,5,7);EVO3D.scene.add(keyLight);
+ var fillLight=new THREE.DirectionalLight(0xb9d9ca,.85);fillLight.position.set(-4,1,4);EVO3D.scene.add(fillLight);
+ var rim=new THREE.DirectionalLight(0x35d07f,1.15);rim.position.set(-3,2,-5);EVO3D.scene.add(rim);
  EVO3D.group=new THREE.Group();EVO3D.scene.add(EVO3D.group);
- evoAddBase(0,1.35,0,.39,.57,.22);evoAddBase(0,.73,0,.31,.28,.19);evoAddBase(0,2.02,0,.17,.2,.16);
- evoAddBase(-.48,1.33,0,.15,.25,.15,-.15);evoAddBase(.48,1.33,0,.15,.25,.15,.15);
- evoAddBase(-.63,.98,0,.105,.28,.105,-.12);evoAddBase(.63,.98,0,.105,.28,.105,.12);
- evoAddBase(-.2,.15,0,.16,.55,.16,-.04);evoAddBase(.2,.15,0,.16,.55,.16,.04);
- evoAddBase(-.21,-.52,0,.12,.48,.12,.02);evoAddBase(.21,-.52,0,.12,.48,.12,-.02);
- evoAddBase(-.21,-.93,.07,.14,.1,.23);evoAddBase(.21,-.93,.07,.14,.1,.23);
- evoAddMesh('deltoide_anterior',-.48,1.53,.14,.18,.19,.12,-.25);evoAddMesh('deltoide_anterior',.48,1.53,.14,.18,.19,.12,.25);
- evoAddMesh('pectoral_mayor',-.2,1.48,.205,.2,.22,.075,-.08);evoAddMesh('pectoral_mayor',.2,1.48,.205,.2,.22,.075,.08);
- evoAddMesh('biceps_braquial',-.59,1.18,.12,.105,.23,.09,-.12);evoAddMesh('biceps_braquial',.59,1.18,.12,.105,.23,.09,.12);
- evoAddMesh('braquiorradial',-.68,.91,.12,.08,.24,.08,-.08);evoAddMesh('braquiorradial',.68,.91,.12,.08,.24,.08,.08);
- evoAddMesh('recto_abdominal',-.105,1.02,.2,.095,.28,.045);evoAddMesh('recto_abdominal',.105,1.02,.2,.095,.28,.045);
- evoAddMesh('oblicuos',-.255,1.04,.13,.09,.25,.08,-.2);evoAddMesh('oblicuos',.255,1.04,.13,.09,.25,.08,.2);
- evoAddMesh('recto_femoral',-.2,.15,.14,.105,.42,.09,-.04);evoAddMesh('recto_femoral',.2,.15,.14,.105,.42,.09,.04);evoAddMesh('aductores',-.085,.12,.15,.055,.31,.075,-.04);evoAddMesh('aductores',.085,.12,.15,.055,.31,.075,.04);
- evoAddMesh('vasto_lateral',-.29,.08,.095,.075,.36,.075,-.08);evoAddMesh('vasto_lateral',.29,.08,.095,.075,.36,.075,.08);
- evoAddMesh('gastrocnemio',-.21,-.53,.075,.105,.23,.09);evoAddMesh('gastrocnemio',.21,-.53,.075,.105,.23,.09);
- evoAddMesh('deltoide_posterior',-.48,1.53,-.13,.17,.19,.1,-.25);evoAddMesh('deltoide_posterior',.48,1.53,-.13,.17,.19,.1,.25);
- evoAddMesh('trapecio',0,1.7,-.17,.25,.3,.07);
- evoAddMesh('dorsal_ancho',-.22,1.28,-.15,.18,.37,.08,-.12);evoAddMesh('dorsal_ancho',.22,1.28,-.15,.18,.37,.08,.12);
- evoAddMesh('triceps_braquial',-.59,1.17,-.12,.1,.24,.09,-.1);evoAddMesh('triceps_braquial',.59,1.17,-.12,.1,.24,.09,.1);
- evoAddMesh('extensores_antebrazo',-.68,.91,-.11,.08,.24,.08,-.08);evoAddMesh('extensores_antebrazo',.68,.91,-.11,.08,.24,.08,.08);
- evoAddMesh('gluteo_mayor',-.17,.68,-.18,.17,.19,.1);evoAddMesh('gluteo_mayor',.17,.68,-.18,.17,.19,.1);
- evoAddMesh('gluteo_medio',-.3,.78,-.13,.11,.15,.08,-.2);evoAddMesh('gluteo_medio',.3,.78,-.13,.11,.15,.08,.2);
- evoAddMesh('biceps_femoral',-.2,.13,-.13,.11,.4,.08,-.04);evoAddMesh('biceps_femoral',.2,.13,-.13,.11,.4,.08,.04);
- evoAddMesh('erectores_espinales',-.07,1.2,-.23,.055,.43,.045);evoAddMesh('erectores_espinales',.07,1.2,-.23,.055,.43,.045);
- evoAddMesh('soleo',-.21,-.58,-.1,.085,.2,.07);evoAddMesh('soleo',.21,-.58,-.1,.085,.2,.07);
- EVO3D.controls=new THREE.OrbitControls(EVO3D.camera,canvas);EVO3D.controls.enablePan=false;EVO3D.controls.enableZoom=false;EVO3D.controls.target.set(0,.48,0);EVO3D.controls.minPolarAngle=.45;EVO3D.controls.maxPolarAngle=2.55;
- var raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
- canvas.addEventListener('pointerup',function(e){var r=canvas.getBoundingClientRect();pointer.x=((e.clientX-r.left)/r.width)*2-1;pointer.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(pointer,EVO3D.camera);var hits=raycaster.intersectObjects(EVO3D.parts,false);if(hits.length){EVO.muscle=hits[0].object.userData.muscle;renderEvolucion();}});
- $('evo-three-view').addEventListener('click',function(){EVO3D.back=!EVO3D.back;EVO3D.group.rotation.y=EVO3D.back?Math.PI:0;$('evo-three-view').textContent=EVO3D.back?'Vista frontal':'Vista posterior';});
- EVO3D.ready=true;stage.hidden=false;$('evo-anatomy-views').hidden=false;evoRefresh3D();
- function animate(){if(!EVO3D.ready)return;EVO3D.frame=requestAnimationFrame(animate);EVO3D.controls.update();EVO3D.renderer.render(EVO3D.scene,EVO3D.camera);}animate();
- window.addEventListener('resize',function(){if(!EVO3D.ready)return;var width=Math.max(280,stage.clientWidth);EVO3D.camera.aspect=width/590;EVO3D.camera.updateProjectionMatrix();EVO3D.renderer.setSize(width,590,false);});
+ EVO3D.controls=new THREE.OrbitControls(EVO3D.camera,canvas);
+ EVO3D.controls.enableDamping=true;EVO3D.controls.dampingFactor=.065;
+ EVO3D.controls.enablePan=false;EVO3D.controls.enableZoom=true;
+ EVO3D.controls.minDistance=7;EVO3D.controls.maxDistance=19;
+ EVO3D.controls.target.set(0,0,0);EVO3D.controls.update();
+ var status=$('evo-three-status');
+ if(status)status.textContent='Cargando modelo anatómico humano…';
+ var modelUrl='https://cdn.jsdelivr.net/gh/organui/muscles-3d@1c746c36d12a78c5f3fd452dbe5d29ae869cad04/public/models/muscles.glb';
+ new THREE.GLTFLoader().load(modelUrl,function(gltf){
+  var count=0;
+  gltf.scene.traverse(function(obj){
+   if(!obj.isMesh)return;
+   var id=obj.name||obj.parent&&obj.parent.name||'';
+   if(!id)return;
+   obj.userData.structureId=id;
+   obj.material=new THREE.MeshStandardMaterial({color:0xb87568,roughness:.66,metalness:0,side:THREE.DoubleSide,emissive:0x120806});
+   obj.castShadow=false;obj.receiveShadow=false;
+   EVO3D.parts.push(obj);count++;
+  });
+  if(!count){if(status)status.textContent='No se reconocieron las estructuras del modelo anatómico.';return;}
+  EVO3D.group.add(gltf.scene);
+  EVO3D.ready=true;
+  stage.hidden=false;
+  var fallback=$('evo-anatomy-views');if(fallback)fallback.hidden=true;
+  if(status)status.textContent='Modelo anatómico real · 177 estructuras musculares · arrastra para girar y usa el zoom.';
+  evoRefresh3D();
+  var raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
+  canvas.addEventListener('pointerup',function(e){
+   var r=canvas.getBoundingClientRect();pointer.x=((e.clientX-r.left)/r.width)*2-1;pointer.y=-((e.clientY-r.top)/r.height)*2+1;
+   raycaster.setFromCamera(pointer,EVO3D.camera);
+   var hits=raycaster.intersectObjects(EVO3D.parts,false);
+   if(hits.length){var id=hits[0].object.userData.structureId,key=EVO_MODEL_TO_UI[id];if(key){EVO.muscle=key;renderEvolucion();}}
+  });
+  var view=$('evo-three-view');
+  if(view&&!view.dataset.bound){view.addEventListener('click',function(){EVO3D.back=!EVO3D.back;EVO3D.group.rotation.y=EVO3D.back?Math.PI:0;view.textContent=EVO3D.back?'Vista frontal':'Vista posterior';});view.dataset.bound='1';}
+  function animate(){if(!EVO3D.ready)return;EVO3D.frame=requestAnimationFrame(animate);EVO3D.controls.update();EVO3D.renderer.render(EVO3D.scene,EVO3D.camera);}
+  animate();
+  window.addEventListener('resize',function(){if(!EVO3D.ready)return;var width=Math.max(280,stage.clientWidth);EVO3D.camera.aspect=width/590;EVO3D.camera.updateProjectionMatrix();EVO3D.renderer.setSize(width,590,false);});
+ },undefined,function(){
+  if(status)status.textContent='No se pudo descargar el modelo 3D. Puedes seguir usando la selección y el registro muscular.';
+  stage.hidden=true;
+  var fallback=$('evo-anatomy-views');if(fallback)fallback.hidden=true;
+ });
 }
 function setupEvo3D(){
  if(EVO3D.ready||EVO3D.loading)return;EVO3D.loading=true;
- evoLoadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js').then(function(){return evoLoadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js');}).then(evoBuild3D).catch(function(){var stage=$('evo-three-stage');if(stage)stage.hidden=true;var fallback=$('evo-anatomy-views');if(fallback)fallback.hidden=false;}).finally(function(){EVO3D.loading=false;});
+ Promise.all([
+  evoLoadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'),
+  evoLoadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js'),
+  evoLoadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js')
+ ]).then(evoBuild3D).catch(function(){
+  var stage=$('evo-three-stage');if(stage)stage.hidden=true;
+  var status=$('evo-three-status');if(status)status.textContent='No se pudo iniciar el visor 3D. La selección muscular y el registro siguen disponibles.';
+ }).finally(function(){EVO3D.loading=false;});
 }
 function renderEvolucion(){
   var buttons=document.querySelectorAll('.evo-muscle');
