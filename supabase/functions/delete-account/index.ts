@@ -11,7 +11,7 @@ const cors = {
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" },
 });
-const buckets = ["avatars", "fotos-gym", "meal-photos", "viper-feed", "chat-images", "viper-progress"];
+const buckets = ["avatars", "fotos-gym", "meal-photos", "viper-feed", "chat-images", "viper-progress", "community-images"];
 
 // Storage files are kept in owner UUID folders. List recursively, including
 // dated subfolders, then remove in batches using the service-role client.
