@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const sql = readFileSync(new URL("../supabase/migrations/20261123090000_protect_xp_from_client_writes.sql", import.meta.url), "utf8");
 const deletion = readFileSync(new URL("../supabase/functions/delete-account/index.ts", import.meta.url), "utf8");
+const engagement = readFileSync(new URL("../supabase/migrations/20261123183000_viper_ai_community_and_security.sql", import.meta.url), "utf8");
 const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
   .map((match) => match[1]).filter((body) => body.trim());
 assert.ok(scripts.length >= 2, "Expected inline setup + application scripts");
@@ -15,7 +16,9 @@ const requireId = (id) => assert.equal(count('id="' + id + '"'), 1, "Missing or 
 for (const id of [
   "mobile-tabs", "auth-form", "signup-profile-fields", "signup-simple-note",
   "security-delete-confirm", "security-delete-account", "security-delete-status",
-  "nav-toggle", "sidebar"
+  "nav-toggle", "sidebar",
+  "landing-signup", "vip-ai-create", "vip-ai-text", "vip-ai-status",
+  "vip-challenge-list", "vip-challenge-week", "vip-ranking-link", "vip-badges-list"
 ]) requireId(id);
 for (const tab of ["inicio", "hoy", "feed", "evolucion", "perfil"])
   assert.equal(count('data-mobile-nav="' + tab + '"'), 1, "Missing tab " + tab);
@@ -27,4 +30,13 @@ assert.match(sql, /revoke insert, update, delete on public\.checkins from authen
 assert.match(deletion, /admin\.auth\.admin\.deleteUser\(data\.user\.id\)/);
 assert.match(deletion, /await removeOwnedFiles\(admin, data\.user\.id\)/);
 assert.doesNotMatch(deletion, /sb_secret_|sk_live_/);
-console.log("VIPER smoke checks passed: inline JS, UI controls, navigation, XP and deletion.");
+assert.ok(html.includes("functions.invoke('viper-ai-coach'"), "Missing existing VIPER Coach call");
+assert.ok(html.includes("async function generateVipAiPlan("));
+assert.ok(html.includes("async function loadVipChallenges("));
+assert.ok(html.includes("function renderVipBadges("));
+assert.ok(engagement.includes("alter table public.viper_ai_training_plans enable row level security"));
+assert.ok(engagement.includes("alter table public.viper_weekly_challenge_entries enable row level security"));
+assert.match(engagement, /security_invoker = true/);
+assert.ok(engagement.includes("revoke execute on function public.crear_perfil"));
+assert.doesNotMatch(engagement, /grant.*to anon/i);
+console.log("VIPER smoke checks passed: inline JS, navigation, security, AI plans, community challenges and deletion.");
