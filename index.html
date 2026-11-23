@@ -3,8 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Viper</title>
-<meta name="description" content="Entrena, registra tu día y sube de rango. Compite con tus amigos.">
+<title>VIPER | Entrenador con IA, retos fitness y comunidad</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="VIPER — Entrena, compite y evoluciona">
+<meta property="og:description" content="Entrenamientos, alimentación con IA, retos semanales, rangos XP y comunidad fitness. Descubre VIPER.">
+<meta name="description" content="Entrena con VIPER AI, registra tus avances, participa en retos semanales y comparte tus logros en la comunidad fitness.">
 <meta name="theme-color" content="#111517">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -448,6 +451,35 @@ main{padding-block:12px 40px}
 }
 @media(max-width:360px){.mobile-tabs button{font-size:.61rem}.mobile-tabs .tab-symbol{font-size:1.1rem}.grid-two{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.mobile-tabs button{transition:none}}
+
+/* VIPER AI + COMMUNITY: mobile-first enhancement */
+.viper-public-landing{margin:18px 0 15px;padding:20px;border:1px solid rgba(76,235,136,.28);border-radius:20px;background:linear-gradient(145deg,rgba(18,54,36,.8),rgba(12,18,17,.9));text-align:center}
+.viper-public-title{display:block;font-size:clamp(1.15rem,4vw,1.65rem);font-weight:900;color:#64ee8f;letter-spacing:.03em}
+.viper-public-landing p{margin:9px 0 15px}
+.viper-public-landing .note{margin:12px 0 0;font-size:.77rem}
+.viper-public-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.viper-public-grid>div{padding:12px 9px;border:1px solid #335544;border-radius:13px;background:rgba(0,0,0,.2);text-align:left}
+.viper-public-grid span{display:block;font-size:1.35rem;margin-bottom:4px}
+.viper-public-grid strong{display:block;color:#f2fff4;font-size:.86rem}
+.viper-public-grid small{display:block;color:#adc3b3;font-size:.75rem;line-height:1.45;margin-top:4px}
+.viper-engagement{background:linear-gradient(165deg,rgba(21,49,36,.85),rgba(19,24,24,.98));border:1px solid #375341;border-radius:17px;padding:19px;margin:16px 0 22px}
+.viper-engagement h2,.viper-engagement h3{margin:9px 0 8px}
+.viper-engagement .note{line-height:1.6}
+.viper-engagement-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.viper-feature-tag{display:inline-block;border-radius:18px;padding:5px 11px;background:#193f28;color:#7cfca2;font-size:.72rem;font-weight:850;letter-spacing:.04em}
+.viper-ai-plan{white-space:pre-wrap;overflow-wrap:anywhere;max-height:540px;overflow:auto;font-family:inherit;font-size:.92rem;line-height:1.7;color:#e2ffe9;background:rgba(0,0,0,.23);border-radius:12px;padding:15px;margin:12px 0}
+.viper-challenge-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+.viper-challenge{border:1px solid #3b5949;border-radius:14px;background:rgba(0,0,0,.19);padding:13px;min-width:0}
+.viper-challenge h4{font-size:.94rem;margin:0 0 6px;color:#edfff3}
+.viper-challenge .note{display:block;font-size:.78rem}
+.viper-challenge-progress{height:7px;background:#34433a;border-radius:10px;overflow:hidden;margin:10px 0}
+.viper-challenge-progress i{display:block;background:#47e476;height:100%;border-radius:10px}
+.viper-challenge .btn{max-width:100%;margin-top:10px}
+.viper-badges{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}
+.viper-badge{border:1px solid #345c43;border-radius:14px;padding:12px;background:#142d1b;color:#b2ffc6;font-size:.86rem}
+.viper-badge.locked{filter:grayscale(1);opacity:.65}
+@media(max-width:720px){.viper-challenge-grid{grid-template-columns:1fr}.viper-engagement{padding:15px}.viper-public-landing{padding:15px}}
+@media(max-width:360px){.viper-public-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -456,6 +488,16 @@ main{padding-block:12px 40px}
   <p class="eyebrow">Gym · Rangos · Amigos</p>
   <h1 class="logo-big">Viper</h1>
   <p class="lead">Entrena, registra tu día y sube de rango. Compite con tus amigos.</p>
+  <div class="viper-public-landing" aria-label="Lo mejor de VIPER">
+    <strong class="viper-public-title">ENTRENA. COMPITE. EVOLUCIONA.</strong>
+    <p>Tu entrenador inteligente y tu comunidad fitness en un solo lugar.</p>
+    <div class="viper-public-grid">
+      <div><span aria-hidden="true">✦</span><strong>VIPER AI</strong><small>Rutinas orientativas y coach inteligente</small></div>
+      <div><span aria-hidden="true">🏆</span><strong>VIPER COMMUNITY</strong><small>Retos, rangos XP, amigos y Feed</small></div>
+    </div>
+    <button id="landing-signup" type="button" class="btn primary wide">Crear mi cuenta en VIPER</button>
+    <p class="note">Disponible en la web. Próximamente en Google Play y App Store.</p>
+  </div>
   <button class="btn wide" id="entrar" type="button">Continuar con Google</button>
   <div class="sec-head"><h2 id="auth-title">Iniciar sesión</h2></div>
   <form id="auth-form" class="stack">
@@ -539,11 +581,27 @@ main{padding-block:12px 40px}
         <button type="button" class="home-shortcut" data-home-nav="feed"><span class="home-shortcut-icon">▶</span><span><b>VIPER Feed</b><small>Comparte tu progreso</small></span></button>
         <button type="button" class="home-shortcut" data-home-nav="ranking"><span class="home-shortcut-icon">🏆</span><span><b>Ranking</b><small>Compite con la comunidad</small></span></button>
       </div>
+      <section class="viper-engagement viper-ai-panel" aria-label="Plan personal VIPER AI">
+        <div class="viper-engagement-head"><span class="viper-feature-tag">✦ VIPER AI</span><span class="note">Tu plan, tu ritmo</span></div>
+        <h2>Tu próximo entrenamiento empieza aquí</h2>
+        <p class="note">Genera una propuesta de rutina con VIPER Coach a partir de tu perfil de atleta. Puedes ajustar los ejercicios según tu experiencia y equipamiento.</p>
+        <button id="vip-ai-create" class="btn primary" type="button">Generar mi plan con IA</button>
+        <p class="note" id="vip-ai-status" role="status" aria-live="polite"></p>
+        <pre id="vip-ai-text" class="viper-ai-plan" aria-live="polite">Crea tu primer plan desde aquí.</pre>
+        <p class="note">Orientación general: adapta las cargas a tu capacidad y consulta con un profesional ante lesiones o limitaciones médicas.</p>
+      </section>
       <div class="home-section-title"><h2>Tu actividad reciente</h2><button class="btn sm" id="home-activity-refresh" type="button">Actualizar</button></div>
       <div id="home-activity-list" class="home-activity" aria-live="polite"><p class="note">Cargando tu actividad…</p></div>
     </section>
     <section id="v-feed" class="view" aria-label="VIPER Feed" hidden>
       <div class="sec-head"><h2>VIPER FEED</h2><span class="note">Comunidad fitness</span></div>
+      <section class="viper-engagement" aria-label="Retos semanales">
+        <div class="viper-engagement-head"><span class="viper-feature-tag">🏆 VIPER COMMUNITY</span><span class="note" id="vip-challenge-week">Esta semana</span></div>
+        <h3>Retos semanales</h3>
+        <p class="note">Participa y supera tus metas. Solo cuentan los registros verificados en VIPER; los retos no conceden XP extra.</p>
+        <div id="vip-challenge-list" class="viper-challenge-grid" aria-live="polite"><p class="note">Cargando retos…</p></div>
+        <button type="button" class="btn sm" id="vip-ranking-link">Ver ranking global</button>
+      </section>
       <form id="feed-composer" class="feed-composer">
         <label class="lbl" for="feed-caption">Comparte tu progreso</label>
         <textarea id="feed-caption" rows="3" maxlength="2000" placeholder="¿Qué entrenamiento hiciste hoy?"></textarea>
@@ -887,6 +945,11 @@ main{padding-block:12px 40px}
 
     <section id="v-perfil" class="view" aria-label="Perfil" hidden>
       <h2>Tu cuenta</h2>
+      <section class="viper-engagement" aria-label="Insignias personales">
+        <div class="viper-engagement-head"><span class="viper-feature-tag">✦ TUS LOGROS</span><span class="note">Se desbloquean con tus resultados</span></div>
+        <h3>Mis insignias VIPER</h3>
+        <div id="vip-badges-list" class="viper-badges"></div>
+      </section>
       <section class="season-card" aria-label="Mis videos"><div class="sec-head"><h2>Mis videos</h2><button class="btn sm" id="my-videos-refresh" type="button">Actualizar</button></div><div id="my-videos-list" class="my-videos-grid"><p class="note">Cargando tus videos…</p></div></section>
       <div class="avatar-card">
         <div class="avatar-ring" id="avatar-ring"><span class="avatar-fallback" id="avatar-fallback">V</span><img id="avatar-img" alt="Foto de perfil" hidden></div>
@@ -1807,6 +1870,7 @@ function renderPerfil(){
   if (P.avatar_path){ var av = sb.storage.from('avatars').getPublicUrl(P.avatar_path).data.publicUrl; $('avatar-img').src = av; $('avatar-img').hidden = false; $('avatar-fallback').hidden = true; }
   else { $('avatar-img').hidden = true; $('avatar-fallback').hidden = false; }
   renderLevels();
+  renderVipBadges();
   loadMyVideos();
   cargarUsuariosBloqueados();
 }
@@ -2205,13 +2269,13 @@ function ir(v){
   window.scrollTo(0, 0);
   $('app').classList.remove('sidebar-open');
   $('nav-toggle').setAttribute('aria-expanded','false');
-  if (v === 'inicio') renderInicio();
+  if (v === 'inicio'){renderInicio();loadVipAiPlan().catch(function(e){$('vip-ai-status').textContent='No se pudo cargar tu plan: '+errMsg(e);});}
   if (v === 'evolucion') cargarEvolucion();
   if (v === 'temporada') cargarTemporada();
   if (v === 'ranking') cargarRanking();
   if (v === 'amigos') cargarAmigos();
   if (v === 'perfil') renderPerfil();
-  if (v === 'feed') loadFeed().catch(function(e){toast(errMsg(e),true);});
+  if (v === 'feed'){loadFeed().catch(function(e){toast(errMsg(e),true);});loadVipChallenges().catch(function(e){$('vip-challenge-list').textContent='No se pudieron cargar los retos: '+errMsg(e);});}
   if (v === 'notificaciones'){loadNotifications().catch(function(e){toast(errMsg(e),true);});loadReminderSettings().catch(function(e){$('reminder-settings-status').textContent='No se pudieron cargar tus horarios: '+errMsg(e);});}
   if (v === 'seguridad') loadAccountActivity().catch(function(e){toast(errMsg(e),true);});
 }
@@ -2379,7 +2443,92 @@ async function start(){
     toast(errMsg(e), true);
   }
 }
+
+/* ---------- VIPER AI + VIPER COMMUNITY ---------- */
+var VIP_CHALLENGES=[
+  {key:'gym_3',title:'3 entrenamientos',target:3,unit:'días con foto de gym'},
+  {key:'xp_150',title:'150 XP semanales',target:150,unit:'XP verificados'},
+  {key:'meals_5',title:'5 comidas con IA',target:5,unit:'comidas aprobadas'}
+];
+function vipWeek(){
+  var dateStr=T&&T.hoy?T.hoy:limaToday();
+  var d=new Date(dateStr+'T12:00:00Z'),dow=d.getUTCDay()||7;
+  d.setUTCDate(d.getUTCDate()-(dow-1));
+  var first=d.toISOString().slice(0,10);
+  d.setUTCDate(d.getUTCDate()+6);
+  return {start:first,end:d.toISOString().slice(0,10)};
+}
+async function loadVipAiPlan(){
+  if(!user)return;
+  var r=await sb.from('viper_ai_training_plans').select('plan_text,updated_at').eq('user_id',user.id).maybeSingle();
+  if(r.error)throw r.error;
+  $('vip-ai-text').textContent=r.data?r.data.plan_text:'Crea tu primer plan personalizado con VIPER AI.';
+  $('vip-ai-status').textContent=r.data?'Última actualización: '+new Date(r.data.updated_at).toLocaleDateString('es-PE'):'Configura tu objetivo en Perfil antes de generar un plan.';
+}
+async function generateVipAiPlan(){
+  if(!user)return;
+  if(!ATHLETE||!ATHLETE.goal){ir('perfil');toast('Completa tus datos de atleta para personalizar tu rutina.',true);return;}
+  var b=$('vip-ai-create'),status=$('vip-ai-status');
+  b.disabled=true;b.textContent='Generando rutina…';status.textContent='VIPER Coach está preparando tu plan.';
+  try{
+    var days=Math.max(1,Math.min(7,Number(ATHLETE.training_days)||3));
+    var question='Crea una propuesta de rutina semanal de entrenamiento para mi perfil de atleta en VIPER. Objetivo: '+String(ATHLETE.goal).slice(0,35)+'. Experiencia: '+String(ATHLETE.experience||'beginner').slice(0,35)+'. Tipo de entrenamiento: '+String(ATHLETE.training_type||'mixed').slice(0,25)+'. Frecuencia: '+days+' días por semana. Propón los días, 3 a 5 ejercicios por sesión, series, repeticiones, descanso y un consejo de progresión. Sé claro y breve (máximo 300 palabras). Si falta información, indícalo. No prometas resultados ni des consejo médico.';
+    var r=await sb.functions.invoke('viper-ai-coach',{body:{question:question}});
+    if(r.error)throw r.error;
+    if(!r.data||r.data.error)throw new Error(r.data&&r.data.error||'No se recibió un plan.');
+    var plan=String(r.data.answer||'').trim().slice(0,11900);
+    if(plan.length<20)throw new Error('La respuesta fue demasiado breve. Intenta otra vez.');
+    var saved=await sb.from('viper_ai_training_plans').upsert({user_id:user.id,goal:String(ATHLETE.goal).slice(0,80),training_days:days,plan_text:plan,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    if(saved.error)throw saved.error;
+    $('vip-ai-text').textContent=plan;
+    status.textContent='Plan actualizado. Puedes volver a generarlo cuando cambie tu objetivo.';
+    toast('Tu plan VIPER AI se guardó de forma privada.');
+  }catch(e){status.textContent='No pudimos generar el plan: '+errMsg(e);toast(errMsg(e),true);}
+  finally{b.disabled=false;b.textContent='Generar mi plan con IA';}
+}
+async function loadVipChallenges(){
+  if(!user)return;
+  var w=vipWeek(),box=$('vip-challenge-list');
+  $('vip-challenge-week').textContent='Semana del '+w.start.split('-').reverse().join('/');
+  var results=await Promise.all([
+    sb.from('viper_weekly_challenge_entries').select('challenge_key').eq('user_id',user.id).eq('week_start',w.start),
+    sb.from('checkins').select('dia,xp,foto_path').gte('dia',w.start).lte('dia',w.end),
+    sb.from('meal_entries').select('id').gte('meal_date',w.start).lte('meal_date',w.end).eq('status','approved').eq('source','ai')
+  ]);
+  results.forEach(function(x){if(x.error)throw x.error;});
+  var checkins=results[1].data||[],enrolled=new Set((results[0].data||[]).map(function(x){return x.challenge_key;}));
+  var stats={gym_3:checkins.filter(function(x){return Boolean(x.foto_path);}).length,xp_150:checkins.reduce(function(n,x){return n+(Number(x.xp)||0);},0),meals_5:(results[2].data||[]).length};
+  box.innerHTML=VIP_CHALLENGES.map(function(x){
+    var progress=Math.max(0,Math.min(x.target,stats[x.key])), joined=enrolled.has(x.key);
+    return '<article class="viper-challenge"><h4>'+x.title+'</h4><span class="note">'+x.unit+'</span><strong>'+progress+' / '+x.target+'</strong>'+
+      '<div class="viper-challenge-progress" role="progressbar" aria-valuemin="0" aria-valuemax="'+x.target+'" aria-valuenow="'+progress+'" aria-label="'+x.title+'"><i style="width:'+(progress/x.target*100)+'%"></i></div>'+
+      (joined?'<span class="note">'+(progress>=x.target?'✓ ¡Reto cumplido!':'Inscrito · sigue avanzando')+'</span>':'<button type="button" class="btn sm" data-vip-challenge="'+x.key+'">Unirme al reto</button>')+'</article>';
+  }).join('');
+}
+async function joinVipChallenge(key){
+  if(!user||!VIP_CHALLENGES.some(function(x){return x.key===key;}))return;
+  var result=await sb.from('viper_weekly_challenge_entries').insert({user_id:user.id,challenge_key:key,week_start:vipWeek().start});
+  if(result.error)throw result.error;
+  await loadVipChallenges();toast('¡Participas en el reto de esta semana!');
+}
+function renderVipBadges(){
+  if(!P)return;
+  var badges=[['🏁','Primeros pasos',Number(P.xp_total)>=125],['⚡','Constancia',Number(P.racha)>=3],['🏅','500 XP',Number(P.xp_total)>=500],['👑','1.500 XP',Number(P.xp_total)>=1500]];
+  $('vip-badges-list').innerHTML=badges.map(function(b){return '<span class="viper-badge'+(b[2]?'':' locked')+'" title="'+(b[2]?'Desbloqueada':'Aún no desbloqueada')+'">'+(b[2]?b[0]:'🔒')+' '+b[1]+'</span>';}).join('');
+}
+
 function eventos(){
+  $('landing-signup').addEventListener('click',function(){
+    if(authMode!=='signup')$('auth-toggle').click();
+    $('auth-email').focus();
+  });
+  $('vip-ai-create').addEventListener('click',generateVipAiPlan);
+  $('vip-ranking-link').addEventListener('click',function(){ir('ranking');});
+  $('vip-challenge-list').addEventListener('click',function(e){
+    var b=e.target.closest('[data-vip-challenge]');if(!b||b.disabled)return;
+    b.disabled=true;
+    joinVipChallenge(b.dataset.vipChallenge).catch(function(err){toast(errMsg(err),true);b.disabled=false;});
+  });
   $('entrar').addEventListener('click', async function(){
     $('login-msg').textContent = '';
     var r = await sb.auth.signInWithOAuth({provider: 'google', options: {redirectTo: location.origin + location.pathname + location.search}});
