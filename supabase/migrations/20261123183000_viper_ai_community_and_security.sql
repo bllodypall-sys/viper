@@ -13,13 +13,17 @@ create table if not exists public.viper_ai_training_plans (
 alter table public.viper_ai_training_plans enable row level security;
 revoke all on public.viper_ai_training_plans from public, anon;
 grant select, insert, update, delete on public.viper_ai_training_plans to authenticated;
+drop policy if exists viper_ai_plan_owner_select on public.viper_ai_training_plans;
 create policy viper_ai_plan_owner_select on public.viper_ai_training_plans
   for select to authenticated using ((select auth.uid()) = user_id);
+drop policy if exists viper_ai_plan_owner_insert on public.viper_ai_training_plans;
 create policy viper_ai_plan_owner_insert on public.viper_ai_training_plans
   for insert to authenticated with check ((select auth.uid()) = user_id);
+drop policy if exists viper_ai_plan_owner_update on public.viper_ai_training_plans;
 create policy viper_ai_plan_owner_update on public.viper_ai_training_plans
   for update to authenticated using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
+drop policy if exists viper_ai_plan_owner_delete on public.viper_ai_training_plans;
 create policy viper_ai_plan_owner_delete on public.viper_ai_training_plans
   for delete to authenticated using ((select auth.uid()) = user_id);
 
@@ -33,13 +37,16 @@ create table if not exists public.viper_weekly_challenge_entries (
 alter table public.viper_weekly_challenge_entries enable row level security;
 revoke all on public.viper_weekly_challenge_entries from public, anon;
 grant select, insert, delete on public.viper_weekly_challenge_entries to authenticated;
+drop policy if exists viper_weekly_own_select on public.viper_weekly_challenge_entries;
 create policy viper_weekly_own_select on public.viper_weekly_challenge_entries
   for select to authenticated using ((select auth.uid()) = user_id);
+drop policy if exists viper_weekly_own_insert on public.viper_weekly_challenge_entries;
 create policy viper_weekly_own_insert on public.viper_weekly_challenge_entries
   for insert to authenticated with check ((select auth.uid()) = user_id
      and week_start >= ((now() at time zone 'America/Lima')::date - 7)
      and week_start <= ((now() at time zone 'America/Lima')::date + 7)
      and extract(isodow from week_start) = 1);
+drop policy if exists viper_weekly_own_delete on public.viper_weekly_challenge_entries;
 create policy viper_weekly_own_delete on public.viper_weekly_challenge_entries
   for delete to authenticated using ((select auth.uid()) = user_id);
 
