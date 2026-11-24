@@ -1963,6 +1963,7 @@ function renderHoy(){
   $('gymsub').textContent = '50 base + ' + bonusSi + ' de racha (día ' + (T.rachaAyer + 1) + ')';
   $('fotobox').innerHTML = fotoHTML();
   renderMeals();
+  vnRender();
   $('mealxp').textContent = '+' + (mealsN() * 10) + ' XP';
   $('prot').setAttribute('aria-pressed', T.prot ? 'true' : 'false');
   $('prot').disabled = !!(T.proteinShake && T.proteinShake.status === 'approved');
@@ -2755,7 +2756,8 @@ function ir(v){
   window.scrollTo(0, 0);
   $('app').classList.remove('sidebar-open');
   $('nav-toggle').setAttribute('aria-expanded','false');
-  if (v === 'inicio'){renderInicio();loadVipAiPlan().catch(function(e){$('vip-ai-status').textContent='No se pudo cargar tu plan: '+errMsg(e);});}
+  if (v === 'inicio'){renderInicio();loadVipAiPlan().catch(function(e){$('vip-ai-status').textContent='No se pudo cargar tu plan: '+errMsg(e);});vtLoadWeeklyReport().catch(function(e){console.warn('VIPER Report',e);});}
+  if (v === 'hoy')vnLoad().catch(function(e){console.warn('VIPER Nutri',e);});
   if (v === 'evolucion') cargarEvolucion();
   if (v === 'temporada') cargarTemporada();
   if (v === 'ranking') cargarRanking();
@@ -3010,6 +3012,7 @@ async function start(){
     await Promise.all([loadProfile(), loadToday()]);
     await signPhoto();
     renderAll();
+    vnLoad().catch(function(e){console.warn('VIPER Nutri',e);});
     loadHomeActivity();
     loadAccountActivity().catch(function(e){console.warn('No se pudo cargar el historial de seguridad',e);});
     await loadNotifications();
@@ -3059,6 +3062,10 @@ async function loadVipAiPlan(){
   if(!user)return;
   var r=await sb.from('viper_ai_training_plans').select('plan_text,updated_at').eq('user_id',user.id).maybeSingle();
   if(r.error)throw r.error;
+  VT_AI_HAS_PLAN=Boolean(r.data);
+  $('vt-ai-edit').disabled=!VT_AI_HAS_PLAN;
+  $('vt-ai-copy').disabled=!VT_AI_HAS_PLAN;
+  $('vt-ai-editor').hidden=true;
   $('vip-ai-text').textContent=r.data?r.data.plan_text:'Crea tu primer plan personalizado con VIPER AI.';
   $('vip-ai-status').textContent=r.data?'Última actualización: '+new Date(r.data.updated_at).toLocaleDateString('es-PE'):'Configura tu objetivo en Perfil antes de generar un plan.';
 }
@@ -3078,6 +3085,7 @@ async function generateVipAiPlan(){
     var saved=await sb.from('viper_ai_training_plans').upsert({user_id:user.id,goal:String(ATHLETE.goal).slice(0,80),training_days:days,plan_text:plan,updated_at:new Date().toISOString()},{onConflict:'user_id'});
     if(saved.error)throw saved.error;
     $('vip-ai-text').textContent=plan;
+    VT_AI_HAS_PLAN=true;$('vt-ai-edit').disabled=false;$('vt-ai-copy').disabled=false;$('vt-ai-editor').hidden=true;
     status.textContent='Plan actualizado. Puedes volver a generarlo cuando cambie tu objetivo.';
     toast('Tu plan VIPER AI se guardó de forma privada.');
   }catch(e){status.textContent='No pudimos generar el plan: '+errMsg(e);toast(errMsg(e),true);}
@@ -3175,6 +3183,88 @@ async function shareViper(text){
 }
 
 function eventos(){
+
+  /* VIPER TRAIN */
+  $('vt-date').value=limaToday();
+  $('vt-live-form').addEventListener('submit',vtSaveLive);
+  $('vt-add-exercise').addEventListener('click',function(){
+    var name=$('vt-add-name').value.trim();
+    if(!name){toast('Escribe el nombre del ejercicio.',true);$('vt-add-name').focus();return;}
+    var before=VT_LIVE.length;vtAddExercise(name,$('vt-add-muscle').value);
+    if(VT_LIVE.length>before)$('vt-add-name').value='';
+  });
+  $('vt-repeat-last').addEventListener('click',function(){
+    if(VT_LIVE.length&&!window.confirm('¿Reemplazar la sesión actual por tu última rutina guardada?'))return;
+    var b=this;b.disabled=true;
+    vtRepeatLast().catch(function(e){toast(errMsg(e),true);}).finally(function(){b.disabled=false;});
+  });
+  $('vt-live-list').addEventListener('click',function(e){
+    var card=e.target.closest('[data-vt-ex]');if(!card)return;
+    var index=Number(card.dataset.vtEx),ex=VT_LIVE[index];if(!ex)return;
+    if(e.target.closest('[data-vt-remove-ex]')){VT_LIVE.splice(index,1);vtRenderLive();return;}
+    if(e.target.closest('[data-vt-add-set]')){
+      if(ex.sets.length>=30){toast('Máximo 30 series por ejercicio.',true);return;}
+      var last=ex.sets[ex.sets.length-1]||{reps:10,weight_kg:0};
+      ex.sets.push({reps:last.reps,weight_kg:last.weight_kg});vtRenderLive();return;
+    }
+    if(e.target.closest('[data-vt-remove-set]')){
+      if(ex.sets.length<=1){toast('Cada ejercicio necesita al menos una serie.',true);return;}
+      var row=e.target.closest('[data-vt-set]');
+      if(row){ex.sets.splice(Number(row.dataset.vtSet),1);vtRenderLive();}
+    }
+  });
+  $('vt-live-list').addEventListener('input',function(e){
+    var card=e.target.closest('[data-vt-ex]'),row=e.target.closest('[data-vt-set]');
+    if(!card||!row)return;
+    var item=VT_LIVE[Number(card.dataset.vtEx)],set=item&&item.sets[Number(row.dataset.vtSet)];
+    if(!set)return;
+    if(e.target.matches('[data-vt-reps]'))set.reps=Number(e.target.value);
+    if(e.target.matches('[data-vt-weight]'))set.weight_kg=Number(e.target.value);
+    vtUpdateSummary();
+  });
+  document.querySelector('.vt-timer').addEventListener('click',function(e){
+    var b=e.target.closest('[data-vt-rest]');if(b)vtStartTimer(Number(b.dataset.vtRest));
+  });
+  $('vt-stop-rest').addEventListener('click',vtStopTimer);
+  /* VIPER NUTRI: manual entries are explicitly excluded from XP */
+  $('vn-goals-form').addEventListener('submit',vnSaveGoals);
+  $('vn-food-form').addEventListener('submit',vnSaveFood);
+  $('vn-manual-list').addEventListener('click',function(e){
+    var b=e.target.closest('[data-vn-remove]');if(!b)return;
+    b.disabled=true;
+    vnRemoveFood(b.dataset.vnRemove).catch(function(err){toast(errMsg(err),true);})
+      .finally(function(){if(b.isConnected)b.disabled=false;});
+  });
+  /* Editable AI plan, backed by current user-owned table */
+  $('vt-ai-edit').addEventListener('click',function(){
+    if(!VT_AI_HAS_PLAN)return;
+    $('vt-ai-textarea').value=$('vip-ai-text').textContent;
+    $('vt-ai-editor').hidden=false;$('vt-ai-textarea').focus();
+  });
+  $('vt-ai-cancel').addEventListener('click',function(){$('vt-ai-editor').hidden=true;});
+  $('vt-ai-copy').addEventListener('click',async function(){
+    if(!VT_AI_HAS_PLAN)return;
+    try{
+      if(!navigator.clipboard||!navigator.clipboard.writeText)throw new Error('Portapapeles no disponible');
+      await navigator.clipboard.writeText($('vip-ai-text').textContent);
+      toast('Plan copiado.');
+    }catch(err){toast('No se pudo copiar automáticamente. Puedes seleccionarlo desde el plan.',true);}
+  });
+  $('vt-ai-save').addEventListener('click',async function(){
+    if(!user||!VT_AI_HAS_PLAN)return;
+    var textPlan=$('vt-ai-textarea').value.trim();
+    if(textPlan.length<20||textPlan.length>11900){toast('El plan debe tener entre 20 y 11.900 caracteres.',true);return;}
+    var b=this;b.disabled=true;
+    try{
+      var r=await sb.from('viper_ai_training_plans').update({plan_text:textPlan,updated_at:new Date().toISOString()}).eq('user_id',user.id).select('user_id').maybeSingle();
+      if(r.error)throw r.error;
+      if(!r.data)throw new Error('No se encontró un plan para actualizar.');
+      $('vip-ai-text').textContent=textPlan;$('vt-ai-editor').hidden=true;
+      $('vip-ai-status').textContent='Plan editado y guardado de forma privada.';
+      toast('Tu plan se actualizó correctamente.');
+    }catch(err){toast(errMsg(err),true);}
+    finally{b.disabled=false;}
+  });
   $('logo-home').addEventListener('click',function(){ir('inicio');});
   $('inbox-head-button').addEventListener('click',function(){ir('amigos');});
   $('chat-peer-profile').addEventListener('click',function(){
@@ -4208,6 +4298,7 @@ async function boot(){
       $('inbox-head-button').setAttribute('aria-label','Abrir mensajes');
       notificationChannel=null; NOTIFICATIONS=[];
       chatChannel=null; chatFriend=null; user = null; P = null; T = null; iniciado = false;
+      VT_LIVE=[];vtStopTimer();VN_TARGETS=null;VN_MANUAL=[];VN_DAY=null;VT_AI_HAS_PLAN=false;
       pantalla('login');
     } else if (ev === 'PASSWORD_RECOVERY' && session && session.user){
       window.viperPasswordRecovery=true;
