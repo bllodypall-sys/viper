@@ -32,6 +32,7 @@ for (const id of [
   "chat-gallery-grid", "chat-view", "chat-messages", "chat-image", "chat-close",
   "friend-dm-search", "friend-dm-total", "nav-friend-unread", "inbox-head-button", "inbox-head-count",
   "vt-live-form", "vt-date", "vt-notes", "vt-add-name", "vt-add-muscle", "vt-report-share", "vt-draft-banner", "vt-draft-status", "vt-discard-draft",
+  "vsg-start", "vsg-start-button", "vsg-start-preview", "vsg-config-toggle", "vsg-open-current", "vsg-config", "vsg-goal", "vsg-experience", "vsg-days", "vsg-type", "vsg-country", "vsg-age", "vsg-focus-open", "vsg-focus", "vsg-focus-title", "vsg-focus-content", "vsg-focus-count", "vsg-focus-volume", "vsg-focus-clock", "vsg-prev", "vsg-next", "vsg-save", "vsg-focus-close",
   "vt-add-exercise", "vt-repeat-last", "vt-live-list", "vt-timer-display",
   "vt-stop-rest", "vt-live-summary", "vt-save", "vt-report-week", "vt-report-summary",
   "vt-ai-edit", "vt-ai-copy", "vt-ai-editor", "vt-ai-textarea", "vt-ai-save", "vt-ai-cancel",
@@ -301,7 +302,7 @@ assert.ok(mainAppScript,"Application boot script missing");
 const scopeProbe = mainAppScript.replace(
   /boot\(\);\s*(?=if \('serviceWorker' in navigator\))/,
   "window.__viperScopeCheck__={"+
-  ["vtLoadWeeklyReport","vtSaveLive","vtMacroFromAnatomy","vtAddExercise","cargarEvolucion","renderEvolucion","evoAddSetRow","guardarEvoEntrenamiento","consultarViperCoach","vtRecentTrainingContext","vnRender","vnSaveFood"].map((k)=>JSON.stringify(k)+":typeof "+k).join(",")+
+  ["vtLoadWeeklyReport","vtSaveLive","vtMacroFromAnatomy","vtAddExercise","cargarEvolucion","renderEvolucion","evoAddSetRow","guardarEvoEntrenamiento","consultarViperCoach","vtRecentTrainingContext","vnRender","vnSaveFood","vsgStarterTemplate","vsgRenderStart","vsgSaveProfile","vsgOpenFocus","vsgFinish"].map((k)=>JSON.stringify(k)+":typeof "+k).join(",")+
   "};\n"
 );
 assert.notEqual(scopeProbe,mainAppScript,"Runtime scope probe injection failed");
@@ -410,4 +411,33 @@ assert.equal(JSON.stringify(saveCalls[0].p_exercises),JSON.stringify(saveCalls[1
 assert.equal(saverCtx.VT_LIVE.length,0);
 assert.equal(saverCtx.VT_PENDING_SAVE,null);
 
-console.log("VIPER smoke checks passed: auth scope, atomic saves, retry, drafts, nutrition, reporting and security.");
+/* VIPER START and mobile gym focus: real template behavior, no XP and accessibility */
+assert.ok(html.includes('id="vsg-start"')&&html.includes('id="vsg-focus"'));
+assert.ok(html.includes('aria-modal="true"'),"Focused gym must be a dialog");
+assert.ok(html.includes("vsgRenderStart();")&&html.includes("if(!ATHLETE||!ATHLETE.goal)vsgOpenConfig(true);"),"First-run setup must show for missing profiles");
+assert.ok(html.includes("if(VT_PENDING_SAVE){toast("),"Do not overwrite uncertain workout saves");
+assert.ok(html.includes("vsgOpenFocus();"),"Starter CTA must lead into workout focus");
+assert.ok(html.includes("vtRenderLive();vsgRenderFocus();"),"Focus mode must sync with the draft");
+assert.ok(html.includes("$('vsg-focus').addEventListener('keydown'"),"Focus mode must handle keyboard navigation");
+assert.ok(html.includes("vtSaveLive({preventDefault:function(){}})"),"Focused mode must use existing atomic workout save");
+assert.ok(!html.includes("xp_total:p.experience"),"Starter templates cannot grant XP");
+
+const startBegin=html.indexOf("/* ---------- VIPER START: a fast, editable first workout ---------- */");
+const startEnd=html.indexOf("/* ---------- VIPER TRAIN: session recorder and recovery timer ---------- */",startBegin);
+assert.ok(startBegin>=0&&startEnd>startBegin,"Starter implementation must be present outside handlers");
+const stContext={console};
+new Script(html.slice(startBegin,startEnd),{filename:"viper-start-logic.js"}).runInNewContext(stContext);
+const novice=stContext.vsgStarterTemplate({goal:'general_fitness',experience:'beginner',training_days:3,training_type:'home'});
+assert.equal(novice.length,3,"Beginner should have a short routine");
+assert.equal(novice[0].sets.length,2,"Beginner routine should have fewer sets");
+assert.ok(novice.every(x=>x.sets.every(y=>y.weight_kg===0)),"Starter routine must not invent weights");
+const expert=stContext.vsgStarterTemplate({goal:'strength',experience:'over_2_years',training_days:5,training_type:'gym'});
+assert.equal(expert.length,4,"Experienced users can start with four exercises");
+assert.equal(expert[0].sets.length,3);
+assert.equal(expert[0].sets[0].reps,6);
+assert.ok(expert.every(x=>['pecho','espalda','hombros','biceps','triceps','antebrazos','abdomen','cuadriceps','isquiotibiales','gluteos','pantorrillas'].includes(x.muscle)));
+const boxing=stContext.vsgStarterTemplate({goal:'boxing',training_type:'boxing',training_days:2});
+assert.ok(boxing.every(x=>x.sets.every(y=>y.weight_kg===0)),"Boxing warm-up presets must be bodyweight");
+assert.ok(html.includes("if(!VT_LIVE.length&&!VT_PENDING_SAVE){vsgCloseFocus(true);ir('evolucion');}"),"Close focus only after saved or confirmed");
+
+console.log("VIPER smoke checks passed: START, focus mode, scope, atomic saves, draft recovery, nutrition and security.");

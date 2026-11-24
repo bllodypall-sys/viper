@@ -642,6 +642,34 @@ main{padding-block:12px 40px}
 .vt-draft-banner[hidden]{display:none!important}
 .vt-draft-banner span{color:var(--fg);font-size:.84rem;flex:1 1 220px}
 .vt-draft-banner.is-pending{border-color:#d6a839;background:color-mix(in srgb,var(--surface) 89%,#f0c04f 11%)}
+
+/* VIPER START + FOCUS: daily training entry point and accessible mobile-first workspace */
+.vsg-start{display:grid;gap:13px;margin:0 0 22px;padding:18px;border:1px solid #3d7952;border-radius:16px;background:color-mix(in srgb,var(--surface) 90%,#30a368 10%)}
+.vsg-start-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.vsg-start-header>div{flex:1 1 230px}.vsg-start-header h2{font:800 clamp(1.2rem,3vw,1.65rem) var(--display);margin:6px 0}.vsg-start-header>.btn{min-height:45px}
+.vsg-start-preview{display:flex;flex-wrap:wrap;gap:8px}
+.vsg-start-preview span{padding:8px 11px;border:1px solid var(--line);border-radius:99px;background:var(--bg);font-size:.82rem}
+.vsg-start-actions{display:flex;flex-wrap:wrap;gap:9px}
+.vsg-config{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:12px}
+.vsg-config[hidden]{display:none!important}.vsg-config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.vsg-config-grid label{display:grid;gap:5px;color:var(--muted);font-size:.84rem}
+.vsg-config-grid select,.vsg-config-grid input{min-height:45px;width:100%;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px;font:inherit}
+.vsg-focus{position:fixed;inset:0;z-index:1200;overflow:auto;overscroll-behavior:contain;background:var(--bg);color:var(--fg);padding:max(15px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.vsg-focus[hidden]{display:none!important}.vsg-active{overflow:hidden}
+.vsg-focus-inner{max-width:720px;min-height:100%;display:flex;flex-direction:column;gap:18px;margin:auto}
+.vsg-focus-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.vsg-focus-header h2{margin:0;font:800 1.7rem var(--display)}.vsg-focus-eyebrow{font-size:.74rem;letter-spacing:.09em;color:#4ac17b;font-weight:800}
+.vsg-focus-progress{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;color:var(--muted);font-size:.88rem}
+.vsg-focus-content{display:grid;gap:12px}.vsg-focus-exname{font:800 1.8rem var(--display);margin:0}
+.vsg-focus-sets{display:grid;gap:12px}.vsg-focus-set{display:grid;grid-template-columns:34px 1fr 1fr;align-items:end;gap:10px;border:1px solid var(--line);border-radius:13px;padding:12px;background:var(--surface)}
+.vsg-focus-set>strong{align-self:center;color:#4ac17b}.vsg-focus-set label{font-size:.78rem;color:var(--muted);display:grid;gap:5px}
+.vsg-focus-set input{width:100%;min-width:0;min-height:52px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);color:var(--fg);font:700 1.15rem var(--body)}
+.vsg-focus-rest{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px;border:1px solid #377750;border-radius:14px;background:var(--surface)}
+.vsg-focus-rest>div:first-child{display:grid;gap:4px}.vsg-focus-rest strong{font:800 2rem var(--display);color:#4ac17b;font-variant-numeric:tabular-nums}
+.vsg-focus-rest-buttons{display:flex;gap:7px;flex-wrap:wrap}.vsg-focus-rest-buttons button{border:1px solid var(--line);border-radius:9px;padding:10px;background:var(--bg);color:var(--fg);font:inherit;min-height:45px}
+.vsg-focus-footer{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto;position:sticky;bottom:0;padding:12px 0;background:var(--bg)}
+.vsg-focus-footer>.btn{min-height:52px;font-size:1rem}.vsg-focus-footer #vsg-save{grid-column:1/-1}
+@media(max-width:520px){.vsg-config-grid{grid-template-columns:1fr}.vsg-focus-set{grid-template-columns:25px 1fr 1fr;gap:6px;padding:9px}.vsg-focus-sets{gap:9px}.vsg-start{padding:13px}}
 </style>
 </head>
 <body>
@@ -735,6 +763,46 @@ main{padding-block:12px 40px}
         <div class="home-rank"><div id="home-rank-icon"></div><strong id="home-rank-name">Novato</strong></div>
         <div class="home-progress"><div class="home-progress-top"><span id="home-level">Nivel 1</span><b id="home-xp">0 XP</b></div><div class="home-progress-track"><i id="home-fill" style="width:0%"></i></div><span id="home-next" class="note" style="color:#b8c4bc">Comienza a sumar XP</span></div>
       </div>
+      <section id="vsg-start" class="vsg-start" aria-label="VIPER START">
+        <div class="vsg-start-header">
+          <div><span class="viper-feature-tag">⚡ VIPER START</span><h2>Tu próximo entrenamiento, listo en un toque</h2>
+          <p id="vsg-start-subtitle" class="note">Una sesión inicial según tu experiencia y objetivo, editable antes de guardar.</p></div>
+          <button type="button" id="vsg-start-button" class="btn primary">▶ Empezar rutina</button>
+        </div>
+        <div id="vsg-start-preview" class="vsg-start-preview" aria-live="polite"></div>
+        <div class="vsg-start-actions">
+          <button type="button" id="vsg-config-toggle" class="btn sm" aria-expanded="false" aria-controls="vsg-config">⚙ Ajustar objetivo</button>
+          <button type="button" id="vsg-open-current" class="btn sm" hidden>↻ Continuar borrador</button>
+        </div>
+        <form id="vsg-config" class="vsg-config" hidden>
+          <p class="note">Esta información ajusta tu experiencia en VIPER. No constituye una prescripción médica.</p>
+          <div class="vsg-config-grid">
+            <label>Objetivo<select id="vsg-goal" required>
+              <option value="">Selecciona</option><option value="muscle_gain">Ganar masa muscular</option>
+              <option value="strength">Ganar fuerza</option><option value="fat_loss">Perder grasa</option>
+              <option value="endurance">Mejorar resistencia</option><option value="general_fitness">Mantenerme en forma</option>
+              <option value="boxing">Boxeo</option><option value="other">Otro objetivo</option>
+            </select></label>
+            <label>Experiencia<select id="vsg-experience" required>
+              <option value="">Selecciona</option><option value="beginner">Estoy empezando</option>
+              <option value="under_6_months">Menos de 6 meses</option><option value="6_12_months">6–12 meses</option>
+              <option value="1_2_years">1–2 años</option><option value="over_2_years">Más de 2 años</option>
+            </select></label>
+            <label>Días por semana<select id="vsg-days" required>
+              <option value="1">1 día</option><option value="2">2 días</option><option value="3" selected>3 días</option>
+              <option value="4">4 días</option><option value="5">5 días</option><option value="6">6 días</option><option value="7">7 días</option>
+            </select></label>
+            <label>Lugar de entrenamiento<select id="vsg-type" required>
+              <option value="gym">Gimnasio</option><option value="home">En casa</option><option value="mixed">En casa y gimnasio</option><option value="boxing">Boxeo</option>
+            </select></label>
+            <label id="vsg-country-wrap" hidden>País<input id="vsg-country" maxlength="80" placeholder="Ej. Perú"></label>
+            <label id="vsg-age-wrap" hidden>Edad<input id="vsg-age" type="number" min="13" max="100" step="1" placeholder="Edad"></label>
+          </div>
+          <button class="btn primary" type="submit" id="vsg-save-profile">Guardar y preparar mi rutina</button>
+          <p id="vsg-config-status" class="note" role="status"></p>
+        </form>
+        <p class="note">La rutina es orientativa. Puedes sustituir ejercicios, regular la intensidad y respetar tus descansos; no otorga XP por sí sola.</p>
+      </section>
       <div class="home-section-title"><h2>Resumen de hoy</h2><span id="home-date" class="note"></span></div>
       <div class="home-stats"><div class="home-stat"><span>XP de hoy</span><strong id="home-today-xp">0</strong></div><div class="home-stat"><span>Comidas registradas</span><strong id="home-meals">0/4</strong></div><div class="home-stat"><span>Racha actual</span><strong id="home-streak">0 días</strong></div></div>
       <section class="vip-daily" aria-label="VIPER Daily: tu actividad del día">
@@ -1080,7 +1148,7 @@ main{padding-block:12px 40px}
             <option value="abdomen">Abdomen</option><option value="cuadriceps">Cuádriceps</option>
             <option value="isquiotibiales">Isquiotibiales</option><option value="gluteos">Glúteos</option><option value="pantorrillas">Pantorrillas</option>
           </select></label></div>
-          <div class="vt-quick-actions"><button id="vt-add-exercise" class="btn sm" type="button">＋ Añadir ejercicio</button><button id="vt-repeat-last" class="btn sm" type="button">↺ Repetir última sesión</button></div>
+          <div class="vt-quick-actions"><button id="vt-add-exercise" class="btn sm" type="button">＋ Añadir ejercicio</button><button id="vt-repeat-last" class="btn sm" type="button">↺ Repetir última sesión</button><button id="vsg-focus-open" class="btn primary sm" type="button">▶ Modo gimnasio</button></div>
           <div id="vt-live-list" class="vt-live-list" aria-live="polite"><p class="note">Añade un ejercicio para comenzar.</p></div>
           <div class="vt-timer"><span>⏱ Descanso entre series</span><strong id="vt-timer-display" role="timer" aria-live="off">01:00</strong>
             <div class="vt-timer-actions"><button type="button" class="btn sm" data-vt-rest="30">30 s</button><button type="button" class="btn sm" data-vt-rest="60">60 s</button><button type="button" class="btn sm" data-vt-rest="90">90 s</button><button type="button" class="btn sm" id="vt-stop-rest">Detener</button></div>
@@ -1399,6 +1467,30 @@ main{padding-block:12px 40px}
   <button type="button" id="viper-coach-fab" class="coach-fab" aria-label="Abrir VIPER Coach" aria-controls="viper-coach-window" aria-expanded="false"><span aria-hidden="true">V</span><small>COACH</small></button>
 </div>
 
+
+<section id="vsg-focus" class="vsg-focus" role="dialog" aria-modal="true" aria-labelledby="vsg-focus-title" hidden>
+  <div class="vsg-focus-inner">
+    <header class="vsg-focus-header">
+      <div><p class="vsg-focus-eyebrow">VIPER · MODO GIMNASIO</p><h2 id="vsg-focus-title">Tu entrenamiento</h2></div>
+      <button type="button" id="vsg-focus-close" class="btn sm" aria-label="Salir del modo gimnasio y conservar borrador">✕ Salir</button>
+    </header>
+    <div class="vsg-focus-progress"><span id="vsg-focus-count">Ejercicio 1 de 1</span><span id="vsg-focus-volume">0 kg de volumen</span></div>
+    <div id="vsg-focus-content" class="vsg-focus-content" aria-live="polite"></div>
+    <section class="vsg-focus-rest" aria-label="Descansos">
+      <div><span>⏱ Descanso</span><strong id="vsg-focus-clock" role="timer">01:00</strong></div>
+      <div class="vsg-focus-rest-buttons">
+        <button type="button" data-vsg-rest="30">30 s</button><button type="button" data-vsg-rest="60">60 s</button><button type="button" data-vsg-rest="90">90 s</button>
+        <button type="button" id="vsg-rest-stop">Detener</button>
+      </div>
+    </section>
+    <footer class="vsg-focus-footer">
+      <button type="button" id="vsg-prev" class="btn sm">← Anterior</button>
+      <button type="button" id="vsg-next" class="btn primary sm">Siguiente →</button>
+      <button type="button" id="vsg-save" class="btn primary" >✓ Terminar y guardar</button>
+    </footer>
+    <p id="vsg-focus-status" class="note" role="status">Tu entrenamiento se guarda automáticamente como borrador en este dispositivo.</p>
+  </div>
+</section>
 
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <div id="welcome-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
@@ -2351,7 +2443,7 @@ async function guardarDatosAtleta(e){
   try{
     var r=await sb.from('viper_onboarding_profiles').upsert(payload,{onConflict:'user_id'});
     if(r.error)throw r.error;
-    ATHLETE=payload;renderPerfil();toast('Datos de atleta actualizados.');
+    ATHLETE=payload;renderPerfil();vsgRenderStart();toast('Datos de atleta actualizados.');
   }catch(err){toast(errMsg(err),true);}
   finally{if(btn)btn.disabled=false;}
 }
@@ -2771,7 +2863,7 @@ function ir(v){
   window.scrollTo(0, 0);
   $('app').classList.remove('sidebar-open');
   $('nav-toggle').setAttribute('aria-expanded','false');
-  if (v === 'inicio'){renderInicio();loadVipAiPlan().catch(function(e){$('vip-ai-status').textContent='No se pudo cargar tu plan: '+errMsg(e);});vtLoadWeeklyReport().catch(function(e){console.warn('VIPER Report',e);});}
+  if (v === 'inicio'){renderInicio();vsgRenderStart();loadVipAiPlan().catch(function(e){$('vip-ai-status').textContent='No se pudo cargar tu plan: '+errMsg(e);});vtLoadWeeklyReport().catch(function(e){console.warn('VIPER Report',e);});}
   if (v === 'hoy')vnLoad().catch(function(e){console.warn('VIPER Nutri',e);vqReportError('nutrition',e);});
   if (v === 'evolucion') cargarEvolucion();
   if (v === 'temporada') cargarTemporada();
@@ -3053,6 +3145,8 @@ async function start(){
     }
     await cargarDatosAtleta();
     renderPerfil();
+    vsgRenderStart();
+    if(!ATHLETE||!ATHLETE.goal)vsgOpenConfig(true);
     showWelcome();
   } catch (e) {
     iniciado = false;
@@ -3615,6 +3709,161 @@ async function consultarViperCoach(e){
   button.disabled=false;button.textContent='Consultar a VIPER Coach';
  }
 }
+/* ---------- VIPER START: a fast, editable first workout ---------- */
+var VSG_FOCUS_INDEX=0,VSG_FOCUS_RETURN=null,VSG_START_READY=false;
+var VSG_GOALS={muscle_gain:'Ganar masa muscular',strength:'Mejorar fuerza',fat_loss:'Perder grasa',endurance:'Mejorar resistencia',general_fitness:'Mantenerme en forma',boxing:'Boxeo',other:'Entrenar con constancia'};
+function vsgStarterTemplate(profile){
+  var p=profile||{},goal=VSG_GOALS[p.goal]?p.goal:'general_fitness';
+  var beginner=!p.experience||p.experience==='beginner'||p.experience==='under_6_months';
+  var atHome=p.training_type==='home'||p.training_type==='boxing',strength=goal==='strength';
+  var reps=strength?6:goal==='endurance'?12:10;
+  var count=beginner?2:3;
+  var choices=atHome
+    ?[['Sentadilla sin carga','cuadriceps'],['Flexiones adaptadas','pecho'],['Puente de glúteos','gluteos'],['Remo con banda (si dispones)','espalda']]
+    :[['Sentadilla o prensa de piernas','cuadriceps'],['Press de pecho','pecho'],['Remo sentado','espalda'],['Puente de glúteos','gluteos']];
+  if(goal==='boxing')choices=[['Sentadilla sin carga','cuadriceps'],['Flexiones adaptadas','pecho'],['Plancha abdominal','abdomen']];
+  if(goal==='endurance')choices=[choices[0],choices[2],choices[1]];
+  var number=Math.min(4,Math.max(3,Number(p.training_days)>=4?4:3));
+  return choices.slice(0,number).map(function(ex){
+    var r=ex[0]==='Plancha abdominal'?1:reps;
+    return {name:ex[0],muscle:ex[1],sets:Array.from({length:count},function(){return {reps:r,weight_kg:0};})};
+  });
+}
+function vsgProfileForPreview(){
+  var current=ATHLETE&&ATHLETE.goal?ATHLETE:{};
+  if(!$('vsg-config').hidden&&$('vsg-goal').value){
+    return {goal:$('vsg-goal').value,experience:$('vsg-experience').value||'beginner',
+      training_days:Number($('vsg-days').value)||3,training_type:$('vsg-type').value||'gym'};
+  }
+  return current;
+}
+function vsgRenderStart(){
+  if(!user)return;
+  var profile=vsgProfileForPreview(),complete=Boolean(ATHLETE&&ATHLETE.goal);
+  var template=vsgStarterTemplate(profile);
+  $('vsg-start-preview').innerHTML=template.map(function(x){
+    return '<span>'+esc(x.name)+'</span>';
+  }).join('');
+  $('vsg-start-subtitle').textContent=complete
+    ?'Rutina orientativa para '+(VSG_GOALS[profile.goal]||'tu objetivo').toLowerCase()+
+      '. '+(profile.training_days||3)+' días por semana según tu perfil. Puedes editar todo.'
+    :'Configura primero tu objetivo y experiencia. Prepararemos una rutina inicial editable.';
+  $('vsg-start-button').textContent=complete?'▶ Empezar mi rutina':'Configurar y empezar';
+  $('vsg-open-current').hidden=!VT_LIVE.length;
+}
+function vsgOpenConfig(open){
+  var isOpen=Boolean(open);
+  $('vsg-config').hidden=!isOpen;
+  $('vsg-config-toggle').setAttribute('aria-expanded',String(isOpen));
+  if(isOpen){
+    var p=ATHLETE||{},meta=user&&user.user_metadata||{};
+    [['vsg-goal','goal'],['vsg-experience','experience'],['vsg-days','training_days'],['vsg-type','training_type']].forEach(function(pair){
+      var el=$(pair[0]);el.value=p[pair[1]]||meta[pair[1]]||el.value;
+    });
+    $('vsg-country').value=p.country||meta.country||'';
+    $('vsg-age').value=p.age||meta.age||'';
+    var needsCountry=!p.country,needsAge=!p.age;
+    $('vsg-country-wrap').hidden=!needsCountry;$('vsg-age-wrap').hidden=!needsAge;
+    $('vsg-country').required=needsCountry;$('vsg-age').required=needsAge;
+    $('vsg-config-status').textContent='';
+  }
+  vsgRenderStart();
+}
+async function vsgSaveProfile(event){
+  event.preventDefault();if(!user||VSG_START_READY)return;
+  var p=ATHLETE||{},country=String(p.country||$('vsg-country').value||'').trim(),
+    age=Number(p.age||$('vsg-age').value),
+    goal=$('vsg-goal').value,experience=$('vsg-experience').value,
+    training_days=Number($('vsg-days').value),training_type=$('vsg-type').value;
+  if(!VSG_GOALS[goal]||!['beginner','under_6_months','6_12_months','1_2_years','over_2_years'].includes(experience)||
+      !Number.isInteger(training_days)||training_days<1||training_days>7||
+      !['gym','home','mixed','boxing'].includes(training_type)||
+      country.length<2||country.length>80||!Number.isInteger(age)||age<13||age>100){
+    $('vsg-config-status').textContent='Completa todos los campos válidos para continuar.';return;
+  }
+  var payload=Object.assign({},p,{user_id:user.id,country:country,age:age,goal:goal,
+    experience:experience,training_days:training_days,training_type:training_type,
+    updated_at:new Date().toISOString()});
+  delete payload.created_at;
+  var b=$('vsg-save-profile');b.disabled=true;VSG_START_READY=true;
+  $('vsg-config-status').textContent='Guardando tu perfil…';
+  try{
+    var result=await sb.from('viper_onboarding_profiles').upsert(payload,{onConflict:'user_id'});
+    if(result.error)throw result.error;
+    ATHLETE=payload;renderPerfil();vsgOpenConfig(false);
+    toast('Tu objetivo está guardado. ¡Empecemos!');
+    vsgStartWorkout();
+  }catch(err){$('vsg-config-status').textContent='No se pudo guardar el perfil: '+errMsg(err);}
+  finally{VSG_START_READY=false;b.disabled=false;}
+}
+function vsgStartWorkout(){
+  if(!user)return;
+  if(!ATHLETE||!ATHLETE.goal){
+    vsgOpenConfig(true);$('vsg-goal').focus();return;
+  }
+  if(VT_PENDING_SAVE){toast('Confirma o descarta primero el guardado pendiente en Evolución muscular.',true);ir('evolucion');return;}
+  if(VT_LIVE.length&&!window.confirm('Tienes un entrenamiento sin guardar. ¿Sustituirlo por una rutina inicial?'))return;
+  VT_LIVE=vsgStarterTemplate(ATHLETE);
+  $('vt-date').value=limaToday();
+  $('vt-notes').value='VIPER START · '+(VSG_GOALS[ATHLETE.goal]||'Entrenamiento inicial');
+  vtRenderLive();
+  vsgOpenFocus();
+}
+function vsgOpenFocus(){
+  if(!user)return;
+  if(!VT_LIVE.length){toast('Primero añade un ejercicio o prepara tu rutina VIPER START.',true);return;}
+  VSG_FOCUS_RETURN=document.activeElement;
+  VSG_FOCUS_INDEX=0;
+  var el=$('vsg-focus');el.hidden=false;document.body.classList.add('vsg-active');
+  vsgRenderFocus();
+  $('vsg-focus-close').focus();
+}
+function vsgCloseFocus(saved){
+  var el=$('vsg-focus');if(el.hidden)return;
+  el.hidden=true;document.body.classList.remove('vsg-active');
+  if(!saved)vtPersistDraft();
+  var target=VSG_FOCUS_RETURN;VSG_FOCUS_RETURN=null;
+  if(target&&target.isConnected&&!target.closest('[hidden]'))target.focus();
+  else $('vsg-focus-open').focus();
+}
+function vsgRenderFocus(){
+  if($('vsg-focus').hidden)return;
+  if(!VT_LIVE.length){vsgCloseFocus();return;}
+  VSG_FOCUS_INDEX=Math.max(0,Math.min(VSG_FOCUS_INDEX,VT_LIVE.length-1));
+  var ex=VT_LIVE[VSG_FOCUS_INDEX],n=VT_LIVE.length;
+  $('vsg-focus-title').textContent=ex.name;
+  $('vsg-focus-count').textContent='Ejercicio '+(VSG_FOCUS_INDEX+1)+' de '+n;
+  var volume=VT_LIVE.reduce(function(total,e){
+    return total+e.sets.reduce(function(sum,row){return sum+Number(row.reps||0)*Number(row.weight_kg||0);},0);
+  },0);
+  $('vsg-focus-volume').textContent=Math.round(volume)+' kg de volumen';
+  $('vsg-focus-content').innerHTML=
+    '<p class="note">'+esc(ex.muscle)+' · '+ex.sets.length+' series. Edita repeticiones y peso; no hay valores obligatorios de carga.</p>'+
+    '<div class="vsg-focus-sets">'+ex.sets.map(function(set,i){
+      return '<div class="vsg-focus-set" data-vsg-set="'+i+'"><strong>S'+(i+1)+'</strong>'+
+        '<label>Repeticiones<input type="number" data-vsg-reps min="1" max="300" step="1" inputmode="numeric" value="'+esc(set.reps)+'"></label>'+
+        '<label>Peso (kg)<input type="number" data-vsg-weight min="0" max="1500" step="0.25" inputmode="decimal" value="'+esc(set.weight_kg)+'"></label>'+
+        '</div>';
+    }).join('')+'</div>'+
+    '<button type="button" id="vsg-add-set" class="btn sm">＋ Agregar serie</button>';
+  $('vsg-prev').disabled=VSG_FOCUS_INDEX===0;
+  $('vsg-next').disabled=VSG_FOCUS_INDEX>=n-1;
+  $('vsg-save').disabled=VT_SAVING;
+  $('vsg-save').textContent=VT_PENDING_SAVE?'↻ Reintentar guardado':'✓ Terminar y guardar';
+  $('vsg-focus-status').textContent=VT_PENDING_SAVE
+    ?'Hay un guardado por confirmar. Reinténtalo sin cambiar las series.'
+    :'Los cambios se conservan como borrador hasta guardar la sesión completa.';
+  var inputs=$('vsg-focus-content').querySelectorAll('input');
+  inputs.forEach(function(el){el.disabled=Boolean(VT_PENDING_SAVE||VT_SAVING);});
+  $('vsg-add-set').disabled=Boolean(VT_PENDING_SAVE||VT_SAVING||ex.sets.length>=30);
+}
+async function vsgFinish(){
+  if(VT_SAVING)return;
+  var b=$('vsg-save');b.disabled=true;b.textContent='Guardando…';
+  await vtSaveLive({preventDefault:function(){}});
+  if(!VT_LIVE.length&&!VT_PENDING_SAVE){vsgCloseFocus(true);ir('evolucion');}
+  else vsgRenderFocus();
+}
 /* ---------- VIPER TRAIN: session recorder and recovery timer ---------- */
 var VT_LIVE=[],VT_TIMER=null,VT_TIMER_END=0,VT_TIMER_DURATION=60,VT_AI_HAS_PLAN=false,VT_WEEKLY_STATS=null;
 var VT_MUSCLES=['pecho','espalda','hombros','biceps','triceps','antebrazos','abdomen','cuadriceps','isquiotibiales','gluteos','pantorrillas'];
@@ -3630,6 +3879,7 @@ function vtFormatTimer(seconds){
 function vtStopTimer(){
   if(VT_TIMER){clearInterval(VT_TIMER);VT_TIMER=null;}
   VT_TIMER_END=0;$('vt-timer-display').textContent=vtFormatTimer(VT_TIMER_DURATION);
+  $('vsg-focus-clock').textContent=vtFormatTimer(VT_TIMER_DURATION);
 }
 function vtStartTimer(seconds){
   VT_TIMER_DURATION=seconds;
@@ -3638,9 +3888,11 @@ function vtStartTimer(seconds){
   function tick(){
     var remaining=Math.ceil((VT_TIMER_END-Date.now())/1000);
     $('vt-timer-display').textContent=vtFormatTimer(remaining);
+    $('vsg-focus-clock').textContent=vtFormatTimer(remaining);
     if(remaining<=0){
       clearInterval(VT_TIMER);VT_TIMER=null;VT_TIMER_END=0;
       $('vt-timer-display').textContent='¡Listo!';
+      $('vsg-focus-clock').textContent='¡Listo!';
     }
   }
   tick();VT_TIMER=setInterval(tick,250);
@@ -3976,6 +4228,55 @@ function eventos(){
 
   /* VIPER TRAIN */
   $('vt-date').value=limaToday();
+  /* VIPER START + FOCUS */
+  $('vsg-start-button').addEventListener('click',vsgStartWorkout);
+  $('vsg-open-current').addEventListener('click',vsgOpenFocus);
+  $('vsg-config-toggle').addEventListener('click',function(){vsgOpenConfig($('vsg-config').hidden);});
+  $('vsg-config').addEventListener('submit',vsgSaveProfile);
+  ['vsg-goal','vsg-experience','vsg-days','vsg-type'].forEach(function(id){
+    $(id).addEventListener('change',vsgRenderStart);
+  });
+  $('vsg-focus-open').addEventListener('click',vsgOpenFocus);
+  $('vsg-focus-close').addEventListener('click',function(){vsgCloseFocus();});
+  $('vsg-prev').addEventListener('click',function(){VSG_FOCUS_INDEX--;vsgRenderFocus();});
+  $('vsg-next').addEventListener('click',function(){VSG_FOCUS_INDEX++;vsgRenderFocus();});
+  $('vsg-save').addEventListener('click',function(){vsgFinish().catch(function(e){toast(errMsg(e),true);vsgRenderFocus();});});
+  $('vsg-rest-stop').addEventListener('click',vtStopTimer);
+  $('vsg-focus').addEventListener('click',function(event){
+    var timer=event.target.closest('[data-vsg-rest]');
+    if(timer){vtStartTimer(Number(timer.dataset.vsgRest));return;}
+    if(event.target.id==='vsg-add-set'&&!VT_PENDING_SAVE&&!VT_SAVING){
+      var ex=VT_LIVE[VSG_FOCUS_INDEX];
+      if(ex&&ex.sets.length<30){
+        var last=ex.sets[ex.sets.length-1]||{reps:10,weight_kg:0};
+        ex.sets.push({reps:last.reps,weight_kg:last.weight_kg});
+        vtRenderLive();vsgRenderFocus();
+      }
+    }
+  });
+  $('vsg-focus-content').addEventListener('input',function(event){
+    if(VT_PENDING_SAVE||VT_SAVING)return;
+    var target=event.target,holder=target.closest('[data-vsg-set]');
+    if(!holder)return;
+    var current=VT_LIVE[VSG_FOCUS_INDEX],row=current&&current.sets[Number(holder.dataset.vsgSet)];
+    if(!row)return;
+    if(target.matches('[data-vsg-reps]'))row.reps=target.value===''?0:Number(target.value);
+    if(target.matches('[data-vsg-weight]'))row.weight_kg=target.value===''?0:Number(target.value);
+    vtRenderLive();
+    var volume=VT_LIVE.reduce(function(total,ex){return total+ex.sets.reduce(function(sum,set){
+      return sum+Number(set.reps||0)*Number(set.weight_kg||0);
+    },0);},0);
+    $('vsg-focus-volume').textContent=Math.round(volume)+' kg de volumen';
+  });
+  $('vsg-focus').addEventListener('keydown',function(event){
+    if(event.key==='Escape'){event.preventDefault();vsgCloseFocus();}
+    if(event.key!=='Tab')return;
+    var nodes=Array.from($('vsg-focus').querySelectorAll('button:not([disabled]),input:not([disabled])')).filter(function(x){return !x.closest('[hidden]');});
+    if(!nodes.length)return;
+    var first=nodes[0],last=nodes[nodes.length-1];
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+  });
   $('vt-discard-draft').addEventListener('click',vtDiscardDraft);
   ['vt-date','vt-notes','vt-add-name','vt-add-muscle'].forEach(function(id){$(id).addEventListener('input',vtPersistDraft);$(id).addEventListener('change',vtPersistDraft);});
   window.addEventListener('pagehide',vtPersistDraft);
@@ -4527,7 +4828,7 @@ async function boot(){
       notificationChannel=null; NOTIFICATIONS=[];
       vtDropDraft(user&&user.id);
       chatChannel=null; chatFriend=null; user = null; P = null; T = null; iniciado = false;
-      VT_LIVE=[];VT_PENDING_SAVE=null;VT_SAVING=false;vtStopTimer();VN_TARGETS=null;VN_MANUAL=[];VN_DAY=null;VT_AI_HAS_PLAN=false;VT_WEEKLY_STATS=null;$('vt-report-share').disabled=true;vtSetDraftUI();
+      VT_LIVE=[];VT_PENDING_SAVE=null;VT_SAVING=false;vtStopTimer();VN_TARGETS=null;VN_MANUAL=[];VN_DAY=null;VT_AI_HAS_PLAN=false;VT_WEEKLY_STATS=null;$('vt-report-share').disabled=true;VSG_START_READY=false;vsgCloseFocus(true);vtSetDraftUI();
       pantalla('login');
     } else if (ev === 'PASSWORD_RECOVERY' && session && session.user){
       window.viperPasswordRecovery=true;
