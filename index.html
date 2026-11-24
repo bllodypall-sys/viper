@@ -578,6 +578,25 @@ main{padding-block:12px 40px}
 #f-board .friend-chat-chevron{flex:0 0 auto;font-size:1.6rem;color:#67d88f;line-height:1}
 #f-board .friend-chat-self{min-height:65px;padding:13px 16px}
 @media(prefers-reduced-motion:reduce){#f-board .friend-chat-row{transition:none}}
+
+/* VIPER DIRECT 2.0 — inbox, unread counters and search */
+.nav-friend-unread[hidden]{display:none!important}
+.nav-friend-unread{margin-left:auto;min-width:20px;height:20px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;border-radius:99px;background:#46e27c;color:#092316;font:800 .75rem/1 var(--body)}
+.friend-dm-search-wrap{display:flex;align-items:center;gap:9px;padding:0 12px;min-height:48px;background:var(--surface);border:1px solid #395641;border-radius:14px}
+.friend-dm-search-wrap:focus-within{border-color:#50df81;box-shadow:0 0 0 2px rgba(80,223,129,.12)}
+.friend-dm-search-wrap>span{color:#88d4a2;font-size:1.55rem}
+.friend-dm-search-wrap input{width:100%;flex:1;min-width:0;min-height:45px;padding:10px 2px;border:0;outline:0;background:transparent;color:var(--fg);font:inherit;font-size:16px}
+.friend-dm-list{display:grid;grid-template-columns:1fr;gap:8px}
+.friend-dm-contact{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:12px;min-height:73px;padding:12px 14px}
+.friend-dm-contact.is-unread{border-color:#51dc83;background:linear-gradient(110deg,#193c29,#192920)}
+.friend-dm-copy strong{font-size:.96rem}
+.friend-dm-copy small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;line-height:1.36;white-space:normal}
+.friend-dm-contact.is-unread .friend-dm-copy small{color:#d3f7dc;font-weight:650}
+.friend-dm-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:8px;min-width:55px;align-self:stretch}
+.friend-dm-time{color:#a5bcae;font-size:.71rem;white-space:nowrap}
+.friend-dm-unread{display:grid;place-items:center;min-width:23px;height:23px;padding:0 6px;border-radius:99px;background:#49e083;color:#062013;font-size:.74rem;font-weight:900}
+.friend-dm-right .friend-dm-arrow{font-size:1.3rem}
+@media(max-width:420px){.friend-dm-contact{gap:9px;padding:11px 10px}.friend-dm-right{min-width:45px}.friend-dm-time{font-size:.65rem}}
 </style>
 </head>
 <body>
@@ -658,7 +677,7 @@ main{padding-block:12px 40px}
     <button type="button" data-nav="evolucion"><span class="nav-icon">💪</span><span class="nav-label">Evolución muscular</span></button>
     <button type="button" data-nav="temporada"><span class="nav-icon">⚡</span><span class="nav-label">Temporada</span></button>
     <button type="button" data-nav="ranking"><span class="nav-icon">🏆</span><span class="nav-label">Ranking</span></button>
-    <button type="button" data-nav="amigos"><span class="nav-icon">♧</span><span class="nav-label">Amigos</span></button>
+    <button type="button" data-nav="amigos"><span class="nav-icon">♧</span><span class="nav-label">Amigos</span><span id="nav-friend-unread" class="nav-friend-unread" hidden aria-label="Mensajes sin leer">0</span></button>
     <button type="button" data-nav="feed"><span class="nav-icon">▶</span><span class="nav-label">VIPER Feed</span></button>
     <button type="button" data-nav="notificaciones"><span class="nav-icon">🔔</span><span class="nav-label">Notificaciones</span><span class="notify-count nav-notify-count" id="nav-notify-count" hidden>0</span></button>
     <button type="button" data-nav="perfil"><span class="nav-icon">◉</span><span class="nav-label">Perfil</span></button>
@@ -1056,7 +1075,9 @@ main{padding-block:12px 40px}
         <button class="btn primary" type="submit">Enviar solicitud</button>
       </form>
       <div id="f-reqs" class="view"></div>
-      <div class="sec-head"><h2>Mensajes</h2><span>Conversaciones privadas con tus amigos</span></div>
+      <div class="sec-head"><h2>Mensajes</h2><span id="friend-dm-total" class="note">Tus conversaciones privadas</span></div>
+      <label class="vh" for="friend-dm-search">Buscar conversaciones</label>
+      <div class="friend-dm-search-wrap"><span aria-hidden="true">⌕</span><input id="friend-dm-search" type="search" maxlength="80" placeholder="Buscar amigos o mensajes…" autocomplete="off"></div>
       <div id="friend-dm-list" class="friend-dm-list" aria-label="Chats con amigos"><p class="note">Selecciona un amigo para conversar.</p></div>
       <div class="sec-head"><h2>Ranking de amigos</h2></div>
       <ol class="board" id="f-board"></ol>
@@ -1331,7 +1352,7 @@ function addDays(iso, n){
   return d.toISOString().slice(0, 10);
 }
 
-var sb = null, user = null, P = null, T = null, F = [], U = {}, iniciado = false, toastT = null, welcomeT = null, welcomeHideT = null, authMode = 'login', chatFriend = null, chatChannel = null;
+var sb = null, user = null, P = null, T = null, F = [], U = {}, iniciado = false, toastT = null, welcomeT = null, welcomeHideT = null, authMode = 'login', chatFriend = null, chatChannel = null, inboxChannel = null, DM_INBOX = [];
 var ATHLETE = null;
 var IDLE_TIMEOUT_MS = 60 * 60 * 1000, idleTimer = null, lastActivityAt = 0, lastActivitySavedAt = 0, idleStorageKey = null;
 var EVO = {muscle:'pectoral_superior',sessions:[],exercises:[],sets:[],measurements:[],photos:[],goals:[]};
@@ -1970,17 +1991,7 @@ function renderAmigos(){
       details+'<span class="friend-chat-chevron" aria-hidden="true">›</span></button></li>';
   }).join('') : '<li class="empty">Aún no hay amigos aceptados.</li>';
   $('f-vacio').hidden = ok.length > 0;
-  var dmFriends=Object.keys(fid).map(function(id){return U[id];}).filter(Boolean)
-    .sort(function(a,b){return String(a.username||'').localeCompare(String(b.username||''));});
-  $('friend-dm-list').innerHTML=dmFriends.length?dmFriends.map(function(r){
-    var avatar=r.avatar_path
-      ? '<img alt="" loading="lazy" src="'+esc(sb.storage.from('avatars').getPublicUrl(r.avatar_path).data.publicUrl)+'">'
-      : esc((r.username||'V').slice(0,1).toUpperCase());
-    return '<button type="button" class="friend-dm-contact" data-chat-user="'+esc(r.id)+'" aria-label="Abrir conversación con '+esc(r.username||'Atleta')+'">'+
-      '<span class="friend-dm-avatar">'+avatar+'</span>'+
-      '<span class="friend-dm-copy"><strong>'+esc(r.username||'Atleta')+'</strong><small>Enviar mensaje privado</small></span>'+
-      '<span class="friend-dm-arrow" aria-hidden="true">›</span></button>';
-  }).join(''):'<p class="note">Agrega amigos para comenzar a chatear con ellos.</p>';
+  renderVipInbox();
 }
 
 /* ---------- Perfil ---------- */
