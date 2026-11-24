@@ -3628,6 +3628,149 @@ async function consultarViperCoach(e){
   button.disabled=false;button.textContent='Consultar a VIPER Coach';
  }
 }
+/* ---------- VIPER TRAIN: session recorder and recovery timer ---------- */
+var VT_LIVE=[],VT_TIMER=null,VT_TIMER_END=0,VT_TIMER_DURATION=60,VT_AI_HAS_PLAN=false;
+var VT_MUSCLES=['pecho','espalda','hombros','biceps','triceps','antebrazos','abdomen','cuadriceps','isquiotibiales','gluteos','pantorrillas'];
+function vtFormatTimer(seconds){
+  seconds=Math.max(0,Math.floor(seconds));
+  return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
+}
+function vtStopTimer(){
+  if(VT_TIMER){clearInterval(VT_TIMER);VT_TIMER=null;}
+  VT_TIMER_END=0;$('vt-timer-display').textContent=vtFormatTimer(VT_TIMER_DURATION);
+}
+function vtStartTimer(seconds){
+  VT_TIMER_DURATION=seconds;
+  if(VT_TIMER){clearInterval(VT_TIMER);VT_TIMER=null;}
+  VT_TIMER_END=Date.now()+seconds*1000;
+  function tick(){
+    var remaining=Math.ceil((VT_TIMER_END-Date.now())/1000);
+    $('vt-timer-display').textContent=vtFormatTimer(remaining);
+    if(remaining<=0){
+      clearInterval(VT_TIMER);VT_TIMER=null;VT_TIMER_END=0;
+      $('vt-timer-display').textContent='¡Listo!';
+    }
+  }
+  tick();VT_TIMER=setInterval(tick,250);
+}
+function vtAddExercise(name,muscle,sets){
+  name=String(name||'').trim();
+  if(!name||name.length>100||!VT_MUSCLES.includes(muscle)){toast('Escribe un ejercicio y selecciona un grupo muscular válido.',true);return;}
+  if(VT_LIVE.length>=12){toast('Máximo 12 ejercicios por sesión.',true);return;}
+  var rows=(sets&&sets.length?sets:[{reps:10,weight_kg:0},{reps:10,weight_kg:0},{reps:10,weight_kg:0}])
+    .slice(0,30).map(function(v){return {reps:Number(v.reps),weight_kg:Number(v.weight_kg)};});
+  VT_LIVE.push({name:name,muscle:muscle,sets:rows});
+  vtRenderLive();
+}
+function vtUpdateSummary(){
+  var count=0,volume=0;
+  VT_LIVE.forEach(function(e){e.sets.forEach(function(row){count++;volume+=Number(row.reps||0)*Number(row.weight_kg||0);});});
+  $('vt-live-summary').textContent=VT_LIVE.length+' ejercicio'+(VT_LIVE.length===1?'':'s')+' · '+count+' series · '+Math.round(volume)+' kg de volumen';
+}
+function vtRenderLive(){
+  var box=$('vt-live-list');
+  if(!VT_LIVE.length){box.innerHTML='<p class="note">Añade un ejercicio para comenzar.</p>';vtUpdateSummary();return;}
+  box.innerHTML=VT_LIVE.map(function(ex,idx){
+    var rows=ex.sets.map(function(row,j){
+      return '<div class="vt-live-set" data-vt-set="'+j+'"><strong>S'+(j+1)+'</strong>'+
+        '<label>Repeticiones<input data-vt-reps type="number" min="1" max="300" step="1" required value="'+esc(row.reps)+'"></label>'+
+        '<label>Peso (kg)<input data-vt-weight type="number" min="0" max="1500" step="0.25" required value="'+esc(row.weight_kg)+'"></label>'+
+        '<button type="button" data-vt-remove-set title="Eliminar serie" aria-label="Eliminar serie '+(j+1)+'">×</button></div>';
+    }).join('');
+    return '<article class="vt-live-exercise" data-vt-ex="'+idx+'">'+
+      '<div class="vt-ex-head"><strong>'+esc(ex.name)+'</strong><button type="button" class="btn sm" data-vt-remove-ex>Quitar</button></div>'+
+      '<small class="note">'+esc(ex.muscle)+'</small><div class="vt-live-sets">'+rows+'</div>'+
+      '<div class="vt-ex-actions"><button type="button" class="btn sm" data-vt-add-set>＋ Serie</button></div></article>';
+  }).join('');
+  vtUpdateSummary();
+}
+function vtValidateDraft(){
+  if(!VT_LIVE.length||VT_LIVE.length>12)return false;
+  return VT_LIVE.every(function(ex){
+    return ex.name.length>=1&&ex.name.length<=100&&VT_MUSCLES.includes(ex.muscle)&&ex.sets.length>=1&&ex.sets.length<=30&&
+      ex.sets.every(function(row){return Number.isInteger(row.reps)&&row.reps>=1&&row.reps<=300&&Number.isFinite(row.weight_kg)&&row.weight_kg>=0&&row.weight_kg<=1500;});
+  });
+}
+async function vtRepeatLast(){
+  if(!user)return;
+  var r=await sb.from('viper_workout_sessions').select('id,notes').eq('user_id',user.id).order('session_date',{ascending:false}).order('created_at',{ascending:false}).limit(1);
+  if(r.error)throw r.error;
+  if(!r.data||!r.data.length){toast('Todavía no tienes entrenamientos guardados para repetir.');return;}
+  var session=r.data[0];
+  var ex=await sb.from('viper_workout_exercises').select('id,muscle_group,exercise_name').eq('session_id',session.id).order('created_at',{ascending:true}).limit(12);
+  if(ex.error)throw ex.error;
+  if(!ex.data||!ex.data.length){toast('La última sesión no tiene ejercicios registrados.',true);return;}
+  var ids=ex.data.map(function(e){return e.id;});
+  var rs=await sb.from('viper_workout_sets').select('exercise_id,set_number,reps,weight_kg').in('exercise_id',ids);
+  if(rs.error)throw rs.error;
+  VT_LIVE=ex.data.map(function(e){
+    var sets=(rs.data||[]).filter(function(row){return row.exercise_id===e.id;}).sort(function(a,b){return a.set_number-b.set_number;});
+    return {name:e.exercise_name,muscle:e.muscle_group,sets:sets.length?sets.map(function(x){return {reps:Number(x.reps),weight_kg:Number(x.weight_kg)};}):[{reps:10,weight_kg:0}]};
+  }).filter(function(e){return VT_MUSCLES.includes(e.muscle);});
+  $('vt-notes').value=session.notes||'';
+  vtRenderLive();toast('Tu última sesión está lista para repetir y ajustar.');
+}
+async function vtSaveLive(event){
+  event.preventDefault();
+  if(!user)return;
+  var date=$('vt-date').value,notes=$('vt-notes').value.trim();
+  if(!date||!vtValidateDraft()){toast('Verifica el día, ejercicios, repeticiones y pesos antes de guardar.',true);return;}
+  var btn=$('vt-save'),sessionId=null;btn.disabled=true;btn.textContent='Guardando sesión…';
+  try{
+    var created=await sb.from('viper_workout_sessions').insert({user_id:user.id,session_date:date,notes:notes||null}).select('id').single();
+    if(created.error)throw created.error;sessionId=created.data.id;
+    for(var i=0;i<VT_LIVE.length;i++){
+      var ex=VT_LIVE[i];
+      var added=await sb.from('viper_workout_exercises').insert({session_id:sessionId,muscle_group:ex.muscle,exercise_name:ex.name}).select('id').single();
+      if(added.error)throw added.error;
+      var sets=await sb.from('viper_workout_sets').insert(ex.sets.map(function(row,j){
+        return {exercise_id:added.data.id,set_number:j+1,reps:row.reps,weight_kg:row.weight_kg};
+      }));
+      if(sets.error)throw sets.error;
+    }
+    VT_LIVE=[];$('vt-notes').value='';vtRenderLive();vtStopTimer();
+    await cargarEvolucion();toast('Sesión completa guardada. ¡Buen entrenamiento!');
+  }catch(err){
+    if(sessionId){
+      var cleanup=await sb.from('viper_workout_sessions').delete().eq('id',sessionId).eq('user_id',user.id);
+      if(cleanup.error)console.warn('No se pudo limpiar la sesión incompleta:',cleanup.error);
+    }
+    toast(errMsg(err),true);
+  }finally{btn.disabled=false;btn.textContent='Guardar sesión completa';}
+}
+/* ---------- VIPER REPORT: verified weekly totals ---------- */
+async function vtLoadWeeklyReport(){
+  if(!user)return;
+  var uid=user.id,w=vipWeek(),root=$('vt-report-summary');
+  $('vt-report-week').textContent=w.start.split('-').reverse().join('/')+' — '+w.end.split('-').reverse().join('/');
+  root.innerHTML='<p class="note">Actualizando informe…</p>';
+  try{
+    var result=await Promise.all([
+      sb.from('viper_workout_sessions').select('id').eq('user_id',uid).gte('session_date',w.start).lte('session_date',w.end).limit(150),
+      sb.from('meal_entries').select('id').eq('user_id',uid).gte('meal_date',w.start).lte('meal_date',w.end).eq('source','ai').eq('status','approved'),
+      sb.from('viper_manual_foods').select('id').eq('user_id',uid).gte('meal_date',w.start).lte('meal_date',w.end)
+    ]);
+    result.forEach(function(r){if(r.error)throw r.error;});
+    var ids=result[0].data.map(function(x){return x.id;}),ex=[],sets=[];
+    if(ids.length){
+      var er=await sb.from('viper_workout_exercises').select('id').in('session_id',ids).limit(900);
+      if(er.error)throw er.error;
+      ex=er.data||[];
+      if(ex.length){
+        var sr=await sb.from('viper_workout_sets').select('reps,weight_kg').in('exercise_id',ex.map(function(x){return x.id;})).limit(4000);
+        if(sr.error)throw sr.error;sets=sr.data||[];
+      }
+    }
+    if(!user||user.id!==uid)return;
+    var volume=sets.reduce(function(n,x){return n+Number(x.reps||0)*Number(x.weight_kg||0);},0);
+    var cells=[
+      [ids.length,'Sesiones guardadas'],[ex.length,'Ejercicios registrados'],[sets.length,'Series completadas'],
+      [fmt(Math.round(volume))+' kg','Volumen registrado'],[result[1].data.length,'Comidas con IA'],[result[2].data.length,'Comidas manuales']
+    ];
+    root.innerHTML=cells.map(function(x){return '<div class="vt-report-card"><strong>'+esc(x[0])+'</strong><span>'+esc(x[1])+'</span></div>';}).join('');
+  }catch(err){root.innerHTML='<p class="note">No se pudo cargar el informe semanal. Inténtalo al volver a Inicio.</p>';console.warn('VIPER Report',err);}
+}
+
 function evoAddSetRow(reps,weight){
  var host=$('evo-set-rows');if(!host||host.children.length>=30)return;
  var n=host.children.length+1,row=document.createElement('div');row.className='evo-set-row';
