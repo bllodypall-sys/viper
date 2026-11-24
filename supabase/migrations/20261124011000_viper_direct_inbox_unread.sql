@@ -40,7 +40,7 @@ select f.destinatario,f.solicitante,
   coalesce((select max(m.id) from public.messages m
     where m.sender_id=f.solicitante and m.recipient_id=f.destinatario),0)
 from public.friendships f where f.estado='aceptada'
-on conflict (user_id,peer_id) do nothing;
+on conflict on constraint viper_chat_reads_pkey do nothing;
 
 create or replace function public.viper_chat_inbox()
 returns table (
@@ -69,7 +69,7 @@ begin
     and not public.is_blocked_between(
       v_me,case when f.solicitante=v_me then f.destinatario else f.solicitante end
     )
-  on conflict (user_id,peer_id) do nothing;
+  on conflict on constraint viper_chat_reads_pkey do nothing;
 
   return query
     with peers as (
@@ -134,7 +134,7 @@ begin
 
   insert into public.viper_chat_reads(user_id,peer_id,last_read_id,updated_at)
   values(v_me,p_peer,v_max,now())
-  on conflict(user_id,peer_id) do update
+  on conflict on constraint viper_chat_reads_pkey do update
     set last_read_id=greatest(viper_chat_reads.last_read_id,excluded.last_read_id),
         updated_at=now();
 end;
