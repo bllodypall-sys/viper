@@ -602,6 +602,23 @@ main{padding-block:12px 40px}
 .inbox-head-button{display:grid;place-items:center;font-size:1.22rem}
 .inbox-head-button:hover,.inbox-head-button:focus-visible{border-color:#52d982}
 @media(max-width:420px){.notify-head{gap:5px}.inbox-head-button{width:38px;height:38px}}
+
+/* VIPER TRAIN & REPORT */
+.vt-live-form{display:grid;gap:13px}.vt-quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.vt-quick label{display:grid;gap:5px;font-size:.81rem;color:var(--muted)}
+.vt-quick input,.vt-quick select{width:100%;min-height:44px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px;color:var(--fg);font:inherit}
+.vt-quick-actions,.vt-timer-actions,.vt-ai-edit-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.vt-live-list{display:grid;gap:12px}.vt-live-exercise{border:1px solid #35533f;border-radius:12px;padding:13px;background:color-mix(in srgb,var(--surface) 85%,#2a713f 15%);display:grid;gap:10px}
+.vt-ex-head{display:flex;justify-content:space-between;align-items:center;gap:9px}.vt-ex-head strong{min-width:0;overflow-wrap:anywhere}
+.vt-live-sets{display:grid;gap:7px}.vt-live-set{display:grid;grid-template-columns:35px minmax(0,1fr) minmax(0,1fr) 34px;align-items:end;gap:7px}
+.vt-live-set label{display:grid;gap:3px;color:var(--muted);font-size:.73rem}.vt-live-set input{min-width:0;width:100%;min-height:40px;padding:7px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit}
+.vt-live-set>strong{padding-bottom:11px;font-size:.85rem;color:#7fdfa1}.vt-live-set button{min-height:40px;min-width:30px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;cursor:pointer}
+.vt-ex-actions{display:flex;gap:8px;flex-wrap:wrap}.vt-timer{display:grid;gap:9px;padding:12px;border:1px solid #396449;border-radius:12px;background:var(--bg)}
+.vt-timer>span{font-size:.83rem;color:var(--muted)}.vt-timer>strong{font:800 2rem var(--display);color:#82f6a9;font-variant-numeric:tabular-nums}.vt-bottom{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.vt-report-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.vt-report-card{padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:11px}
+.vt-report-card strong{display:block;font:800 1.35rem var(--display);color:#71f1a0}.vt-report-card span{font-size:.77rem;color:var(--muted)}.vt-ai-edit-actions{margin:8px 0}
+#vt-ai-editor[hidden]{display:none!important}#vt-ai-editor textarea{width:100%;min-height:160px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);padding:12px;font:inherit;line-height:1.45}
+@media(max-width:580px){.vt-quick{grid-template-columns:1fr}.vt-report-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.vt-live-set{grid-template-columns:24px minmax(0,1fr) minmax(0,1fr) 30px}}
 </style>
 </head>
 <body>
@@ -723,6 +740,11 @@ main{padding-block:12px 40px}
         </div>
         <p class="note">Tus registros son privados. Descansar también es parte de entrenar: no hace falta completar ambas actividades todos los días.</p>
       </section>
+      <section class="viper-engagement vt-weekly" aria-label="Informe semanal VIPER">
+        <div class="viper-engagement-head"><span class="viper-feature-tag">📊 VIPER REPORT</span><span id="vt-report-week" class="note">Esta semana</span></div>
+        <h2>Tu progreso de la semana</h2><div id="vt-report-summary" class="vt-report-stats" aria-live="polite"><p class="note">Cargando tu actividad semanal…</p></div>
+        <p class="note">Resumen de registros guardados; no concede XP adicional.</p>
+      </section>
       <div class="home-section-title"><h2>Accesos rápidos</h2><span class="note">Todo VIPER en un toque</span></div>
       <div class="home-shortcuts">
         <button type="button" class="home-shortcut" data-home-nav="hoy"><span class="home-shortcut-icon">✓</span><span><b>Mi día</b><small>Registra gym y comidas</small></span></button>
@@ -737,6 +759,8 @@ main{padding-block:12px 40px}
         <button id="vip-ai-create" class="btn primary" type="button">Generar mi plan con IA</button>
         <p class="note" id="vip-ai-status" role="status" aria-live="polite"></p>
         <pre id="vip-ai-text" class="viper-ai-plan" aria-live="polite">Crea tu primer plan desde aquí.</pre>
+        <div class="vt-ai-edit-actions"><button id="vt-ai-edit" type="button" class="btn sm">✎ Editar mi plan</button><button id="vt-ai-copy" type="button" class="btn sm">Copiar plan</button></div>
+        <div id="vt-ai-editor" hidden><label class="lbl" for="vt-ai-textarea">Ajusta tu plan personal</label><textarea id="vt-ai-textarea" rows="9" maxlength="11900"></textarea><div class="vt-quick-actions"><button id="vt-ai-save" type="button" class="btn primary sm">Guardar cambios</button><button id="vt-ai-cancel" type="button" class="btn sm">Cancelar</button></div></div>
         <p class="note">Orientación general: adapta las cargas a tu capacidad y consulta con un profesional ante lesiones o limitaciones médicas.</p>
       </section>
       <div class="home-section-title"><h2>Tu actividad reciente</h2><button class="btn sm" id="home-activity-refresh" type="button">Actualizar</button></div>
@@ -989,7 +1013,27 @@ main{padding-block:12px 40px}
         <div id="evo-goals-list" class="evo-history"><p class="note">Todavía no tienes objetivos.</p></div>
       </div>
       <div class="season-card">
-        <h2>Registrar entrenamiento</h2>
+        <h2>VIPER TRAIN · Entrenamiento guiado</h2>
+        <p class="note">Registra una sesión con varios ejercicios y descansos. No modifica tus XP verificados.</p>
+        <form id="vt-live-form" class="vt-live-form">
+          <div class="vt-quick"><label>Fecha de sesión<input id="vt-date" type="date" required></label><label>Notas (opcional)<input id="vt-notes" type="text" maxlength="300" placeholder="Ej. Buena sesión de piernas"></label></div>
+          <div class="vt-quick"><label>Ejercicio<input id="vt-add-name" maxlength="100" type="text" placeholder="Ej. Sentadilla"></label><label>Grupo muscular<select id="vt-add-muscle">
+            <option value="pecho">Pecho</option><option value="espalda">Espalda</option><option value="hombros">Hombros</option>
+            <option value="biceps">Bíceps</option><option value="triceps">Tríceps</option><option value="antebrazos">Antebrazos</option>
+            <option value="abdomen">Abdomen</option><option value="cuadriceps">Cuádriceps</option>
+            <option value="isquiotibiales">Isquiotibiales</option><option value="gluteos">Glúteos</option><option value="pantorrillas">Pantorrillas</option>
+          </select></label></div>
+          <div class="vt-quick-actions"><button id="vt-add-exercise" class="btn sm" type="button">＋ Añadir ejercicio</button><button id="vt-repeat-last" class="btn sm" type="button">↺ Repetir última sesión</button></div>
+          <div id="vt-live-list" class="vt-live-list" aria-live="polite"><p class="note">Añade un ejercicio para comenzar.</p></div>
+          <div class="vt-timer"><span>⏱ Descanso entre series</span><strong id="vt-timer-display" role="timer" aria-live="off">01:00</strong>
+            <div class="vt-timer-actions"><button type="button" class="btn sm" data-vt-rest="30">30 s</button><button type="button" class="btn sm" data-vt-rest="60">60 s</button><button type="button" class="btn sm" data-vt-rest="90">90 s</button><button type="button" class="btn sm" id="vt-stop-rest">Detener</button></div>
+          </div>
+          <div class="vt-bottom"><span id="vt-live-summary" class="note">Sin series añadidas.</span><button id="vt-save" class="btn primary" type="submit">Guardar sesión completa</button></div>
+        </form>
+        <p class="note">Comprueba los ejercicios y cargas antes de guardar. Las sesiones se almacenan de forma privada.</p>
+      </div>
+      <div class="season-card">
+        <h2>Registro rápido · un ejercicio</h2>
         <form id="evo-workout-form" class="stack">
           <label class="lbl" for="evo-exercise">Ejercicio</label>
           <input id="evo-exercise" type="text" maxlength="100" required placeholder="Ej. Press banca">
