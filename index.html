@@ -3644,6 +3644,138 @@ function vtStartTimer(seconds){
   }
   tick();VT_TIMER=setInterval(tick,250);
 }
+/* ---------- VIPER QUALITY: local, account-scoped draft recovery ---------- */
+var VT_PENDING_SAVE=null,VT_SAVING=false,VT_DRAFT_STORAGE_OK=true;
+var VT_DRAFT_TTL_MS=14*24*60*60*1000;
+function vtDraftKey(id){return 'viper:train:draft:v1:'+String(id);}
+function vtRequestId(){
+  if(typeof crypto!=='undefined'&&typeof crypto.randomUUID==='function')return crypto.randomUUID();
+  if(typeof crypto==='undefined'||!crypto.getRandomValues)throw new Error('El navegador no permite generar identificadores seguros.');
+  var bytes=crypto.getRandomValues(new Uint8Array(16));
+  bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+  var hex=Array.from(bytes).map(function(n){return n.toString(16).padStart(2,'0');}).join('');
+  return hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20);
+}
+function vtDraftSnapshot(){
+  return {
+    version:1,updatedAt:Date.now(),
+    date:$('vt-date').value,
+    notes:$('vt-notes').value,
+    nameInput:$('vt-add-name').value,
+    muscleInput:$('vt-add-muscle').value,
+    exercises:VT_LIVE.map(function(ex){return {
+      name:ex.name,muscle:ex.muscle,
+      sets:ex.sets.map(function(row){return {reps:row.reps,weight_kg:row.weight_kg};})
+    };}),
+    pending:VT_PENDING_SAVE
+  };
+}
+function vtDropDraft(uid){
+  if(!uid)return;
+  try{localStorage.removeItem(vtDraftKey(uid));}catch(err){VT_DRAFT_STORAGE_OK=false;}
+}
+function vtSetDraftUI(){
+  var pending=Boolean(VT_PENDING_SAVE),active=VT_LIVE.length>0||Boolean($('vt-add-name').value.trim())||Boolean($('vt-notes').value.trim());
+  var banner=$('vt-draft-banner');
+  banner.hidden=!pending&&!active;
+  banner.classList.toggle('is-pending',pending);
+  $('vt-draft-status').textContent=pending
+    ?'Guardado pendiente de confirmar. Reintenta con el mismo identificador para evitar duplicados, o descarta el borrador.'
+    :VT_DRAFT_STORAGE_OK
+      ?'Borrador guardado en este dispositivo. Podrás continuar si cierras y vuelves a abrir VIPER.'
+      :'No se pudo guardar el borrador en este navegador. Evita cerrar la aplicación.';
+  var locked=pending||VT_SAVING,form=$('vt-live-form');
+  form.querySelectorAll('input,select,button').forEach(function(el){
+    if(el.id==='vt-save')return;
+    if(el.closest('.vt-timer'))return;
+    el.disabled=locked;
+  });
+  $('vt-save').disabled=VT_SAVING;
+  $('vt-save').textContent=VT_SAVING?'Guardando sesión…':pending?'Reintentar guardado':'Guardar sesión completa';
+  $('vt-discard-draft').disabled=VT_SAVING;
+}
+function vtPersistDraft(){
+  if(!user)return;
+  var d=vtDraftSnapshot();
+  if(!d.exercises.length&&!d.notes.trim()&&!d.nameInput.trim()&&!d.pending){
+    vtDropDraft(user.id);vtSetDraftUI();return;
+  }
+  try{
+    localStorage.setItem(vtDraftKey(user.id),JSON.stringify(d));
+    VT_DRAFT_STORAGE_OK=true;
+  }catch(err){VT_DRAFT_STORAGE_OK=false;}
+  vtSetDraftUI();
+}
+function vtRestoreDraft(){
+  if(!user)return false;
+  VT_DRAFT_STORAGE_OK=true;
+  var raw=null;
+  try{raw=localStorage.getItem(vtDraftKey(user.id));}
+  catch(err){VT_DRAFT_STORAGE_OK=false;vtSetDraftUI();return false;}
+  if(!raw){vtSetDraftUI();return false;}
+  try{
+    if(raw.length>80000)throw new Error('Borrador demasiado grande');
+    var data=JSON.parse(raw);
+    if(!data||data.version!==1||!Number.isFinite(data.updatedAt)||
+       data.updatedAt>Date.now()+60000||Date.now()-data.updatedAt>VT_DRAFT_TTL_MS||
+       !Array.isArray(data.exercises)||data.exercises.length>12)throw new Error('Borrador vencido');
+    var items=data.exercises.map(function(ex){
+      if(!ex||typeof ex.name!=='string'||ex.name.length>100||
+         !VT_MUSCLES.includes(ex.muscle)||!Array.isArray(ex.sets)||
+         ex.sets.length<1||ex.sets.length>30)throw new Error('Ejercicio de borrador inválido');
+      return {name:ex.name,muscle:ex.muscle,sets:ex.sets.map(function(row){
+        if(!row||!Number.isInteger(row.reps)||row.reps<1||row.reps>300||
+           !Number.isFinite(row.weight_kg)||row.weight_kg<0||row.weight_kg>1500)
+          throw new Error('Serie de borrador inválida');
+        return {reps:row.reps,weight_kg:row.weight_kg};
+      })};
+    });
+    var pending=data.pending||null;
+    if(pending){
+      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pending.id||'')||
+         !pending.payload||!Array.isArray(pending.payload.exercises)||
+         JSON.stringify(pending.payload.exercises)!==JSON.stringify(items))
+        throw new Error('Pendiente no válido');
+    }
+    VT_LIVE=items;VT_PENDING_SAVE=pending;
+    $('vt-date').value=/^\d{4}-\d{2}-\d{2}$/.test(data.date||'')?data.date:limaToday();
+    $('vt-notes').value=String(data.notes||'').slice(0,300);
+    $('vt-add-name').value=String(data.nameInput||'').slice(0,100);
+    if(VT_MUSCLES.includes(data.muscleInput))$('vt-add-muscle').value=data.muscleInput;
+    vtRenderLive();vtPersistDraft();
+    toast(pending?'Se recuperó una sesión cuyo guardado debes confirmar.':'Recuperamos tu entrenamiento interrumpido.');
+    return true;
+  }catch(err){
+    vtDropDraft(user.id);VT_LIVE=[];VT_PENDING_SAVE=null;
+    vtRenderLive();vtSetDraftUI();return false;
+  }
+}
+function vtDiscardDraft(){
+  if(!user||VT_SAVING)return;
+  var warning=VT_PENDING_SAVE
+    ?'El servidor podría haber guardado ya la sesión. Si descartas el borrador, comprueba después tu historial. ¿Descartarlo?'
+    :'¿Descartar el entrenamiento que aún no has guardado?';
+  if(!window.confirm(warning))return;
+  VT_PENDING_SAVE=null;VT_LIVE=[];
+  $('vt-notes').value='';$('vt-add-name').value='';$('vt-date').value=limaToday();
+  vtDropDraft(user.id);vtRenderLive();vtSetDraftUI();
+  toast('Borrador descartado en este dispositivo.');
+}
+/* ---------- VIPER QUALITY: restricted diagnostic events (no messages or PII) ---------- */
+var VQ_REPORTED=0,VQ_LAST_REPORT=0;
+function vqReportError(source,err){
+  if(!user||!sb||VQ_REPORTED>=5||Date.now()-VQ_LAST_REPORT<15000)return;
+  var allowed={runtime:1,promise:1,workout:1,nutrition:1,report:1};
+  if(!allowed[source])return;
+  var kind=String(err&&err.name||'Error').replace(/[^A-Za-z]/g,'').slice(0,40)||'Error';
+  VQ_REPORTED++;VQ_LAST_REPORT=Date.now();
+  try{
+    sb.from('viper_client_errors').insert({
+      user_id:user.id,source:source,error_type:kind,release_tag:'viper-quality-v1'
+    }).then(function(r){if(r.error)console.warn('VIPER Quality: diagnóstico no disponible');})
+      .catch(function(){/* Sin datos sensibles en consola. */});
+  }catch(ignore){}
+}
 function vtAddExercise(name,muscle,sets){
   name=String(name||'').trim();
   if(!name||name.length>100||!VT_MUSCLES.includes(muscle)){toast('Escribe un ejercicio y selecciona un grupo muscular válido.',true);return;}
