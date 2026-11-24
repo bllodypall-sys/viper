@@ -565,6 +565,19 @@ main{padding-block:12px 40px}
 .friend-dm-copy strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.94rem}
 .friend-dm-copy small{color:#adbdaf;font-size:.75rem}
 .friend-dm-arrow{font-size:1.8rem;color:#7beb9d}
+
+/* Ranking de amigos: todo el recuadro abre únicamente el chat. */
+#f-board .friend-chat-item{list-style:none;padding:0;margin:0;min-width:0}
+#f-board .friend-chat-row{width:100%;min-height:65px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;padding:13px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;cursor:pointer;transition:background .15s ease,border-color .15s ease}
+#f-board .friend-chat-row:hover{border-color:#50d881;background:color-mix(in srgb,var(--surface) 90%,#35d07f 10%)}
+#f-board .friend-chat-row:focus-visible{outline:2px solid #50d881;outline-offset:3px}
+#f-board .friend-chat-row:active{background:color-mix(in srgb,var(--surface) 80%,#35d07f 20%)}
+#f-board .friend-meta{display:flex;flex-direction:column;gap:5px;min-width:0;max-width:100%;overflow:hidden}
+#f-board .friend-meta b{font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#f-board .friend-meta small{font-size:.8rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#f-board .friend-chat-chevron{flex:0 0 auto;font-size:1.6rem;color:#67d88f;line-height:1}
+#f-board .friend-chat-self{min-height:65px;padding:13px 16px}
+@media(prefers-reduced-motion:reduce){#f-board .friend-chat-row{transition:none}}
 </style>
 </head>
 <body>
@@ -1947,7 +1960,14 @@ function renderAmigos(){
     .sort(function(a, b){ return b.xp_total - a.xp_total || a.username.localeCompare(b.username); });
   $('f-board').innerHTML = rows.length ? rows.map(function(r){
     var l = LV[idxOf(r.xp_total)];
-    return '<li class="req friend-chat"><span class="friend-meta"><b><button class="profile-link" type="button" data-profile="' + r.id + '">' + esc(r.username) + '</button></b><br><small>' + l.label + ' · ' + fmt(r.xp_total) + ' XP · racha ' + r.racha_activa + '</small></span>' + (r.id !== me ? '<button class="btn primary sm" type="button" data-act="chat" data-user="' + r.id + '">Abrir chat</button>' : '<span class="note">Tú</span>') + '</li>';
+    var details='<span class="friend-meta"><b>'+esc(r.username)+'</b><small>'+esc(l.label)+' · '+fmt(r.xp_total)+' XP · racha '+fmt(r.racha_activa||0)+'</small></span>';
+    // La fila propia no abre ningún chat y nunca enlaza al perfil.
+    if(r.id===me){
+      return '<li class="req friend-chat friend-chat-self">'+details+'<span class="note">Tú</span></li>';
+    }
+    // El botón ocupa TODA la tarjeta; pulsar nombre, estadísticas o fondo abre el chat.
+    return '<li class="friend-chat-item"><button type="button" class="friend-chat-row" data-chat-user="'+esc(r.id)+'" aria-label="Abrir conversación con '+esc(r.username)+'">'+
+      details+'<span class="friend-chat-chevron" aria-hidden="true">›</span></button></li>';
   }).join('') : '<li class="empty">Aún no hay amigos aceptados.</li>';
   $('f-vacio').hidden = ok.length > 0;
   var dmFriends=Object.keys(fid).map(function(id){return U[id];}).filter(Boolean)
@@ -3626,7 +3646,6 @@ async function guardarEvoFoto(e){
     if(direct){abrirChat(direct.dataset.chatUser).catch(function(err){toast(errMsg(err),true);});return;}
     var b = e.target.closest('button[data-act]');
     if (!b) return;
-    if (b.dataset.act === 'chat'){abrirChat(b.dataset.user).catch(function(err){toast(errMsg(err),true);});return;}
     var id = b.dataset.id, act = b.dataset.act;
     if (act === 'quitar' && !confirm('¿Quitar a este amigo?')) return;
     b.disabled = true;

@@ -105,4 +105,31 @@ assert.ok(html.includes("data-chat-user"), "Direct message contact buttons missi
 assert.ok(html.includes("createSignedUrl(m.media_path,3600)"), "Gallery media must use signed URLs");
 assert.ok(html.includes(".chat-panel[hidden]"), "Hidden modal override must be present");
 assert.match(html, /chatFriend\.id!==id\)return;/);
+
+/* Ranking de amigos: un único botón cubre la tarjeta completa. */
+const rankingStart=html.indexOf("function renderAmigos(){");
+const rankingEnd=html.indexOf("/* ---------- Perfil ---------- */",rankingStart);
+assert.ok(rankingStart>=0 && rankingEnd>rankingStart);
+const renderSource=html.slice(rankingStart,rankingEnd);
+assert.ok(renderSource.includes("class=\"friend-chat-row\" data-chat-user="));
+assert.ok(!renderSource.includes('data-act="chat"'), "No separate Open Chat button");
+assert.ok(!renderSource.includes('data-profile="' + "' + r.id + '"), "Name must not link to profile");
+assert.ok(html.includes("#f-board .friend-chat-row{width:100%"),"Friend row must span full width");
+const domNodes=Object.create(null);
+const rankings={
+  user:{id:"self"},
+  F:[{id:"friendship-1",solicitante:"self",destinatario:"buddy",estado:"aceptada"}],
+  U:{self:{id:"self",username:"Mi usuario",xp_total:285,racha_activa:4},buddy:{id:"buddy",username:"Mi amigo",xp_total:0,racha_activa:0}},
+  LV:[{label:"Novato"}],
+  idxOf:()=>0,fmt:String,esc:String,
+  $:id=>domNodes[id]||=(id==="f-vacio"?{hidden:false}:{innerHTML:""}),
+  sb:{storage:{from:()=>({getPublicUrl:()=>({data:{publicUrl:""}})})}}
+};
+new Script(renderSource).runInNewContext(rankings);
+rankings.renderAmigos();
+assert.match(domNodes["f-board"].innerHTML, /<button[^>]*class="friend-chat-row"[^>]*data-chat-user="buddy"/);
+assert.doesNotMatch(domNodes["f-board"].innerHTML, /data-profile=|Abrir chat<\/button>|data-chat-user="self"/);
+assert.match(domNodes["f-board"].innerHTML, />Tú<\/span>/);
+assert.match(domNodes["f-board"].innerHTML, />Mi amigo<\/b>/);
+
 console.log("VIPER smoke checks passed: syntax, navigation, private chat, media, reporting, badges and existing security checks.");
