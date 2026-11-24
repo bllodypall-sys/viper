@@ -267,6 +267,59 @@ assert.equal(macros.carbs_g,70);
 assert.equal(macros.fat_g,15);
 
 
+
+/* Nutrition form behavior: no invalid data persisted; reload only after a successful save. */
+const foodStart=html.indexOf("async function vnSaveFood(e){");
+const foodEnd=html.indexOf("async function vnRemoveFood(id){",foodStart);
+assert.ok(foodStart>0&&foodEnd>foodStart,"Manual food form handler missing");
+const foodFields={
+  "vn-food-name":{value:"",reset(){}},
+  "vn-food-calories":{value:""},
+  "vn-food-protein":{value:""},
+  "vn-food-carbs":{value:""},
+  "vn-food-fat":{value:""},
+  "vn-food-form":{reset(){this.didReset=true;},didReset:false}
+};
+const foodCalls=[],foodToasts=[];
+let shouldFailFood=false,foodReloads=0;
+const foodCtx={
+  user:{id:"test-user"},T:{hoy:"2026-11-24"},$:id=>foodFields[id],
+  sb:{from:(table)=>{
+    assert.equal(table,"viper_manual_foods");
+    return {insert:async payload=>{
+      foodCalls.push(payload);
+      return shouldFailFood?{error:{message:"Fallo de red"}}:{error:null};
+    }};
+  }},
+  vnLoad:async()=>{foodReloads++;},
+  toast:(message,isError)=>foodToasts.push({message,isError}),
+  errMsg:err=>err.message
+};
+new Script(html.slice(foodStart,foodEnd)).runInNewContext(foodCtx);
+const foodSubmit=()=>({preventDefault(){},submitter:{disabled:false}});
+foodFields["vn-food-name"].value="Arroz con pollo";
+foodFields["vn-food-calories"].value="-1";
+foodFields["vn-food-protein"].value="30";
+foodFields["vn-food-carbs"].value="50";
+foodFields["vn-food-fat"].value="12";
+await foodCtx.vnSaveFood(foodSubmit());
+assert.equal(foodCalls.length,0,"Invalid calories must not be saved");
+foodFields["vn-food-calories"].value="550";
+shouldFailFood=true;
+await foodCtx.vnSaveFood(foodSubmit());
+assert.equal(foodCalls.length,1);
+assert.equal(foodReloads,0,"Failed save must not trigger reload");
+assert.equal(foodFields["vn-food-form"].didReset,false,"Failed save must retain fields");
+shouldFailFood=false;
+await foodCtx.vnSaveFood(foodSubmit());
+assert.equal(foodCalls.length,2);
+assert.equal(foodCalls[1].user_id,"test-user");
+assert.equal(foodCalls[1].meal_date,"2026-11-24");
+assert.equal(foodCalls[1].calories,550);
+assert.equal(foodReloads,1);
+assert.equal(foodFields["vn-food-form"].didReset,true);
+assert.ok(foodToasts.some(x=>String(x.message).includes("No se suman XP.")),"Manual food must not award XP");
+
 /* VIPER integrated library and adaptive AI plan. */
 assert.ok(html.includes('data-vt-add-library="'+ "'+esc(x[0])"),"Exercise library must offer direct add to live session");
 assert.ok(html.includes("vtMacroFromAnatomy(add.dataset.vtMuscle)"),"Library muscle group must map to supported DB groups");
