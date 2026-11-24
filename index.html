@@ -4029,7 +4029,10 @@ async function guardarEvoEntrenamiento(e){
  try{
   var session=await sb.from('viper_workout_sessions').insert({user_id:user.id,session_date:date,notes:notes}).select('id').single();
   if(session.error)throw session.error;sessionId=session.data.id;
-  var exercise=await sb.from('viper_workout_exercises').insert({session_id:sessionId,muscle_group:EVO.muscle,exercise_name:name}).select('id').single();
+  var compatibleGroup=VT_MUSCLES.includes(EVO.muscle)?EVO.muscle:
+    (EVO.muscle==='aductores'?'cuadriceps':
+    (EVO_LEGACY_MUSCLES[EVO.muscle]||[]).find(function(x){return VT_MUSCLES.includes(x);})||'pecho');
+  var exercise=await sb.from('viper_workout_exercises').insert({session_id:sessionId,muscle_group:compatibleGroup,exercise_name:name}).select('id').single();
   if(exercise.error)throw exercise.error;exerciseId=exercise.data.id;
   var saved=await sb.from('viper_workout_sets').insert(rows.map(function(x){return {exercise_id:exerciseId,set_number:x.set_number,reps:x.reps,weight_kg:x.weight_kg};}));
   if(saved.error)throw saved.error;
