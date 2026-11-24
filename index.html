@@ -3027,6 +3027,7 @@ async function start(){
     await Promise.all([loadProfile(), loadToday()]);
     await signPhoto();
     renderAll();
+    vtRestoreDraft();
     vnLoad().catch(function(e){console.warn('VIPER Nutri',e);});
     loadHomeActivity();
     loadAccountActivity().catch(function(e){console.warn('No se pudo cargar el historial de seguridad',e);});
@@ -3975,6 +3976,11 @@ function eventos(){
 
   /* VIPER TRAIN */
   $('vt-date').value=limaToday();
+  $('vt-discard-draft').addEventListener('click',vtDiscardDraft);
+  ['vt-date','vt-notes','vt-add-name','vt-add-muscle'].forEach(function(id){$(id).addEventListener('input',vtPersistDraft);$(id).addEventListener('change',vtPersistDraft);});
+  window.addEventListener('pagehide',vtPersistDraft);
+  window.addEventListener('error',function(e){vqReportError('runtime',e.error||{name:'Error'});});
+  window.addEventListener('unhandledrejection',function(e){vqReportError('promise',e.reason||{name:'Error'});});
   $('vt-report-share').addEventListener('click',function(){
     if(!VT_WEEKLY_STATS)return;
     var st=VT_WEEKLY_STATS;
@@ -4014,7 +4020,7 @@ function eventos(){
     if(!set)return;
     if(e.target.matches('[data-vt-reps]'))set.reps=Number(e.target.value);
     if(e.target.matches('[data-vt-weight]'))set.weight_kg=Number(e.target.value);
-    vtUpdateSummary();
+    vtUpdateSummary();vtPersistDraft();
   });
   document.querySelector('.vt-timer').addEventListener('click',function(e){
     var b=e.target.closest('[data-vt-rest]');if(b)vtStartTimer(Number(b.dataset.vtRest));
@@ -4408,6 +4414,7 @@ function eventos(){
   $('blocked-users').addEventListener('click',function(e){var b=e.target.closest('[data-unblock-user]');if(!b)return;b.disabled=true;desbloquearUsuario(b.dataset.unblockUser).finally(function(){b.disabled=false;});});
   $('friend-dm-search').addEventListener('input',renderVipInbox);
   document.addEventListener('visibilitychange',function(){
+    if(document.hidden&&user)vtPersistDraft();
     if(!document.hidden&&user)refreshVipInbox().catch(function(err){console.warn('VIPER Direct',err);});
   });
   $('v-amigos').addEventListener('click', async function(e){
@@ -4518,8 +4525,9 @@ async function boot(){
       $('inbox-head-count').hidden=true;
       $('inbox-head-button').setAttribute('aria-label','Abrir mensajes');
       notificationChannel=null; NOTIFICATIONS=[];
+      vtDropDraft(user&&user.id);
       chatChannel=null; chatFriend=null; user = null; P = null; T = null; iniciado = false;
-      VT_LIVE=[];vtStopTimer();VN_TARGETS=null;VN_MANUAL=[];VN_DAY=null;VT_AI_HAS_PLAN=false;VT_WEEKLY_STATS=null;$('vt-report-share').disabled=true;
+      VT_LIVE=[];VT_PENDING_SAVE=null;VT_SAVING=false;vtStopTimer();VN_TARGETS=null;VN_MANUAL=[];VN_DAY=null;VT_AI_HAS_PLAN=false;VT_WEEKLY_STATS=null;$('vt-report-share').disabled=true;vtSetDraftUI();
       pantalla('login');
     } else if (ev === 'PASSWORD_RECOVERY' && session && session.user){
       window.viperPasswordRecovery=true;
