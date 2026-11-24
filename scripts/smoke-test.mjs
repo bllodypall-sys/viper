@@ -293,4 +293,21 @@ const mockHistory={
 new Script(html.slice(hStart,hEnd)).runInNewContext(mockHistory);
 assert.match(await mockHistory.vtRecentTrainingContext(),/Sin sesiones registradas/);
 
+/* Prevent accidental nesting of app functions inside eventos() again. */
+const mainAppScript = scripts.find((body) => body.includes("function eventos(){") && body.includes("async function boot(){"));
+assert.ok(mainAppScript,"Application boot script missing");
+const scopeProbe = mainAppScript.replace(
+  /boot\(\);\s*(?=if \('serviceWorker' in navigator\))/,
+  "window.__viperScopeCheck__={"+
+  ["vtLoadWeeklyReport","vtSaveLive","vtMacroFromAnatomy","vtAddExercise","cargarEvolucion","renderEvolucion","evoAddSetRow","guardarEvoEntrenamiento","consultarViperCoach","vtRecentTrainingContext","vnRender","vtSaveFood"].map((k)=>JSON.stringify(k)+":typeof "+k).join(",")+
+  "};\n"
+);
+assert.notEqual(scopeProbe,mainAppScript,"Runtime scope probe injection failed");
+const scopeWindow = {__TEST__:false};
+new Script(scopeProbe,{filename:"viper-runtime-scope.js"}).runInNewContext({window:scopeWindow,navigator:{},document:{},console});
+assert.ok(scopeWindow.__viperScopeCheck__,"Runtime scope probe not executed");
+for(const [name,kind] of Object.entries(scopeWindow.__viperScopeCheck__)){
+  assert.equal(kind,"function",name+" must be available throughout the application, not nested inside eventos()");
+}
+
 console.log("VIPER smoke checks passed: training, nutrition, report, share, adaptive AI and security.");
