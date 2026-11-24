@@ -8,6 +8,7 @@ const deletion = readFileSync(new URL("../supabase/functions/delete-account/inde
 const engagement = readFileSync(new URL("../supabase/migrations/20261123183000_viper_ai_community_and_security.sql", import.meta.url), "utf8");
 const dmSql = readFileSync(new URL("../supabase/migrations/20261124011000_viper_direct_inbox_unread.sql", import.meta.url), "utf8");
 const nutritionSql = readFileSync(new URL("../supabase/migrations/20261124033000_viper_train_nutri.sql", import.meta.url), "utf8");
+const qualitySql = readFileSync(new URL("../supabase/migrations/20261124050000_viper_quality_atomic_saves.sql", import.meta.url), "utf8");
 const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
   .map((match) => match[1]).filter((body) => body.trim());
 assert.ok(scripts.length >= 2, "Expected inline setup + application scripts");
@@ -30,7 +31,7 @@ for (const id of [
   "chat-options", "chat-options-menu", "chat-gallery", "chat-gallery-back",
   "chat-gallery-grid", "chat-view", "chat-messages", "chat-image", "chat-close",
   "friend-dm-search", "friend-dm-total", "nav-friend-unread", "inbox-head-button", "inbox-head-count",
-  "vt-live-form", "vt-date", "vt-notes", "vt-add-name", "vt-add-muscle", "vt-report-share",
+  "vt-live-form", "vt-date", "vt-notes", "vt-add-name", "vt-add-muscle", "vt-report-share", "vt-draft-banner", "vt-draft-status", "vt-discard-draft",
   "vt-add-exercise", "vt-repeat-last", "vt-live-list", "vt-timer-display",
   "vt-stop-rest", "vt-live-summary", "vt-save", "vt-report-week", "vt-report-summary",
   "vt-ai-edit", "vt-ai-copy", "vt-ai-editor", "vt-ai-textarea", "vt-ai-save", "vt-ai-cancel",
@@ -229,6 +230,7 @@ const trEnd=html.indexOf("function evoAddSetRow(reps,weight){",trStart);
 assert.ok(trStart>=0&&trEnd>trStart,"Training logic missing");
 const trNodes={};
 const trCtx={
+  user:null,
   $:id=>trNodes[id]||=(id==="vt-live-list"?{innerHTML:""}:{textContent:""}),
   esc:String,fmt:String,toast:()=>{},console
 };
@@ -310,4 +312,102 @@ for(const [name,kind] of Object.entries(scopeWindow.__viperScopeCheck__)){
   assert.equal(kind,"function",name+" must be available throughout the application, not nested inside eventos()");
 }
 
-console.log("VIPER smoke checks passed: training, nutrition, report, share, adaptive AI and security.");
+
+/* VIPER QUALITY: database transactions, idempotency, RLS and draft recovery. */
+assert.match(qualitySql,/add column if not exists client_request_id uuid/);
+assert.match(qualitySql,/create unique index if not exists viper_workout_sessions_user_request_unique/);
+assert.match(qualitySql,/create or replace function public\.viper_save_workout_v2/);
+assert.match(qualitySql,/language plpgsql volatile security invoker/);
+assert.match(qualitySql,/on conflict \(user_id,client_request_id\)/);
+assert.match(qualitySql,/insert into public\.viper_workout_sets/);
+assert.match(qualitySql,/insert into public\.viper_workout_sets/);
+assert.match(qualitySql,/revoke all on function public\.viper_save_workout_v2\(uuid,date,text,jsonb\) from public,anon/);
+assert.match(qualitySql,/grant execute on function public\.viper_save_workout_v2\(uuid,date,text,jsonb\) to authenticated/);
+assert.match(qualitySql,/alter table public\.viper_client_errors enable row level security/);
+assert.match(qualitySql,/create policy viper_client_errors_insert_own/);
+assert.match(qualitySql,/grant insert on public\.viper_client_errors to authenticated/);
+assert.doesNotMatch(qualitySql,/xp_total|registrar_dia/);
+const saveBegin=html.indexOf("async function vtSaveLive(event){");
+const saveEnd=html.indexOf("/* ---------- VIPER REPORT: verified weekly totals ---------- */",saveBegin);
+assert.ok(saveBegin>=0&&saveEnd>saveBegin);
+const saveCode=html.slice(saveBegin,saveEnd);
+assert.ok(saveCode.includes("sb.rpc('viper_save_workout_v2'"),"Workout saves must use atomic RPC");
+assert.doesNotMatch(saveCode,/sb\.from\('viper_workout_(sessions|exercises|sets)'\)/,"No manual partial inserts allowed");
+assert.ok(saveCode.includes("VT_PENDING_SAVE=pending;"),"Pending request must survive lost responses");
+
+const qualityBegin=html.indexOf("/* ---------- VIPER QUALITY: local, account-scoped draft recovery ---------- */");
+const qualityEnd=html.indexOf("function vtAddExercise(name,muscle,sets){",qualityBegin);
+assert.ok(qualityBegin>=0&&qualityEnd>qualityBegin);
+const qualityElems=new Map();
+function qNode(id){
+  if(!qualityElems.has(id)){
+    qualityElems.set(id,{
+      value:id==='vt-date'?'2026-11-23':id==='vt-add-muscle'?'pecho':'',
+      disabled:false,hidden:false,textContent:'',classList:{toggle(){}},
+      querySelectorAll:()=>[]
+    });
+  }
+  return qualityElems.get(id);
+}
+const stored=new Map(),draftUser={id:'user-1'};
+const qc={
+  user:draftUser,sb:{},VT_LIVE:[],VT_MUSCLES:['pecho','espalda','cuadriceps'],
+  $:qNode,
+  localStorage:{getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,v),removeItem:k=>stored.delete(k)},
+  crypto:{randomUUID:()=> '11111111-1111-4111-8111-111111111111'},
+  window:{confirm:()=>true},
+  limaToday:()=> '2026-11-23',
+  vtRenderLive:()=>{},toast:()=>{},console
+};
+new Script(html.slice(qualityBegin,qualityEnd)).runInNewContext(qc);
+qc.VT_LIVE=[{name:'Press',muscle:'pecho',sets:[{reps:8,weight_kg:60}]}];
+qc.vtPersistDraft();
+const draftKey=qc.vtDraftKey('user-1');
+assert.ok(stored.has(draftKey),"Workout draft must be locally saved for this account");
+assert.ok(!stored.has(qc.vtDraftKey('user-2')),"No draft may leak to another account");
+qc.VT_LIVE=[];assert.equal(qc.vtRestoreDraft(),true);
+assert.equal(qc.VT_LIVE[0].name,'Press');
+assert.equal(qc.VT_LIVE[0].sets[0].weight_kg,60);
+const snapshot=qc.vtDraftSnapshot();
+const pendingId='22222222-2222-4222-8222-222222222222';
+qc.VT_PENDING_SAVE={id:pendingId,payload:{date:snapshot.date,notes:snapshot.notes,exercises:snapshot.exercises}};
+qc.vtPersistDraft();
+qc.VT_LIVE=[];qc.VT_PENDING_SAVE=null;
+assert.equal(qc.vtRestoreDraft(),true);
+assert.equal(qc.VT_PENDING_SAVE.id,pendingId,"Pending request id must survive a reload");
+qc.vtDropDraft('user-1');
+assert.equal(stored.has(draftKey),false);
+
+const saveCalls=[];
+const saverCtx={
+  user:{id:'u1'},VT_SAVING:false,VT_PENDING_SAVE:null,
+  VT_LIVE:[{name:'Sentadilla',muscle:'cuadriceps',sets:[{reps:10,weight_kg:80}]}],
+  $:id=>qNode(id),
+  vtValidateDraft:()=>true,vtRequestId:()=>pendingId,
+  vtDraftSnapshot:()=>({exercises:saverCtx.VT_LIVE.map(x=>({
+    name:x.name,muscle:x.muscle,sets:x.sets.map(y=>({reps:y.reps,weight_kg:y.weight_kg}))
+  }))}),
+  vtPersistDraft:()=>{},vtDropDraft:()=>{},vtRenderLive:()=>{},vtStopTimer:()=>{},vtSetDraftUI:()=>{},
+  vqReportError:()=>{},toast:()=>{},cargarEvolucion:async()=>{},console,
+  sb:{
+    rpc:async(name,args)=>{
+      assert.equal(name,'viper_save_workout_v2');
+      saveCalls.push(args);
+      return saveCalls.length===1?{error:{name:'NetworkError'}}:
+        {error:null,data:'33333333-3333-4333-8333-333333333333'};
+    },
+    from:()=>{throw new Error('Non-atomic insert attempt');}
+  }
+};
+new Script(saveCode).runInNewContext(saverCtx);
+await saverCtx.vtSaveLive({preventDefault(){}});
+assert.equal(saverCtx.VT_PENDING_SAVE.id,pendingId);
+assert.equal(saverCtx.VT_LIVE.length,1);
+await saverCtx.vtSaveLive({preventDefault(){}});
+assert.equal(saveCalls.length,2);
+assert.equal(saveCalls[0].p_client_request_id,saveCalls[1].p_client_request_id);
+assert.equal(JSON.stringify(saveCalls[0].p_exercises),JSON.stringify(saveCalls[1].p_exercises));
+assert.equal(saverCtx.VT_LIVE.length,0);
+assert.equal(saverCtx.VT_PENDING_SAVE,null);
+
+console.log("VIPER smoke checks passed: auth scope, atomic saves, retry, drafts, nutrition, reporting and security.");

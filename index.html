@@ -637,6 +637,11 @@ main{padding-block:12px 40px}
 @media(max-width:680px){.vn-goals-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:390px){.vn-progress{grid-template-columns:1fr}}
 .vt-lib-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto}.vt-lib-actions .btn{flex:1 1 145px;min-height:40px}
+/* VIPER QUALITY: draft recovery, safe retry, discard control */
+.vt-draft-banner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px;border:1px solid #468358;border-radius:10px;background:color-mix(in srgb,var(--surface) 83%,#3cae68 17%)}
+.vt-draft-banner[hidden]{display:none!important}
+.vt-draft-banner span{color:var(--fg);font-size:.84rem;flex:1 1 220px}
+.vt-draft-banner.is-pending{border-color:#d6a839;background:color-mix(in srgb,var(--surface) 89%,#f0c04f 11%)}
 </style>
 </head>
 <body>
@@ -1081,6 +1086,11 @@ main{padding-block:12px 40px}
             <div class="vt-timer-actions"><button type="button" class="btn sm" data-vt-rest="30">30 s</button><button type="button" class="btn sm" data-vt-rest="60">60 s</button><button type="button" class="btn sm" data-vt-rest="90">90 s</button><button type="button" class="btn sm" id="vt-stop-rest">Detener</button></div>
           </div>
           <div class="vt-bottom"><span id="vt-live-summary" class="note">Sin series añadidas.</span><button id="vt-save" class="btn primary" type="submit">Guardar sesión completa</button></div>
+          <div id="vt-draft-banner" class="vt-draft-banner" role="status" aria-live="polite" hidden>
+            <span id="vt-draft-status">Tu borrador se guarda automáticamente en este dispositivo.</span>
+            <button type="button" class="btn sm" id="vt-discard-draft">Descartar borrador</button>
+          </div>
+          <p class="note">Guardado automático por cuenta en este navegador. Se recupera al regresar y se elimina al cerrar sesión o descartarlo.</p>
         </form>
         <p class="note">Comprueba los ejercicios y cargas antes de guardar. Las sesiones se almacenan de forma privada.</p>
       </div>
@@ -1297,6 +1307,7 @@ main{padding-block:12px 40px}
       <p class="note">Los datos privados y las fotos de check-in no se muestran aquí.</p>
     </section>
     <section id="v-seguridad" class="view" aria-label="Centro de seguridad" hidden>
+      <p class="note">VIPER QUALITY almacena categorías de errores técnicos asociadas a tu cuenta, sin incluir mensajes, entrenamientos, alimentos, ubicación ni contraseñas. Solo se utilizan para diagnosticar fallos.</p>
       <div class="sec-head"><h2>Centro de seguridad</h2><span class="note">Protege tu cuenta VIPER</span></div>
       <section class="season-card">
         <h3>Contraseña</h3>
@@ -2761,7 +2772,7 @@ function ir(v){
   $('app').classList.remove('sidebar-open');
   $('nav-toggle').setAttribute('aria-expanded','false');
   if (v === 'inicio'){renderInicio();loadVipAiPlan().catch(function(e){$('vip-ai-status').textContent='No se pudo cargar tu plan: '+errMsg(e);});vtLoadWeeklyReport().catch(function(e){console.warn('VIPER Report',e);});}
-  if (v === 'hoy')vnLoad().catch(function(e){console.warn('VIPER Nutri',e);});
+  if (v === 'hoy')vnLoad().catch(function(e){console.warn('VIPER Nutri',e);vqReportError('nutrition',e);});
   if (v === 'evolucion') cargarEvolucion();
   if (v === 'temporada') cargarTemporada();
   if (v === 'ranking') cargarRanking();
@@ -3016,7 +3027,8 @@ async function start(){
     await Promise.all([loadProfile(), loadToday()]);
     await signPhoto();
     renderAll();
-    vnLoad().catch(function(e){console.warn('VIPER Nutri',e);});
+    vtRestoreDraft();
+    vnLoad().catch(function(e){console.warn('VIPER Nutri',e);vqReportError('nutrition',e);});
     loadHomeActivity();
     loadAccountActivity().catch(function(e){console.warn('No se pudo cargar el historial de seguridad',e);});
     await loadNotifications();
@@ -3633,6 +3645,138 @@ function vtStartTimer(seconds){
   }
   tick();VT_TIMER=setInterval(tick,250);
 }
+/* ---------- VIPER QUALITY: local, account-scoped draft recovery ---------- */
+var VT_PENDING_SAVE=null,VT_SAVING=false,VT_DRAFT_STORAGE_OK=true;
+var VT_DRAFT_TTL_MS=14*24*60*60*1000;
+function vtDraftKey(id){return 'viper:train:draft:v1:'+String(id);}
+function vtRequestId(){
+  if(typeof crypto!=='undefined'&&typeof crypto.randomUUID==='function')return crypto.randomUUID();
+  if(typeof crypto==='undefined'||!crypto.getRandomValues)throw new Error('El navegador no permite generar identificadores seguros.');
+  var bytes=crypto.getRandomValues(new Uint8Array(16));
+  bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+  var hex=Array.from(bytes).map(function(n){return n.toString(16).padStart(2,'0');}).join('');
+  return hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20);
+}
+function vtDraftSnapshot(){
+  return {
+    version:1,updatedAt:Date.now(),
+    date:$('vt-date').value,
+    notes:$('vt-notes').value,
+    nameInput:$('vt-add-name').value,
+    muscleInput:$('vt-add-muscle').value,
+    exercises:VT_LIVE.map(function(ex){return {
+      name:ex.name,muscle:ex.muscle,
+      sets:ex.sets.map(function(row){return {reps:row.reps,weight_kg:row.weight_kg};})
+    };}),
+    pending:VT_PENDING_SAVE
+  };
+}
+function vtDropDraft(uid){
+  if(!uid)return;
+  try{localStorage.removeItem(vtDraftKey(uid));}catch(err){VT_DRAFT_STORAGE_OK=false;}
+}
+function vtSetDraftUI(){
+  var pending=Boolean(VT_PENDING_SAVE),active=VT_LIVE.length>0||Boolean($('vt-add-name').value.trim())||Boolean($('vt-notes').value.trim());
+  var banner=$('vt-draft-banner');
+  banner.hidden=!pending&&!active;
+  banner.classList.toggle('is-pending',pending);
+  $('vt-draft-status').textContent=pending
+    ?'Guardado pendiente de confirmar. Reintenta con el mismo identificador para evitar duplicados, o descarta el borrador.'
+    :VT_DRAFT_STORAGE_OK
+      ?'Borrador guardado en este dispositivo. Podrás continuar si cierras y vuelves a abrir VIPER.'
+      :'No se pudo guardar el borrador en este navegador. Evita cerrar la aplicación.';
+  var locked=pending||VT_SAVING,form=$('vt-live-form');
+  form.querySelectorAll('input,select,button').forEach(function(el){
+    if(el.id==='vt-save')return;
+    if(el.closest('.vt-timer'))return;
+    el.disabled=locked;
+  });
+  $('vt-save').disabled=VT_SAVING;
+  $('vt-save').textContent=VT_SAVING?'Guardando sesión…':pending?'Reintentar guardado':'Guardar sesión completa';
+  $('vt-discard-draft').disabled=VT_SAVING;
+}
+function vtPersistDraft(){
+  if(!user)return;
+  var d=vtDraftSnapshot();
+  if(!d.exercises.length&&!d.notes.trim()&&!d.nameInput.trim()&&!d.pending){
+    vtDropDraft(user.id);vtSetDraftUI();return;
+  }
+  try{
+    localStorage.setItem(vtDraftKey(user.id),JSON.stringify(d));
+    VT_DRAFT_STORAGE_OK=true;
+  }catch(err){VT_DRAFT_STORAGE_OK=false;}
+  vtSetDraftUI();
+}
+function vtRestoreDraft(){
+  if(!user)return false;
+  VT_DRAFT_STORAGE_OK=true;
+  var raw=null;
+  try{raw=localStorage.getItem(vtDraftKey(user.id));}
+  catch(err){VT_DRAFT_STORAGE_OK=false;vtSetDraftUI();return false;}
+  if(!raw){vtSetDraftUI();return false;}
+  try{
+    if(raw.length>80000)throw new Error('Borrador demasiado grande');
+    var data=JSON.parse(raw);
+    if(!data||data.version!==1||!Number.isFinite(data.updatedAt)||
+       data.updatedAt>Date.now()+60000||Date.now()-data.updatedAt>VT_DRAFT_TTL_MS||
+       !Array.isArray(data.exercises)||data.exercises.length>12)throw new Error('Borrador vencido');
+    var items=data.exercises.map(function(ex){
+      if(!ex||typeof ex.name!=='string'||ex.name.length>100||
+         !VT_MUSCLES.includes(ex.muscle)||!Array.isArray(ex.sets)||
+         ex.sets.length<1||ex.sets.length>30)throw new Error('Ejercicio de borrador inválido');
+      return {name:ex.name,muscle:ex.muscle,sets:ex.sets.map(function(row){
+        if(!row||!Number.isInteger(row.reps)||row.reps<0||row.reps>300||
+           !Number.isFinite(row.weight_kg)||row.weight_kg<0||row.weight_kg>1500)
+          throw new Error('Serie de borrador inválida');
+        return {reps:row.reps,weight_kg:row.weight_kg};
+      })};
+    });
+    var pending=data.pending||null;
+    if(pending){
+      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pending.id||'')||
+         !pending.payload||!Array.isArray(pending.payload.exercises)||
+         JSON.stringify(pending.payload.exercises)!==JSON.stringify(items))
+        throw new Error('Pendiente no válido');
+    }
+    VT_LIVE=items;VT_PENDING_SAVE=pending;
+    $('vt-date').value=/^\d{4}-\d{2}-\d{2}$/.test(data.date||'')?data.date:limaToday();
+    $('vt-notes').value=String(data.notes||'').slice(0,300);
+    $('vt-add-name').value=String(data.nameInput||'').slice(0,100);
+    if(VT_MUSCLES.includes(data.muscleInput))$('vt-add-muscle').value=data.muscleInput;
+    vtRenderLive();vtPersistDraft();
+    toast(pending?'Se recuperó una sesión cuyo guardado debes confirmar.':'Recuperamos tu entrenamiento interrumpido.');
+    return true;
+  }catch(err){
+    vtDropDraft(user.id);VT_LIVE=[];VT_PENDING_SAVE=null;
+    vtRenderLive();vtSetDraftUI();return false;
+  }
+}
+function vtDiscardDraft(){
+  if(!user||VT_SAVING)return;
+  var warning=VT_PENDING_SAVE
+    ?'El servidor podría haber guardado ya la sesión. Si descartas el borrador, comprueba después tu historial. ¿Descartarlo?'
+    :'¿Descartar el entrenamiento que aún no has guardado?';
+  if(!window.confirm(warning))return;
+  VT_PENDING_SAVE=null;VT_LIVE=[];
+  $('vt-notes').value='';$('vt-add-name').value='';$('vt-date').value=limaToday();
+  vtDropDraft(user.id);vtRenderLive();vtSetDraftUI();
+  toast('Borrador descartado en este dispositivo.');
+}
+/* ---------- VIPER QUALITY: restricted diagnostic events (no messages or PII) ---------- */
+var VQ_REPORTED=0,VQ_LAST_REPORT=0;
+function vqReportError(source,err){
+  if(!user||!sb||VQ_REPORTED>=5||Date.now()-VQ_LAST_REPORT<15000)return;
+  var allowed={runtime:1,promise:1,workout:1,nutrition:1,report:1};
+  if(!allowed[source])return;
+  var kind=String(err&&err.name||'Error').replace(/[^A-Za-z]/g,'').slice(0,40)||'Error';
+  VQ_REPORTED++;VQ_LAST_REPORT=Date.now();
+  try{
+    sb.from('viper_client_errors').insert({
+      user_id:user.id,source:source,error_type:kind,release_tag:'viper-quality-v1'
+    }).then(function(r){if(r.error)console.warn('VIPER Quality: diagnóstico no disponible');})
+      .catch(function(){/* Sin datos sensibles en consola. */});
+  }catch(ignore){}
+}
 function vtAddExercise(name,muscle,sets){
   name=String(name||'').trim();
   if(!name||name.length>100||!VT_MUSCLES.includes(muscle)){toast('Escribe un ejercicio y selecciona un grupo muscular válido.',true);return;}
@@ -3649,7 +3793,7 @@ function vtUpdateSummary(){
 }
 function vtRenderLive(){
   var box=$('vt-live-list');
-  if(!VT_LIVE.length){box.innerHTML='<p class="note">Añade un ejercicio para comenzar.</p>';vtUpdateSummary();return;}
+  if(!VT_LIVE.length){box.innerHTML='<p class="note">Añade un ejercicio para comenzar.</p>';vtUpdateSummary();vtPersistDraft();return;}
   box.innerHTML=VT_LIVE.map(function(ex,idx){
     var rows=ex.sets.map(function(row,j){
       return '<div class="vt-live-set" data-vt-set="'+j+'"><strong>S'+(j+1)+'</strong>'+
@@ -3663,6 +3807,7 @@ function vtRenderLive(){
       '<div class="vt-ex-actions"><button type="button" class="btn sm" data-vt-add-set>＋ Serie</button></div></article>';
   }).join('');
   vtUpdateSummary();
+  vtPersistDraft();
 }
 function vtValidateDraft(){
   if(!VT_LIVE.length||VT_LIVE.length>12)return false;
@@ -3692,34 +3837,46 @@ async function vtRepeatLast(){
 }
 async function vtSaveLive(event){
   event.preventDefault();
-  if(!user)return;
-  var date=$('vt-date').value,notes=$('vt-notes').value.trim();
-  if(!date||!vtValidateDraft()){toast('Verifica el día, ejercicios, repeticiones y pesos antes de guardar.',true);return;}
-  var btn=$('vt-save'),sessionId=null,fullySaved=false;btn.disabled=true;btn.textContent='Guardando sesión…';
+  if(!user||VT_SAVING)return;
+  if(!$('vt-date').value||!vtValidateDraft()){
+    toast('Verifica la fecha, los ejercicios, las repeticiones y los pesos.',true);return;
+  }
+  var uid=user.id,pending=VT_PENDING_SAVE;
+  if(!pending){
+    try{
+      pending={id:vtRequestId(),payload:{
+        date:$('vt-date').value,notes:$('vt-notes').value.trim(),
+        exercises:vtDraftSnapshot().exercises
+      }};
+    }catch(err){toast('No es posible iniciar un guardado seguro en este navegador.',true);return;}
+    VT_PENDING_SAVE=pending;
+  }
+  VT_SAVING=true;vtPersistDraft();
   try{
-    var created=await sb.from('viper_workout_sessions').insert({user_id:user.id,session_date:date,notes:notes||null}).select('id').single();
-    if(created.error)throw created.error;sessionId=created.data.id;
-    for(var i=0;i<VT_LIVE.length;i++){
-      var ex=VT_LIVE[i];
-      var added=await sb.from('viper_workout_exercises').insert({session_id:sessionId,muscle_group:ex.muscle,exercise_name:ex.name}).select('id').single();
-      if(added.error)throw added.error;
-      var sets=await sb.from('viper_workout_sets').insert(ex.sets.map(function(row,j){
-        return {exercise_id:added.data.id,set_number:j+1,reps:row.reps,weight_kg:row.weight_kg};
-      }));
-      if(sets.error)throw sets.error;
-    }
-    fullySaved=true;
-    VT_LIVE=[];$('vt-notes').value='';vtRenderLive();vtStopTimer();
+    var result=await sb.rpc('viper_save_workout_v2',{
+      p_client_request_id:pending.id,
+      p_session_date:pending.payload.date,
+      p_notes:pending.payload.notes||null,
+      p_exercises:pending.payload.exercises
+    });
+    if(result.error)throw result.error;
+    if(!result.data||!/^[0-9a-f-]{36}$/i.test(String(result.data)))
+      throw new Error('No se pudo confirmar el identificador de la sesión');
+    if(!user||user.id!==uid)return;
+    VT_PENDING_SAVE=null;VT_LIVE=[];
+    $('vt-notes').value='';$('vt-add-name').value='';
+    vtDropDraft(uid);vtRenderLive();vtStopTimer();
     try{await cargarEvolucion();}
-    catch(refreshError){console.warn('Sesión guardada; no se pudo actualizar la vista de Evolución',refreshError);}
-    toast('Sesión completa guardada. ¡Buen entrenamiento!');
+    catch(refreshError){console.warn('Sesión guardada, no se pudo refrescar Evolución',refreshError);}
+    toast('Entrenamiento completo guardado correctamente, sin duplicados.');
   }catch(err){
-    if(sessionId&&!fullySaved){
-      var cleanup=await sb.from('viper_workout_sessions').delete().eq('id',sessionId).eq('user_id',user.id);
-      if(cleanup.error)console.warn('No se pudo limpiar la sesión incompleta:',cleanup.error);
+    if(user&&user.id===uid){
+      vtPersistDraft();vqReportError('workout',err);
+      toast('No pudimos confirmar el guardado. Tu borrador sigue disponible: pulsa «Reintentar guardado».',true);
     }
-    toast(errMsg(err),true);
-  }finally{btn.disabled=false;btn.textContent='Guardar sesión completa';}
+  }finally{
+    VT_SAVING=false;vtSetDraftUI();
+  }
 }
 /* ---------- VIPER REPORT: verified weekly totals ---------- */
 async function vtLoadWeeklyReport(){
@@ -3754,7 +3911,7 @@ async function vtLoadWeeklyReport(){
       [fmt(Math.round(volume))+' kg','Volumen registrado'],[result[1].data.length,'Comidas con IA'],[result[2].data.length,'Comidas manuales']
     ];
     root.innerHTML=cells.map(function(x){return '<div class="vt-report-card"><strong>'+esc(x[0])+'</strong><span>'+esc(x[1])+'</span></div>';}).join('');
-  }catch(err){root.innerHTML='<p class="note">No se pudo cargar el informe semanal. Inténtalo al volver a Inicio.</p>';console.warn('VIPER Report',err);}
+  }catch(err){root.innerHTML='<p class="note">No se pudo cargar el informe semanal. Inténtalo al volver a Inicio.</p>';console.warn('VIPER Report',err);vqReportError('report',err);}
 }
 
 function evoAddSetRow(reps,weight){
@@ -3819,6 +3976,11 @@ function eventos(){
 
   /* VIPER TRAIN */
   $('vt-date').value=limaToday();
+  $('vt-discard-draft').addEventListener('click',vtDiscardDraft);
+  ['vt-date','vt-notes','vt-add-name','vt-add-muscle'].forEach(function(id){$(id).addEventListener('input',vtPersistDraft);$(id).addEventListener('change',vtPersistDraft);});
+  window.addEventListener('pagehide',vtPersistDraft);
+  window.addEventListener('error',function(e){vqReportError('runtime',e.error||{name:'Error'});});
+  window.addEventListener('unhandledrejection',function(e){vqReportError('promise',e.reason||{name:'Error'});});
   $('vt-report-share').addEventListener('click',function(){
     if(!VT_WEEKLY_STATS)return;
     var st=VT_WEEKLY_STATS;
@@ -3858,7 +4020,7 @@ function eventos(){
     if(!set)return;
     if(e.target.matches('[data-vt-reps]'))set.reps=Number(e.target.value);
     if(e.target.matches('[data-vt-weight]'))set.weight_kg=Number(e.target.value);
-    vtUpdateSummary();
+    vtUpdateSummary();vtPersistDraft();
   });
   document.querySelector('.vt-timer').addEventListener('click',function(e){
     var b=e.target.closest('[data-vt-rest]');if(b)vtStartTimer(Number(b.dataset.vtRest));
@@ -4252,6 +4414,7 @@ function eventos(){
   $('blocked-users').addEventListener('click',function(e){var b=e.target.closest('[data-unblock-user]');if(!b)return;b.disabled=true;desbloquearUsuario(b.dataset.unblockUser).finally(function(){b.disabled=false;});});
   $('friend-dm-search').addEventListener('input',renderVipInbox);
   document.addEventListener('visibilitychange',function(){
+    if(document.hidden&&user)vtPersistDraft();
     if(!document.hidden&&user)refreshVipInbox().catch(function(err){console.warn('VIPER Direct',err);});
   });
   $('v-amigos').addEventListener('click', async function(e){
@@ -4362,8 +4525,9 @@ async function boot(){
       $('inbox-head-count').hidden=true;
       $('inbox-head-button').setAttribute('aria-label','Abrir mensajes');
       notificationChannel=null; NOTIFICATIONS=[];
+      vtDropDraft(user&&user.id);
       chatChannel=null; chatFriend=null; user = null; P = null; T = null; iniciado = false;
-      VT_LIVE=[];vtStopTimer();VN_TARGETS=null;VN_MANUAL=[];VN_DAY=null;VT_AI_HAS_PLAN=false;VT_WEEKLY_STATS=null;$('vt-report-share').disabled=true;
+      VT_LIVE=[];VT_PENDING_SAVE=null;VT_SAVING=false;vtStopTimer();VN_TARGETS=null;VN_MANUAL=[];VN_DAY=null;VT_AI_HAS_PLAN=false;VT_WEEKLY_STATS=null;$('vt-report-share').disabled=true;vtSetDraftUI();
       pantalla('login');
     } else if (ev === 'PASSWORD_RECOVERY' && session && session.user){
       window.viperPasswordRecovery=true;
