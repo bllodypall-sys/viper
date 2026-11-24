@@ -3707,6 +3707,161 @@ async function consultarViperCoach(e){
   button.disabled=false;button.textContent='Consultar a VIPER Coach';
  }
 }
+/* ---------- VIPER START: a fast, editable first workout ---------- */
+var VSG_FOCUS_INDEX=0,VSG_FOCUS_RETURN=null,VSG_START_READY=false;
+var VSG_GOALS={muscle_gain:'Ganar masa muscular',strength:'Mejorar fuerza',fat_loss:'Perder grasa',endurance:'Mejorar resistencia',general_fitness:'Mantenerme en forma',boxing:'Boxeo',other:'Entrenar con constancia'};
+function vsgStarterTemplate(profile){
+  var p=profile||{},goal=VSG_GOALS[p.goal]?p.goal:'general_fitness';
+  var beginner=!p.experience||p.experience==='beginner'||p.experience==='under_6_months';
+  var atHome=p.training_type==='home'||p.training_type==='boxing',strength=goal==='strength';
+  var reps=strength?6:goal==='endurance'?12:10;
+  var count=beginner?2:3;
+  var choices=atHome
+    ?[['Sentadilla sin carga','cuadriceps'],['Flexiones adaptadas','pecho'],['Puente de glúteos','gluteos'],['Remo con banda (si dispones)','espalda']]
+    :[['Sentadilla o prensa de piernas','cuadriceps'],['Press de pecho','pecho'],['Remo sentado','espalda'],['Puente de glúteos','gluteos']];
+  if(goal==='boxing')choices=[['Sentadilla sin carga','cuadriceps'],['Flexiones adaptadas','pecho'],['Plancha abdominal','abdomen']];
+  if(goal==='endurance')choices=[choices[0],choices[2],choices[1]];
+  var number=Math.min(4,Math.max(3,Number(p.training_days)>=4?4:3));
+  return choices.slice(0,number).map(function(ex){
+    var r=ex[0]==='Plancha abdominal'?1:reps;
+    return {name:ex[0],muscle:ex[1],sets:Array.from({length:count},function(){return {reps:r,weight_kg:0};})};
+  });
+}
+function vsgProfileForPreview(){
+  var current=ATHLETE&&ATHLETE.goal?ATHLETE:{};
+  if(!$('vsg-config').hidden&&$('vsg-goal').value){
+    return {goal:$('vsg-goal').value,experience:$('vsg-experience').value||'beginner',
+      training_days:Number($('vsg-days').value)||3,training_type:$('vsg-type').value||'gym'};
+  }
+  return current;
+}
+function vsgRenderStart(){
+  if(!user)return;
+  var profile=vsgProfileForPreview(),complete=Boolean(ATHLETE&&ATHLETE.goal);
+  var template=vsgStarterTemplate(profile);
+  $('vsg-start-preview').innerHTML=template.map(function(x){
+    return '<span>'+esc(x.name)+'</span>';
+  }).join('');
+  $('vsg-start-subtitle').textContent=complete
+    ?'Rutina orientativa para '+(VSG_GOALS[profile.goal]||'tu objetivo').toLowerCase()+
+      '. '+(profile.training_days||3)+' días por semana según tu perfil. Puedes editar todo.'
+    :'Configura primero tu objetivo y experiencia. Prepararemos una rutina inicial editable.';
+  $('vsg-start-button').textContent=complete?'▶ Empezar mi rutina':'Configurar y empezar';
+  $('vsg-open-current').hidden=!VT_LIVE.length;
+}
+function vsgOpenConfig(open){
+  var isOpen=Boolean(open);
+  $('vsg-config').hidden=!isOpen;
+  $('vsg-config-toggle').setAttribute('aria-expanded',String(isOpen));
+  if(isOpen){
+    var p=ATHLETE||{},meta=user&&user.user_metadata||{};
+    [['vsg-goal','goal'],['vsg-experience','experience'],['vsg-days','training_days'],['vsg-type','training_type']].forEach(function(pair){
+      var el=$(pair[0]);el.value=p[pair[1]]||meta[pair[1]]||el.value;
+    });
+    $('vsg-country').value=p.country||meta.country||'';
+    $('vsg-age').value=p.age||meta.age||'';
+    var needsCountry=!p.country,needsAge=!p.age;
+    $('vsg-country-wrap').hidden=!needsCountry;$('vsg-age-wrap').hidden=!needsAge;
+    $('vsg-country').required=needsCountry;$('vsg-age').required=needsAge;
+    $('vsg-config-status').textContent='';
+  }
+  vsgRenderStart();
+}
+async function vsgSaveProfile(event){
+  event.preventDefault();if(!user||VSG_START_READY)return;
+  var p=ATHLETE||{},country=String(p.country||$('vsg-country').value||'').trim(),
+    age=Number(p.age||$('vsg-age').value),
+    goal=$('vsg-goal').value,experience=$('vsg-experience').value,
+    training_days=Number($('vsg-days').value),training_type=$('vsg-type').value;
+  if(!VSG_GOALS[goal]||!['beginner','under_6_months','6_12_months','1_2_years','over_2_years'].includes(experience)||
+      !Number.isInteger(training_days)||training_days<1||training_days>7||
+      !['gym','home','mixed','boxing'].includes(training_type)||
+      country.length<2||country.length>80||!Number.isInteger(age)||age<13||age>100){
+    $('vsg-config-status').textContent='Completa todos los campos válidos para continuar.';return;
+  }
+  var payload=Object.assign({},p,{user_id:user.id,country:country,age:age,goal:goal,
+    experience:experience,training_days:training_days,training_type:training_type,
+    updated_at:new Date().toISOString()});
+  delete payload.created_at;
+  var b=$('vsg-save-profile');b.disabled=true;VSG_START_READY=true;
+  $('vsg-config-status').textContent='Guardando tu perfil…';
+  try{
+    var result=await sb.from('viper_onboarding_profiles').upsert(payload,{onConflict:'user_id'});
+    if(result.error)throw result.error;
+    ATHLETE=payload;renderPerfil();vsgOpenConfig(false);
+    toast('Tu objetivo está guardado. ¡Empecemos!');
+    vsgStartWorkout();
+  }catch(err){$('vsg-config-status').textContent='No se pudo guardar el perfil: '+errMsg(err);}
+  finally{VSG_START_READY=false;b.disabled=false;}
+}
+function vsgStartWorkout(){
+  if(!user)return;
+  if(!ATHLETE||!ATHLETE.goal){
+    vsgOpenConfig(true);$('vsg-goal').focus();return;
+  }
+  if(VT_PENDING_SAVE){toast('Confirma o descarta primero el guardado pendiente en Evolución muscular.',true);ir('evolucion');return;}
+  if(VT_LIVE.length&&!window.confirm('Tienes un entrenamiento sin guardar. ¿Sustituirlo por una rutina inicial?'))return;
+  VT_LIVE=vsgStarterTemplate(ATHLETE);
+  $('vt-date').value=limaToday();
+  $('vt-notes').value='VIPER START · '+(VSG_GOALS[ATHLETE.goal]||'Entrenamiento inicial');
+  vtRenderLive();
+  vsgOpenFocus();
+}
+function vsgOpenFocus(){
+  if(!user)return;
+  if(!VT_LIVE.length){toast('Primero añade un ejercicio o prepara tu rutina VIPER START.',true);return;}
+  VSG_FOCUS_RETURN=document.activeElement;
+  VSG_FOCUS_INDEX=0;
+  var el=$('vsg-focus');el.hidden=false;document.body.classList.add('vsg-active');
+  vsgRenderFocus();
+  $('vsg-focus-close').focus();
+}
+function vsgCloseFocus(saved){
+  var el=$('vsg-focus');if(el.hidden)return;
+  el.hidden=true;document.body.classList.remove('vsg-active');
+  if(!saved)vtPersistDraft();
+  var target=VSG_FOCUS_RETURN;VSG_FOCUS_RETURN=null;
+  if(target&&target.isConnected&&!target.closest('[hidden]'))target.focus();
+  else $('vsg-focus-open').focus();
+}
+function vsgRenderFocus(){
+  if($('vsg-focus').hidden)return;
+  if(!VT_LIVE.length){vsgCloseFocus();return;}
+  VSG_FOCUS_INDEX=Math.max(0,Math.min(VSG_FOCUS_INDEX,VT_LIVE.length-1));
+  var ex=VT_LIVE[VSG_FOCUS_INDEX],n=VT_LIVE.length;
+  $('vsg-focus-title').textContent=ex.name;
+  $('vsg-focus-count').textContent='Ejercicio '+(VSG_FOCUS_INDEX+1)+' de '+n;
+  var volume=VT_LIVE.reduce(function(total,e){
+    return total+e.sets.reduce(function(sum,row){return sum+Number(row.reps||0)*Number(row.weight_kg||0);},0);
+  },0);
+  $('vsg-focus-volume').textContent=Math.round(volume)+' kg de volumen';
+  $('vsg-focus-content').innerHTML=
+    '<p class="note">'+esc(ex.muscle)+' · '+ex.sets.length+' series. Edita repeticiones y peso; no hay valores obligatorios de carga.</p>'+
+    '<div class="vsg-focus-sets">'+ex.sets.map(function(set,i){
+      return '<div class="vsg-focus-set" data-vsg-set="'+i+'"><strong>S'+(i+1)+'</strong>'+
+        '<label>Repeticiones<input type="number" data-vsg-reps min="1" max="300" step="1" inputmode="numeric" value="'+esc(set.reps)+'"></label>'+
+        '<label>Peso (kg)<input type="number" data-vsg-weight min="0" max="1500" step="0.25" inputmode="decimal" value="'+esc(set.weight_kg)+'"></label>'+
+        '</div>';
+    }).join('')+'</div>'+
+    '<button type="button" id="vsg-add-set" class="btn sm">＋ Agregar serie</button>';
+  $('vsg-prev').disabled=VSG_FOCUS_INDEX===0;
+  $('vsg-next').disabled=VSG_FOCUS_INDEX>=n-1;
+  $('vsg-save').disabled=VT_SAVING;
+  $('vsg-save').textContent=VT_PENDING_SAVE?'↻ Reintentar guardado':'✓ Terminar y guardar';
+  $('vsg-focus-status').textContent=VT_PENDING_SAVE
+    ?'Hay un guardado por confirmar. Reinténtalo sin cambiar las series.'
+    :'Los cambios se conservan como borrador hasta guardar la sesión completa.';
+  var inputs=$('vsg-focus-content').querySelectorAll('input');
+  inputs.forEach(function(el){el.disabled=Boolean(VT_PENDING_SAVE||VT_SAVING);});
+  $('vsg-add-set').disabled=Boolean(VT_PENDING_SAVE||VT_SAVING||ex.sets.length>=30);
+}
+async function vsgFinish(){
+  if(VT_SAVING)return;
+  var b=$('vsg-save');b.disabled=true;b.textContent='Guardando…';
+  await vtSaveLive({preventDefault:function(){}});
+  if(!VT_LIVE.length&&!VT_PENDING_SAVE){vsgCloseFocus(true);ir('evolucion');}
+  else vsgRenderFocus();
+}
 /* ---------- VIPER TRAIN: session recorder and recovery timer ---------- */
 var VT_LIVE=[],VT_TIMER=null,VT_TIMER_END=0,VT_TIMER_DURATION=60,VT_AI_HAS_PLAN=false,VT_WEEKLY_STATS=null;
 var VT_MUSCLES=['pecho','espalda','hombros','biceps','triceps','antebrazos','abdomen','cuadriceps','isquiotibiales','gluteos','pantorrillas'];
