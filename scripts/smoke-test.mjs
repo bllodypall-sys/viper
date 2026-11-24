@@ -28,7 +28,7 @@ for (const id of [
   "chat-title", "chat-subtitle", "chat-peer-avatar", "chat-peer-profile",
   "chat-options", "chat-options-menu", "chat-gallery", "chat-gallery-back",
   "chat-gallery-grid", "chat-view", "chat-messages", "chat-image", "chat-close",
-  "friend-dm-search", "friend-dm-total", "nav-friend-unread"
+  "friend-dm-search", "friend-dm-total", "nav-friend-unread", "inbox-head-button", "inbox-head-count"
 ]) requireId(id);
 for (const tab of ["inicio", "hoy", "feed", "evolucion", "perfil"])
   assert.equal(count('data-mobile-nav="' + tab + '"'), 1, "Missing tab " + tab);
@@ -147,6 +147,8 @@ assert.ok(dmSql.includes("revoke all on function public.viper_chat_inbox() from 
 assert.ok(dmSql.includes("revoke all on function public.viper_mark_chat_read(uuid) from public, anon"),"No anonymous read-state writes");
 assert.ok(dmSql.includes("m.sender_id=p_peer and m.recipient_id=v_me"),"Read state must only advance on incoming messages");
 assert.ok(html.includes("async function markVipChatRead(peer)"),"Client must mark inbound messages read");
+assert.ok(html.includes("inbox-head-button').addEventListener('click'"),"Header must link to Amigos");
+assert.ok(html.includes("headerBadge.hidden=total===0"),"Unread updates must reach header");
 assert.ok(html.includes("function subscribeVipInbox()"),"Chat should receive live updates");
 assert.ok(html.includes("document.addEventListener('visibilitychange'"),"Inbox should refresh after background activity");
 const inboxStart=html.indexOf("/* ---------- VIPER Direct 2.0: inbox, unread and search ---------- */");
@@ -184,9 +186,11 @@ dmContext.sb.rpc=async function(name){
 };
 await dmContext.refreshVipInbox();
 assert.equal(dmGet("nav-friend-unread").textContent,"3");
+assert.equal(dmGet("inbox-head-count").textContent,"3");
 assert.equal(dmGet("nav-friend-unread").hidden,false);
 dmContext.DM_INBOX=dmContext.DM_INBOX.map(m=>({...m,unread_count:0}));
 await dmContext.refreshVipInbox();
 assert.equal(dmGet("nav-friend-unread").hidden,true);
+assert.equal(dmGet("inbox-head-count").hidden,true);
 
 console.log("VIPER smoke checks passed: direct inbox, unread, search, chat navigation, AI and security.");
