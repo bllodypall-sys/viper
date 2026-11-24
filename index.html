@@ -776,7 +776,7 @@ main{padding-block:12px 40px}
         <button id="vip-ai-create" class="btn primary" type="button">Generar mi plan con IA</button>
         <p class="note" id="vip-ai-status" role="status" aria-live="polite"></p>
         <pre id="vip-ai-text" class="viper-ai-plan" aria-live="polite">Crea tu primer plan desde aquí.</pre>
-        <div class="vt-ai-edit-actions"><button id="vt-ai-edit" type="button" class="btn sm">✎ Editar mi plan</button><button id="vt-ai-copy" type="button" class="btn sm">Copiar plan</button></div>
+        <div class="vt-ai-edit-actions"><button id="vt-ai-edit" type="button" class="btn sm" disabled>✎ Editar mi plan</button><button id="vt-ai-copy" type="button" class="btn sm" disabled>Copiar plan</button></div>
         <div id="vt-ai-editor" hidden><label class="lbl" for="vt-ai-textarea">Ajusta tu plan personal</label><textarea id="vt-ai-textarea" rows="9" maxlength="11900"></textarea><div class="vt-quick-actions"><button id="vt-ai-save" type="button" class="btn primary sm">Guardar cambios</button><button id="vt-ai-cancel" type="button" class="btn sm">Cancelar</button></div></div>
         <p class="note">Orientación general: adapta las cargas a tu capacidad y consulta con un profesional ante lesiones o limitaciones médicas.</p>
       </section>
@@ -3955,7 +3955,7 @@ async function vtSaveLive(event){
   if(!user)return;
   var date=$('vt-date').value,notes=$('vt-notes').value.trim();
   if(!date||!vtValidateDraft()){toast('Verifica el día, ejercicios, repeticiones y pesos antes de guardar.',true);return;}
-  var btn=$('vt-save'),sessionId=null;btn.disabled=true;btn.textContent='Guardando sesión…';
+  var btn=$('vt-save'),sessionId=null,fullySaved=false;btn.disabled=true;btn.textContent='Guardando sesión…';
   try{
     var created=await sb.from('viper_workout_sessions').insert({user_id:user.id,session_date:date,notes:notes||null}).select('id').single();
     if(created.error)throw created.error;sessionId=created.data.id;
@@ -3968,10 +3968,13 @@ async function vtSaveLive(event){
       }));
       if(sets.error)throw sets.error;
     }
+    fullySaved=true;
     VT_LIVE=[];$('vt-notes').value='';vtRenderLive();vtStopTimer();
-    await cargarEvolucion();toast('Sesión completa guardada. ¡Buen entrenamiento!');
+    try{await cargarEvolucion();}
+    catch(refreshError){console.warn('Sesión guardada; no se pudo actualizar la vista de Evolución',refreshError);}
+    toast('Sesión completa guardada. ¡Buen entrenamiento!');
   }catch(err){
-    if(sessionId){
+    if(sessionId&&!fullySaved){
       var cleanup=await sb.from('viper_workout_sessions').delete().eq('id',sessionId).eq('user_id',user.id);
       if(cleanup.error)console.warn('No se pudo limpiar la sesión incompleta:',cleanup.error);
     }
