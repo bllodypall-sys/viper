@@ -7,6 +7,11 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="VIPER — Entrena, compite y evoluciona">
 <meta property="og:description" content="Entrenamientos, alimentación con IA, retos semanales, rangos XP y comunidad fitness. Descubre VIPER.">
+<meta property="og:url" content="https://viper-7n4z.vercel.app/">
+<meta property="og:image" content="https://viper-7n4z.vercel.app/icon-512.png">
+<meta property="og:image:alt" content="VIPER, plataforma de entrenamiento y comunidad fitness">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://viper-7n4z.vercel.app/">
 <meta name="description" content="Entrena con VIPER AI, registra tus avances, participa en retos semanales y comparte tus logros en la comunidad fitness.">
 <meta name="theme-color" content="#111517">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -480,6 +485,28 @@ main{padding-block:12px 40px}
 .viper-badge.locked{filter:grayscale(1);opacity:.65}
 @media(max-width:720px){.viper-challenge-grid{grid-template-columns:1fr}.viper-engagement{padding:15px}.viper-public-landing{padding:15px}}
 @media(max-width:360px){.viper-public-grid{grid-template-columns:1fr}}
+
+/* VIPER Daily: concise and accessible personal dashboard */
+.vip-daily{margin:16px 0 22px;border:1px solid #347851;background:linear-gradient(130deg,#102b1d 0%,#132219 60%,#121e19 100%);border-radius:20px;padding:clamp(16px,3vw,23px);box-shadow:inset 0 1px rgba(129,243,151,.12),0 16px 38px rgba(0,0,0,.13)}
+.vip-daily-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.vip-daily-kicker{font-weight:800;letter-spacing:.08em;font-size:.76rem;color:#72ee9e}
+.vip-daily-head strong{font-size:.78rem;color:#e8ffe9}
+.vip-daily h2{font-size:clamp(1.32rem,3.8vw,1.85rem);margin:12px 0 5px;line-height:1.22;color:#f4fff5}
+.vip-daily p{line-height:1.55;color:#bcdfc7;margin:5px 0 14px}
+.vip-daily .note{font-size:.8rem;color:#a6c5ac;margin:10px 0 0}
+.vip-daily-track{height:9px;border-radius:999px;background:#2a4c36;overflow:hidden;margin:15px 0 18px}
+.vip-daily-track i{display:block;height:100%;width:0;background:linear-gradient(90deg,#24b76b,#87fdaa);border-radius:999px;transition:width .28s ease}
+.vip-daily-tasks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.vip-daily-task{display:flex;gap:10px;padding:13px;border:1px solid #34523c;border-radius:13px;min-width:0;background:rgba(7,19,13,.5)}
+.vip-daily-task.complete{border-color:#5fcd82;background:rgba(32,113,64,.22)}
+.vip-daily-check{font-size:1.25rem;flex:0 0 24px;line-height:1.2;color:#7ee7a1}
+.vip-daily-task strong{font-size:.89rem;display:block;color:#f4fff6}
+.vip-daily-task small{display:block;margin-top:4px;color:#a9c9b4;font-size:.76rem;line-height:1.45}
+.vip-daily-buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:17px}
+.vip-daily-buttons .btn{min-height:44px}
+.vip-badges-summary{font-weight:750;color:#8beaac;margin:8px 0}
+@media(max-width:630px){.vip-daily-tasks{grid-template-columns:1fr}.vip-daily-buttons{flex-direction:column}.vip-daily-buttons .btn{width:100%}}
+@media(prefers-reduced-motion:reduce){.vip-daily-track i{transition:none}}
 </style>
 </head>
 <body>
@@ -498,6 +525,7 @@ main{padding-block:12px 40px}
     <button id="landing-signup" type="button" class="btn primary wide">Crear mi cuenta en VIPER</button>
     <p class="note">Disponible en la web. Próximamente en Google Play y App Store.</p>
   </div>
+  <button class="btn sm" id="landing-share" type="button">↗ Compartir VIPER con un amigo</button>
   <button class="btn wide" id="entrar" type="button">Continuar con Google</button>
   <div class="sec-head"><h2 id="auth-title">Iniciar sesión</h2></div>
   <form id="auth-form" class="stack">
@@ -574,6 +602,32 @@ main{padding-block:12px 40px}
       </div>
       <div class="home-section-title"><h2>Resumen de hoy</h2><span id="home-date" class="note"></span></div>
       <div class="home-stats"><div class="home-stat"><span>XP de hoy</span><strong id="home-today-xp">0</strong></div><div class="home-stat"><span>Comidas registradas</span><strong id="home-meals">0/4</strong></div><div class="home-stat"><span>Racha actual</span><strong id="home-streak">0 días</strong></div></div>
+      <section class="vip-daily" aria-label="VIPER Daily: tu actividad del día">
+        <div class="vip-daily-head">
+          <span class="vip-daily-kicker">⚡ VIPER DAILY</span>
+          <strong id="vip-daily-counter">0 de 2 actividades</strong>
+        </div>
+        <h2 id="vip-daily-title">Un paso hoy también cuenta.</h2>
+        <p id="vip-daily-subtitle">Registra lo que hagas a tu ritmo y celebra tus avances.</p>
+        <div class="vip-daily-track" role="progressbar" aria-label="Actividades registradas hoy" aria-valuemin="0" aria-valuemax="2" aria-valuenow="0" id="vip-daily-progress">
+          <i id="vip-daily-fill"></i>
+        </div>
+        <div class="vip-daily-tasks">
+          <div class="vip-daily-task" id="vip-daily-gym">
+            <span class="vip-daily-check" aria-hidden="true">○</span>
+            <span><strong>Entrenamiento registrado</strong><small id="vip-daily-gym-desc">Sin registro de gym verificado hoy</small></span>
+          </div>
+          <div class="vip-daily-task" id="vip-daily-food">
+            <span class="vip-daily-check" aria-hidden="true">○</span>
+            <span><strong>Alimentación registrada</strong><small id="vip-daily-food-desc">Aún sin comidas aprobadas hoy</small></span>
+          </div>
+        </div>
+        <div class="vip-daily-buttons">
+          <button type="button" class="btn primary" id="vip-daily-cta">Registrar mi día</button>
+          <button type="button" class="btn sm" id="vip-daily-plan">Ver mi plan con IA</button>
+        </div>
+        <p class="note">Tus registros son privados. Descansar también es parte de entrenar: no hace falta completar ambas actividades todos los días.</p>
+      </section>
       <div class="home-section-title"><h2>Accesos rápidos</h2><span class="note">Todo VIPER en un toque</span></div>
       <div class="home-shortcuts">
         <button type="button" class="home-shortcut" data-home-nav="hoy"><span class="home-shortcut-icon">✓</span><span><b>Mi día</b><small>Registra gym y comidas</small></span></button>
@@ -948,7 +1002,11 @@ main{padding-block:12px 40px}
       <section class="viper-engagement" aria-label="Insignias personales">
         <div class="viper-engagement-head"><span class="viper-feature-tag">✦ TUS LOGROS</span><span class="note">Se desbloquean con tus resultados</span></div>
         <h3>Mis insignias VIPER</h3>
+        <p id="vip-badges-count" class="vip-badges-summary">Calculando tus logros…</p>
         <div id="vip-badges-list" class="viper-badges"></div>
+        <p id="vip-badges-next" class="note"></p>
+        <button id="vip-badges-share" class="btn sm" type="button">↗ Compartir mi rango</button>
+        <p class="note">Estas insignias reflejan tus XP y tu racha actuales. No dan puntos adicionales ni conservan un historial de desbloqueos.</p>
       </section>
       <section class="season-card" aria-label="Mis videos"><div class="sec-head"><h2>Mis videos</h2><button class="btn sm" id="my-videos-refresh" type="button">Actualizar</button></div><div id="my-videos-list" class="my-videos-grid"><p class="note">Cargando tus videos…</p></div></section>
       <div class="avatar-card">
@@ -2128,11 +2186,11 @@ function renderInicio(){
   $('home-xp').textContent=fmt(total)+' XP';
   $('home-fill').style.width=(next?Math.max(0,Math.min(100,(total-level.x)/(next.x-level.x)*100)):100).toFixed(1)+'%';
   $('home-next').textContent=next?'Te faltan '+fmt(next.x-total)+' XP para '+next.label:'¡Has alcanzado el rango máximo!';
-  var preview=previewXP();
-  $('home-today-xp').textContent=fmt(preview.xp);
+  $('home-today-xp').textContent=fmt(Number(T.saved && T.saved.xp)||0);
   $('home-meals').textContent=mealsN()+'/4';
   $('home-streak').textContent=String(Math.max(Number(P.racha)||0,Number(T.rachaAyer)||0))+' días';
   $('home-date').textContent=new Date(T.hoy+'T12:00:00').toLocaleDateString('es-PE',{weekday:'short',day:'numeric',month:'short'});
+  renderVipDaily();
 }
 
 /* ---------- Navegación ---------- */
@@ -2511,13 +2569,88 @@ async function joinVipChallenge(key){
   if(result.error)throw result.error;
   await loadVipChallenges();toast('¡Participas en el reto de esta semana!');
 }
+function vipBadgeDefinitions(){
+  return [
+    {icon:'🏁',name:'Primeros pasos',metric:'XP',target:125},
+    {icon:'⚡',name:'3 días de constancia',metric:'racha',target:3},
+    {icon:'🏅',name:'Aprendiz',metric:'XP',target:500},
+    {icon:'🔥',name:'7 días de constancia',metric:'racha',target:7},
+    {icon:'💚',name:'Constante',metric:'XP',target:1500},
+    {icon:'💪',name:'Atleta',metric:'XP',target:4000},
+    {icon:'🌟',name:'14 días de constancia',metric:'racha',target:14},
+    {icon:'🥊',name:'Guerrero',metric:'XP',target:9000},
+    {icon:'💎',name:'Élite',metric:'XP',target:18000},
+    {icon:'🏆',name:'30 días de constancia',metric:'racha',target:30},
+    {icon:'🛡️',name:'Titán',metric:'XP',target:35000},
+    {icon:'👑',name:'Leyenda',metric:'XP',target:70000}
+  ];
+}
 function renderVipBadges(){
   if(!P)return;
-  var badges=[['🏁','Primeros pasos',Number(P.xp_total)>=125],['⚡','Constancia',Number(P.racha)>=3],['🏅','500 XP',Number(P.xp_total)>=500],['👑','1.500 XP',Number(P.xp_total)>=1500]];
-  $('vip-badges-list').innerHTML=badges.map(function(b){return '<span class="viper-badge'+(b[2]?'':' locked')+'" title="'+(b[2]?'Desbloqueada':'Aún no desbloqueada')+'">'+(b[2]?b[0]:'🔒')+' '+b[1]+'</span>';}).join('');
+  var xp=Math.max(0,Number(P.xp_total)||0),racha=Math.max(0,Number(P.racha)||0);
+  var badges=vipBadgeDefinitions(),unlocked=0;
+  $('vip-badges-list').innerHTML=badges.map(function(b){
+    var current=b.metric==='XP'?xp:racha,done=current>=b.target;
+    if(done)unlocked++;
+    var targetText=b.metric==='XP'?fmt(b.target)+' XP':b.target+' días de racha';
+    var title=b.name+' · '+targetText+(done?' · desbloqueada':' · pendiente');
+    return '<span class="viper-badge'+(done?'':' locked')+'" title="'+esc(title)+'" aria-label="'+esc(title)+'">'+
+      (done?b.icon:'🔒')+' '+esc(b.name)+'</span>';
+  }).join('');
+  $('vip-badges-count').textContent=unlocked+' de '+badges.length+' insignias desbloqueadas';
+  var next=badges.filter(function(b){return b.metric==='XP' && b.target>xp;})[0];
+  $('vip-badges-next').textContent=next?'Próxima insignia por XP: '+next.name+' · faltan '+fmt(next.target-xp)+' XP.':'¡Has alcanzado todas las insignias por XP!';
+}
+function renderVipDaily(){
+  if(!T || !P)return;
+  var gym=Boolean(T.saved && T.saved.foto_path);
+  var meals=mealsN(),nutrition=meals>0,done=(gym?1:0)+(nutrition?1:0);
+  $('vip-daily-counter').textContent=done+' de 2 actividades';
+  $('vip-daily-progress').setAttribute('aria-valuenow',String(done));
+  $('vip-daily-fill').style.width=(done*50)+'%';
+  $('vip-daily-gym').classList.toggle('complete',gym);
+  $('vip-daily-food').classList.toggle('complete',nutrition);
+  $('vip-daily-gym').querySelector('.vip-daily-check').textContent=gym?'✓':'○';
+  $('vip-daily-food').querySelector('.vip-daily-check').textContent=nutrition?'✓':'○';
+  $('vip-daily-gym-desc').textContent=gym?'Foto de entrenamiento verificada':'Sin foto de entrenamiento guardada hoy';
+  $('vip-daily-food-desc').textContent=nutrition?meals+' comida'+(meals===1?'':'s')+' aprobada'+(meals===1?'':'s'):'Sin comidas aprobadas hoy';
+  $('vip-daily-title').textContent=done===2?'¡Buen trabajo! Tu progreso cuenta.':done===1?'¡Ya diste un paso hoy!':'Un paso hoy también cuenta.';
+  $('vip-daily-subtitle').textContent=done===2?'Puedes seguir tu progreso o descubrir los retos con la comunidad.':done===1?'Continúa cuando te venga bien. Tu constancia se construye a tu ritmo.':'Elige una actividad para registrar o revisa tu plan. También puedes descansar.';
+  $('vip-daily-cta').textContent=done===2?'Ver retos de la semana':gym?'Registrar mi alimentación':'Registrar mi entrenamiento';
+  $('vip-daily-cta').dataset.vipDailyDestination=done===2?'feed':'hoy';
+}
+async function shareViper(text){
+  var url='https://viper-7n4z.vercel.app/';
+  try{
+    if(navigator.share){
+      await navigator.share({title:'VIPER · Entrena, compite y evoluciona',text:text,url:url});
+      return;
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(text+' '+url);
+      toast('Enlace copiado. ¡Compártelo con tus amigos!');
+      return;
+    }
+    toast('Comparte este enlace: '+url);
+  }catch(err){if(err&&err.name!=='AbortError')toast('No se pudo compartir el enlace.',true);}
 }
 
 function eventos(){
+  $('landing-share').addEventListener('click',function(){
+    shareViper('¡Descubre VIPER! Entrena con IA, compite en retos y comparte tus avances.');
+  });
+  $('vip-daily-cta').addEventListener('click',function(){
+    ir(this.dataset.vipDailyDestination==='feed'?'feed':'hoy');
+  });
+  $('vip-daily-plan').addEventListener('click',function(){
+    var el=$('vip-ai-create');
+    el.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});
+    el.focus({preventScroll:true});
+  });
+  $('vip-badges-share').addEventListener('click',function(){
+    if(!P)return;
+    shareViper('¡Estoy en VIPER! Mi rango: '+LV[idxOf(Number(P.xp_total)||0)].label+' · '+fmt(Number(P.xp_total)||0)+' XP. ¿Entrenamos?');
+  });
   $('landing-signup').addEventListener('click',function(){
     if(authMode!=='signup')$('auth-toggle').click();
     $('auth-email').focus();
