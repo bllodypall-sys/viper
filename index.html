@@ -3792,7 +3792,7 @@ function vtUpdateSummary(){
 }
 function vtRenderLive(){
   var box=$('vt-live-list');
-  if(!VT_LIVE.length){box.innerHTML='<p class="note">Añade un ejercicio para comenzar.</p>';vtUpdateSummary();return;}
+  if(!VT_LIVE.length){box.innerHTML='<p class="note">Añade un ejercicio para comenzar.</p>';vtUpdateSummary();vtPersistDraft();return;}
   box.innerHTML=VT_LIVE.map(function(ex,idx){
     var rows=ex.sets.map(function(row,j){
       return '<div class="vt-live-set" data-vt-set="'+j+'"><strong>S'+(j+1)+'</strong>'+
@@ -3806,6 +3806,7 @@ function vtRenderLive(){
       '<div class="vt-ex-actions"><button type="button" class="btn sm" data-vt-add-set>＋ Serie</button></div></article>';
   }).join('');
   vtUpdateSummary();
+  vtPersistDraft();
 }
 function vtValidateDraft(){
   if(!VT_LIVE.length||VT_LIVE.length>12)return false;
@@ -3835,34 +3836,46 @@ async function vtRepeatLast(){
 }
 async function vtSaveLive(event){
   event.preventDefault();
-  if(!user)return;
-  var date=$('vt-date').value,notes=$('vt-notes').value.trim();
-  if(!date||!vtValidateDraft()){toast('Verifica el día, ejercicios, repeticiones y pesos antes de guardar.',true);return;}
-  var btn=$('vt-save'),sessionId=null,fullySaved=false;btn.disabled=true;btn.textContent='Guardando sesión…';
+  if(!user||VT_SAVING)return;
+  if(!$('vt-date').value||!vtValidateDraft()){
+    toast('Verifica la fecha, los ejercicios, las repeticiones y los pesos.',true);return;
+  }
+  var uid=user.id,pending=VT_PENDING_SAVE;
+  if(!pending){
+    try{
+      pending={id:vtRequestId(),payload:{
+        date:$('vt-date').value,notes:$('vt-notes').value.trim(),
+        exercises:vtDraftSnapshot().exercises
+      }};
+    }catch(err){toast('No es posible iniciar un guardado seguro en este navegador.',true);return;}
+    VT_PENDING_SAVE=pending;
+  }
+  VT_SAVING=true;vtPersistDraft();
   try{
-    var created=await sb.from('viper_workout_sessions').insert({user_id:user.id,session_date:date,notes:notes||null}).select('id').single();
-    if(created.error)throw created.error;sessionId=created.data.id;
-    for(var i=0;i<VT_LIVE.length;i++){
-      var ex=VT_LIVE[i];
-      var added=await sb.from('viper_workout_exercises').insert({session_id:sessionId,muscle_group:ex.muscle,exercise_name:ex.name}).select('id').single();
-      if(added.error)throw added.error;
-      var sets=await sb.from('viper_workout_sets').insert(ex.sets.map(function(row,j){
-        return {exercise_id:added.data.id,set_number:j+1,reps:row.reps,weight_kg:row.weight_kg};
-      }));
-      if(sets.error)throw sets.error;
-    }
-    fullySaved=true;
-    VT_LIVE=[];$('vt-notes').value='';vtRenderLive();vtStopTimer();
+    var result=await sb.rpc('viper_save_workout_v2',{
+      p_client_request_id:pending.id,
+      p_session_date:pending.payload.date,
+      p_notes:pending.payload.notes||null,
+      p_exercises:pending.payload.exercises
+    });
+    if(result.error)throw result.error;
+    if(!result.data||!/^[0-9a-f-]{36}$/i.test(String(result.data)))
+      throw new Error('No se pudo confirmar el identificador de la sesión');
+    if(!user||user.id!==uid)return;
+    VT_PENDING_SAVE=null;VT_LIVE=[];
+    $('vt-notes').value='';$('vt-add-name').value='';
+    vtDropDraft(uid);vtRenderLive();vtStopTimer();
     try{await cargarEvolucion();}
-    catch(refreshError){console.warn('Sesión guardada; no se pudo actualizar la vista de Evolución',refreshError);}
-    toast('Sesión completa guardada. ¡Buen entrenamiento!');
+    catch(refreshError){console.warn('Sesión guardada, no se pudo refrescar Evolución',refreshError);}
+    toast('Entrenamiento completo guardado correctamente, sin duplicados.');
   }catch(err){
-    if(sessionId&&!fullySaved){
-      var cleanup=await sb.from('viper_workout_sessions').delete().eq('id',sessionId).eq('user_id',user.id);
-      if(cleanup.error)console.warn('No se pudo limpiar la sesión incompleta:',cleanup.error);
+    if(user&&user.id===uid){
+      vtPersistDraft();vqReportError('workout',err);
+      toast('No pudimos confirmar el guardado. Tu borrador sigue disponible: pulsa «Reintentar guardado».',true);
     }
-    toast(errMsg(err),true);
-  }finally{btn.disabled=false;btn.textContent='Guardar sesión completa';}
+  }finally{
+    VT_SAVING=false;vtSetDraftUI();
+  }
 }
 /* ---------- VIPER REPORT: verified weekly totals ---------- */
 async function vtLoadWeeklyReport(){
