@@ -6,6 +6,7 @@ const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const sql = readFileSync(new URL("../supabase/migrations/20261123090000_protect_xp_from_client_writes.sql", import.meta.url), "utf8");
 const deletion = readFileSync(new URL("../supabase/functions/delete-account/index.ts", import.meta.url), "utf8");
 const engagement = readFileSync(new URL("../supabase/migrations/20261123183000_viper_ai_community_and_security.sql", import.meta.url), "utf8");
+const dmSql = readFileSync(new URL("../supabase/migrations/20261124011000_viper_direct_inbox_unread.sql", import.meta.url), "utf8");
 const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
   .map((match) => match[1]).filter((body) => body.trim());
 assert.ok(scripts.length >= 2, "Expected inline setup + application scripts");
@@ -26,7 +27,8 @@ for (const id of [
   "logo-home", "current-section", "friend-dm-list", "chat-panel",
   "chat-title", "chat-subtitle", "chat-peer-avatar", "chat-peer-profile",
   "chat-options", "chat-options-menu", "chat-gallery", "chat-gallery-back",
-  "chat-gallery-grid", "chat-view", "chat-messages", "chat-image", "chat-close"
+  "chat-gallery-grid", "chat-view", "chat-messages", "chat-image", "chat-close",
+  "friend-dm-search", "friend-dm-total", "nav-friend-unread"
 ]) requireId(id);
 for (const tab of ["inicio", "hoy", "feed", "evolucion", "perfil"])
   assert.equal(count('data-mobile-nav="' + tab + '"'), 1, "Missing tab " + tab);
@@ -108,7 +110,7 @@ assert.match(html, /chatFriend\.id!==id\)return;/);
 
 /* Ranking de amigos: un único botón cubre la tarjeta completa. */
 const rankingStart=html.indexOf("function renderAmigos(){");
-const rankingEnd=html.indexOf("/* ---------- Perfil ---------- */",rankingStart);
+const rankingEnd=html.indexOf("/* ---------- VIPER Direct 2.0: inbox, unread and search ---------- */",rankingStart);
 assert.ok(rankingStart>=0 && rankingEnd>rankingStart);
 const renderSource=html.slice(rankingStart,rankingEnd);
 assert.ok(renderSource.includes("class=\"friend-chat-row\" data-chat-user="));
@@ -123,7 +125,8 @@ const rankings={
   LV:[{label:"Novato"}],
   idxOf:()=>0,fmt:String,esc:String,
   $:id=>domNodes[id]||=(id==="f-vacio"?{hidden:false}:{innerHTML:""}),
-  sb:{storage:{from:()=>({getPublicUrl:()=>({data:{publicUrl:""}})})}}
+  sb:{storage:{from:()=>({getPublicUrl:()=>({data:{publicUrl:""}})})}},
+  renderVipInbox:()=>{}
 };
 new Script(renderSource).runInNewContext(rankings);
 rankings.renderAmigos();
@@ -132,4 +135,58 @@ assert.doesNotMatch(domNodes["f-board"].innerHTML, /data-profile=|Abrir chat<\/b
 assert.match(domNodes["f-board"].innerHTML, />Tú<\/span>/);
 assert.match(domNodes["f-board"].innerHTML, />Mi amigo<\/b>/);
 
-console.log("VIPER smoke checks passed: syntax, navigation, private chat, media, reporting, badges and existing security checks.");
+
+/* VIPER Direct 2.0: read states are private, previews are per accepted friend. */
+assert.match(dmSql,/create table if not exists public\.viper_chat_reads/);
+assert.match(dmSql,/alter table public\.viper_chat_reads enable row level security/);
+assert.match(dmSql,/create policy viper_chat_reads_select_own/);
+assert.match(dmSql,/create policy viper_chat_reads_insert_own/);
+assert.match(dmSql,/create policy viper_chat_reads_update_own/);
+assert.ok(dmSql.includes("security invoker"),"Inbox RPC must respect RLS");
+assert.ok(dmSql.includes("revoke all on function public.viper_chat_inbox() from public, anon"),"No anonymous inbox access");
+assert.ok(dmSql.includes("revoke all on function public.viper_mark_chat_read(uuid) from public, anon"),"No anonymous read-state writes");
+assert.ok(dmSql.includes("m.sender_id=p_peer and m.recipient_id=v_me"),"Read state must only advance on incoming messages");
+assert.ok(html.includes("async function markVipChatRead(peer)"),"Client must mark inbound messages read");
+assert.ok(html.includes("function subscribeVipInbox()"),"Chat should receive live updates");
+assert.ok(html.includes("document.addEventListener('visibilitychange'"),"Inbox should refresh after background activity");
+const inboxStart=html.indexOf("/* ---------- VIPER Direct 2.0: inbox, unread and search ---------- */");
+const inboxEnd=html.indexOf("/* ---------- Perfil ---------- */",inboxStart);
+assert.ok(inboxStart>0&&inboxEnd>inboxStart,"Inbox helper source missing");
+const dmNodes=Object.create(null);
+const dmGet=id=>dmNodes[id]||=(id==="friend-dm-search"?{value:""}:{innerHTML:"",textContent:"",hidden:false,setAttribute(key,value){this[key]=value;}});
+const dmContext={
+  user:{id:"self"},
+  DM_INBOX:[
+    {peer_id:"buddy",last_message_at:"2026-11-23T19:00:00Z",last_sender_id:"buddy",last_preview:"¡Vamos al gym!",unread_count:3},
+    {peer_id:"other",last_message_at:"2026-11-22T19:00:00Z",last_sender_id:"self",last_preview:"Nos vemos",unread_count:0}
+  ],
+  F:[{solicitante:"self",destinatario:"buddy",estado:"aceptada"},{solicitante:"other",destinatario:"self",estado:"aceptada"}],
+  U:{buddy:{id:"buddy",username:"Atleta Uno",avatar_path:null},other:{id:"other",username:"Otro Atleta",avatar_path:null}},
+  $:dmGet,
+  esc:(v)=>String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;"),
+  sb:{storage:{from:()=>({getPublicUrl:()=>({data:{publicUrl:""}})})}},
+  console
+};
+new Script(html.slice(inboxStart,inboxEnd)).runInNewContext(dmContext);
+dmContext.renderVipInbox();
+assert.match(dmGet("friend-dm-list").innerHTML,/data-chat-user="buddy"/);
+assert.match(dmGet("friend-dm-list").innerHTML,/3 mensajes sin leer/);
+assert.match(dmGet("friend-dm-list").innerHTML,/¡Vamos al gym!/);
+assert.ok(dmGet("friend-dm-list").innerHTML.indexOf('data-chat-user="buddy"')<dmGet("friend-dm-list").innerHTML.indexOf('data-chat-user="other"'),"Newest conversation first");
+dmGet("friend-dm-search").value="otro";
+dmContext.renderVipInbox();
+assert.doesNotMatch(dmGet("friend-dm-list").innerHTML,/data-chat-user="buddy"/);
+assert.match(dmGet("friend-dm-list").innerHTML,/data-chat-user="other"/);
+dmGet("friend-dm-search").value="";
+dmContext.sb.rpc=async function(name){
+  assert.equal(name,"viper_chat_inbox");
+  return {data:dmContext.DM_INBOX,error:null};
+};
+await dmContext.refreshVipInbox();
+assert.equal(dmGet("nav-friend-unread").textContent,"3");
+assert.equal(dmGet("nav-friend-unread").hidden,false);
+dmContext.DM_INBOX=dmContext.DM_INBOX.map(m=>({...m,unread_count:0}));
+await dmContext.refreshVipInbox();
+assert.equal(dmGet("nav-friend-unread").hidden,true);
+
+console.log("VIPER smoke checks passed: direct inbox, unread, search, chat navigation, AI and security.");
