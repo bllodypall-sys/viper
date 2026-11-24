@@ -3219,313 +3219,6 @@ async function shareViper(text){
   }catch(err){if(err&&err.name!=='AbortError')toast('No se pudo compartir el enlace.',true);}
 }
 
-function eventos(){
-
-  /* VIPER TRAIN */
-  $('vt-date').value=limaToday();
-  $('vt-report-share').addEventListener('click',function(){
-    if(!VT_WEEKLY_STATS)return;
-    var st=VT_WEEKLY_STATS;
-    shareViper('Mi semana en VIPER: '+st.sessions+' sesiones, '+st.sets+' series y '+fmt(st.volume)+' kg de volumen registrado. ¡Seguimos avanzando!');
-  });
-  $('vt-live-form').addEventListener('submit',vtSaveLive);
-  $('vt-add-exercise').addEventListener('click',function(){
-    var name=$('vt-add-name').value.trim();
-    if(!name){toast('Escribe el nombre del ejercicio.',true);$('vt-add-name').focus();return;}
-    var before=VT_LIVE.length;vtAddExercise(name,$('vt-add-muscle').value);
-    if(VT_LIVE.length>before)$('vt-add-name').value='';
-  });
-  $('vt-repeat-last').addEventListener('click',function(){
-    if(VT_LIVE.length&&!window.confirm('¿Reemplazar la sesión actual por tu última rutina guardada?'))return;
-    var b=this;b.disabled=true;
-    vtRepeatLast().catch(function(e){toast(errMsg(e),true);}).finally(function(){b.disabled=false;});
-  });
-  $('vt-live-list').addEventListener('click',function(e){
-    var card=e.target.closest('[data-vt-ex]');if(!card)return;
-    var index=Number(card.dataset.vtEx),ex=VT_LIVE[index];if(!ex)return;
-    if(e.target.closest('[data-vt-remove-ex]')){VT_LIVE.splice(index,1);vtRenderLive();return;}
-    if(e.target.closest('[data-vt-add-set]')){
-      if(ex.sets.length>=30){toast('Máximo 30 series por ejercicio.',true);return;}
-      var last=ex.sets[ex.sets.length-1]||{reps:10,weight_kg:0};
-      ex.sets.push({reps:last.reps,weight_kg:last.weight_kg});vtRenderLive();return;
-    }
-    if(e.target.closest('[data-vt-remove-set]')){
-      if(ex.sets.length<=1){toast('Cada ejercicio necesita al menos una serie.',true);return;}
-      var row=e.target.closest('[data-vt-set]');
-      if(row){ex.sets.splice(Number(row.dataset.vtSet),1);vtRenderLive();}
-    }
-  });
-  $('vt-live-list').addEventListener('input',function(e){
-    var card=e.target.closest('[data-vt-ex]'),row=e.target.closest('[data-vt-set]');
-    if(!card||!row)return;
-    var item=VT_LIVE[Number(card.dataset.vtEx)],set=item&&item.sets[Number(row.dataset.vtSet)];
-    if(!set)return;
-    if(e.target.matches('[data-vt-reps]'))set.reps=Number(e.target.value);
-    if(e.target.matches('[data-vt-weight]'))set.weight_kg=Number(e.target.value);
-    vtUpdateSummary();
-  });
-  document.querySelector('.vt-timer').addEventListener('click',function(e){
-    var b=e.target.closest('[data-vt-rest]');if(b)vtStartTimer(Number(b.dataset.vtRest));
-  });
-  $('vt-stop-rest').addEventListener('click',vtStopTimer);
-  /* VIPER NUTRI: manual entries are explicitly excluded from XP */
-  $('vn-goals-form').addEventListener('submit',vnSaveGoals);
-  $('vn-food-form').addEventListener('submit',vnSaveFood);
-  $('vn-manual-list').addEventListener('click',function(e){
-    var b=e.target.closest('[data-vn-remove]');if(!b)return;
-    b.disabled=true;
-    vnRemoveFood(b.dataset.vnRemove).catch(function(err){toast(errMsg(err),true);})
-      .finally(function(){if(b.isConnected)b.disabled=false;});
-  });
-  /* Editable AI plan, backed by current user-owned table */
-  $('vt-ai-edit').addEventListener('click',function(){
-    if(!VT_AI_HAS_PLAN)return;
-    $('vt-ai-textarea').value=$('vip-ai-text').textContent;
-    $('vt-ai-editor').hidden=false;$('vt-ai-textarea').focus();
-  });
-  $('vt-ai-cancel').addEventListener('click',function(){$('vt-ai-editor').hidden=true;});
-  $('vt-ai-copy').addEventListener('click',async function(){
-    if(!VT_AI_HAS_PLAN)return;
-    try{
-      if(!navigator.clipboard||!navigator.clipboard.writeText)throw new Error('Portapapeles no disponible');
-      await navigator.clipboard.writeText($('vip-ai-text').textContent);
-      toast('Plan copiado.');
-    }catch(err){toast('No se pudo copiar automáticamente. Puedes seleccionarlo desde el plan.',true);}
-  });
-  $('vt-ai-save').addEventListener('click',async function(){
-    if(!user||!VT_AI_HAS_PLAN)return;
-    var textPlan=$('vt-ai-textarea').value.trim();
-    if(textPlan.length<20||textPlan.length>11900){toast('El plan debe tener entre 20 y 11.900 caracteres.',true);return;}
-    var b=this;b.disabled=true;
-    try{
-      var r=await sb.from('viper_ai_training_plans').update({plan_text:textPlan,updated_at:new Date().toISOString()}).eq('user_id',user.id).select('user_id').maybeSingle();
-      if(r.error)throw r.error;
-      if(!r.data)throw new Error('No se encontró un plan para actualizar.');
-      $('vip-ai-text').textContent=textPlan;$('vt-ai-editor').hidden=true;
-      $('vip-ai-status').textContent='Plan editado y guardado de forma privada.';
-      toast('Tu plan se actualizó correctamente.');
-    }catch(err){toast(errMsg(err),true);}
-    finally{b.disabled=false;}
-  });
-  $('logo-home').addEventListener('click',function(){ir('inicio');});
-  $('inbox-head-button').addEventListener('click',function(){ir('amigos');});
-  $('chat-peer-profile').addEventListener('click',function(){
-    if(!chatFriend)return;
-    var id=chatFriend.id;cerrarChat();abrirPerfilPublico(id);
-  });
-  $('chat-options').addEventListener('click',function(){toggleChatOptions($('chat-options-menu').hidden);});
-  $('chat-options-menu').addEventListener('click',function(e){
-    var option=e.target.closest('button[data-chat-option]');
-    if(!option || !chatFriend)return;
-    var action=option.dataset.chatOption;
-    toggleChatOptions(false);
-    if(action==='gallery')toggleChatGallery(true);
-    else if(action==='profile'){var id=chatFriend.id;cerrarChat();abrirPerfilPublico(id);}
-    else if(action==='block')bloquearDesdeChat().catch(function(err){toast(errMsg(err),true);});
-    else if(action==='report')reportarDesdeChat().catch(function(err){toast(errMsg(err),true);});
-  });
-  $('chat-gallery-back').addEventListener('click',function(){toggleChatGallery(false);$('chat-text').focus();});
-  $('chat-panel').addEventListener('click',function(e){if(e.target===$('chat-panel'))cerrarChat();});
-  document.addEventListener('click',function(e){
-    if(!$('chat-options-menu').hidden && !e.target.closest('.chat-menu-holder'))toggleChatOptions(false);
-  });
-  document.addEventListener('keydown',function(e){
-    if(e.key!=='Escape'||$('chat-panel').hidden)return;
-    e.preventDefault();
-    if(!$('chat-options-menu').hidden)toggleChatOptions(false);
-    else if(!$('chat-gallery').hidden)toggleChatGallery(false);
-    else cerrarChat();
-  });
-  $('landing-share').addEventListener('click',function(){
-    shareViper('¡Descubre VIPER! Entrena con IA, compite en retos y comparte tus avances.');
-  });
-  $('vip-daily-cta').addEventListener('click',function(){
-    ir(this.dataset.vipDailyDestination==='feed'?'feed':'hoy');
-  });
-  $('vip-daily-plan').addEventListener('click',function(){
-    var el=$('vip-ai-create');
-    el.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});
-    el.focus({preventScroll:true});
-  });
-  $('vip-badges-share').addEventListener('click',function(){
-    if(!P)return;
-    shareViper('¡Estoy en VIPER! Mi rango: '+LV[idxOf(Number(P.xp_total)||0)].label+' · '+fmt(Number(P.xp_total)||0)+' XP. ¿Entrenamos?');
-  });
-  $('landing-signup').addEventListener('click',function(){
-    if(authMode!=='signup')$('auth-toggle').click();
-    $('auth-email').focus();
-  });
-  $('vip-ai-create').addEventListener('click',generateVipAiPlan);
-  $('vip-ranking-link').addEventListener('click',function(){ir('ranking');});
-  $('vip-challenge-list').addEventListener('click',function(e){
-    var b=e.target.closest('[data-vip-challenge]');if(!b||b.disabled)return;
-    b.disabled=true;
-    joinVipChallenge(b.dataset.vipChallenge).catch(function(err){toast(errMsg(err),true);b.disabled=false;});
-  });
-  $('entrar').addEventListener('click', async function(){
-    $('login-msg').textContent = '';
-    var r = await sb.auth.signInWithOAuth({provider: 'google', options: {redirectTo: location.origin + location.pathname + location.search}});
-    if (r.error) $('login-msg').textContent = errMsg(r.error);
-  });
-  $('auth-password-toggle').addEventListener('click', function(){
-    var field = $('auth-password');
-    var showing = field.type === 'password';
-    field.type = showing ? 'text' : 'password';
-    this.textContent = showing ? 'Ocultar' : 'Mostrar';
-    this.setAttribute('aria-label', showing ? 'Ocultar contraseña' : 'Mostrar contraseña');
-    this.setAttribute('aria-pressed', showing ? 'true' : 'false');
-  });
-  $('forgot-password').addEventListener('click', async function(){
-    var email=$('auth-email').value.trim().toLowerCase();
-    var cloud=$('password-mail-cloud');
-    cloud.hidden=true;cloud.classList.remove('show');
-    $('login-msg').textContent='';
-    if(!email){$('login-msg').textContent='Escribe tu correo electrónico para enviarte el enlace.';$('auth-email').focus();return;}
-    var captchaToken=window.viperTurnstileToken;
-    if(!captchaToken){$('login-msg').textContent='Completa la verificación CAPTCHA antes de continuar.';return;}
-    this.disabled=true;
-    try{
-      var result=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname+location.search,captchaToken:captchaToken});
-      if(result.error)throw result.error;
-      $('login-msg').textContent='';
-      cloud.hidden=false;
-      requestAnimationFrame(function(){cloud.classList.add('show');});
-      if(window.viperRecoveryNoticeTimer)clearTimeout(window.viperRecoveryNoticeTimer);
-      window.viperRecoveryNoticeTimer=setTimeout(function(){
-        cloud.classList.remove('show');
-        setTimeout(function(){cloud.hidden=true;},300);
-      },9000);
-    }catch(err){
-      cloud.hidden=true;cloud.classList.remove('show');
-      $('login-msg').textContent=errMsg(err);
-    }finally{
-      window.viperTurnstileToken=null;
-      if(window.turnstile)window.turnstile.reset();
-      this.disabled=false;
-    }
-  });
-  $('password-recovery-form').addEventListener('submit',async function(e){
-    e.preventDefault();
-    var password=$('recovery-password').value;
-    var confirmPassword=$('recovery-password-confirm').value;
-    if(password.length<8){$('login-msg').textContent='La contraseña debe tener al menos 8 caracteres.';return;}
-    if(password!==confirmPassword){$('login-msg').textContent='Las contraseñas no coinciden.';return;}
-    var submit=$('recovery-submit');
-    submit.disabled=true;submit.textContent='Guardando…';
-    try{
-      var result=await sb.auth.updateUser({password:password});
-      if(result.error)throw result.error;
-      window.viperPasswordRecovery=false;
-      $('login-msg').textContent='Contraseña actualizada. Ya puedes iniciar sesión con tu nueva contraseña.';
-      $('password-recovery-form').reset();
-      $('password-recovery-panel').hidden=true;
-      $('auth-form').hidden=false;
-      $('forgot-password').hidden=false;
-      $('auth-toggle').hidden=false;
-      $('entrar').hidden=false;
-      await sb.auth.signOut();
-    }catch(err){
-      $('login-msg').textContent=errMsg(err);
-    }finally{
-      submit.disabled=false;submit.textContent='Guardar nueva contraseña';
-    }
-  });
-  $('auth-toggle').addEventListener('click', function(){
-    authMode = authMode === 'login' ? 'signup' : 'login';
-    $('auth-title').textContent = authMode === 'signup' ? 'Crear cuenta' : 'Iniciar sesión';
-    $('auth-submit').textContent = authMode === 'signup' ? 'Registrarme' : 'Iniciar sesión';
-    $('auth-password').autocomplete = authMode === 'signup' ? 'new-password' : 'current-password';
-    $('auth-toggle').textContent = authMode === 'signup' ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate';
-    $('signup-profile-fields').disabled = authMode !== 'signup';
-    $('signup-profile-fields').hidden = authMode !== 'signup';
-    $('forgot-password').hidden = authMode !== 'login';
-    $('signup-simple-note').hidden = authMode !== 'signup';
-    $('login-msg').textContent = '';
-  });
-  $('auth-form').addEventListener('submit', async function(e){
-    e.preventDefault();
-    var email = $('auth-email').value.trim().toLowerCase();
-    var password = $('auth-password').value;
-    var submit = $('auth-submit');
-    $('login-msg').textContent = '';
-    if (password.length < 8){
-      $('login-msg').textContent = 'La contraseña debe tener al menos 8 caracteres.';
-      return;
-    }
-    var captchaToken = window.viperTurnstileToken;
-    if (!captchaToken){
-      $('login-msg').textContent = 'Completa la verificación CAPTCHA antes de continuar.';
-      return;
-    }
-    submit.disabled = true;
-    submit.textContent = authMode === 'signup' ? 'Creando cuenta…' : 'Ingresando…';
-    try {
-      var result;
-      if (authMode === 'signup'){
-        var athleteData = {
-          country: $('ob-country').value.trim(), age: Number($('ob-age').value),
-          goal: $('ob-goal').value, experience: $('ob-experience').value,
-          training_days: Number($('ob-days').value) || 3, training_type: $('ob-type').value || 'mixed',
-          height_cm: $('ob-height').value ? Number($('ob-height').value) : null,
-          weight_kg: $('ob-weight').value ? Number($('ob-weight').value) : null,
-          priority_muscle: $('ob-muscle').value || null
-        };
-        result = await sb.auth.signUp({
-          email: email, password: password,
-          options: { emailRedirectTo: location.origin + location.pathname, data: athleteData, captchaToken: captchaToken }
-        });
-        if (result.error) throw result.error;
-        if (result.data.session) {
-          $('login-msg').textContent = 'Cuenta creada. Entrando a VIPER…';
-        } else {
-          $('login-msg').innerHTML = '<div class="auth-success-notice" role="alert" aria-live="assertive"><strong>📩 ¡Revisa tu correo para activar tu cuenta!</strong><p>Enviamos un enlace de confirmación a:</p><p class="auth-mail">'+esc(email)+'</p><p>Abre ese correo y pulsa <b>Confirmar correo</b> para activar tu cuenta. Después podrás iniciar sesión en VIPER.</p><p>Si no lo encuentras, revisa la carpeta de spam o correo no deseado.</p></div>';
-        }
-      } else {
-        result = await sb.auth.signInWithPassword({email: email, password: password, options: {captchaToken: captchaToken}});
-        if (result.error) throw result.error;
-      }
-    } catch (err) {
-      $('login-msg').textContent = authMode === 'login'
-        ? 'Correo o contraseña incorrectos. Verifica tus datos e inténtalo de nuevo.'
-        : errMsg(err);
-    } finally {
-      window.viperTurnstileToken = null;
-      if (window.turnstile) window.turnstile.reset();
-      submit.disabled = false;
-      submit.textContent = authMode === 'signup' ? 'Registrarme' : 'Iniciar sesión';
-    }
-  });
-  $('salir').addEventListener('click', async function(){ await sb.auth.signOut(); });
-  $('security-password-form').addEventListener('submit',changeVipPassword);
-  $('security-global-signout').addEventListener('click',signOutAllVipSessions);
-  $('security-delete-confirm').addEventListener('input',function(){
-    $('security-delete-account').disabled=!user || this.value.trim()!=='ELIMINAR';
-  });
-  $('security-delete-account').addEventListener('click',deleteViperAccount);
-  $('security-activity-refresh').addEventListener('click',function(){loadAccountActivity().catch(function(e){toast(errMsg(e),true);});});
-  $('error-report-form').addEventListener('submit',reportVipError);
-  $('notify-bell').addEventListener('click',function(){ir('notificaciones');});
-  $('notify-read-all').addEventListener('click',function(){markAllNotificationsRead().catch(function(e){toast(errMsg(e),true);});});
-  $('reminder-settings-form').addEventListener('submit',function(e){saveReminderSettings(e).catch(function(err){toast(errMsg(err),true);});});
-  $('notify-list').addEventListener('click',function(e){var b=e.target.closest('[data-notify-id]');if(!b)return;markNotificationRead(b.dataset.notifyId).catch(function(err){toast(errMsg(err),true);});});
-  $('v-inicio').addEventListener('click',function(e){var b=e.target.closest('[data-home-nav]');if(b)ir(b.dataset.homeNav);});
-  $('my-videos-refresh').addEventListener('click',function(){loadMyVideos();});
-  $('home-activity-refresh').addEventListener('click',function(){loadHomeActivity();});
-  $('nav-toggle').addEventListener('click', function(){
-    if (window.matchMedia('(max-width:700px)').matches){ $('app').classList.toggle('sidebar-open'); $('nav-toggle').setAttribute('aria-expanded', $('app').classList.contains('sidebar-open') ? 'true' : 'false'); }
-    else { $('app').classList.toggle('nav-collapsed'); }
-  });
-  document.querySelectorAll('[data-mobile-nav]').forEach(function(b){
-    b.addEventListener('click',function(){ir(b.dataset.mobileNav);});
-  });
-  document.querySelectorAll('[data-nav]').forEach(function(b){
-    b.addEventListener('click', function(){ ir(b.dataset.nav); });
-  });
-  $('feed-composer').addEventListener('submit',publishFeed);
-  $('feed-file').addEventListener('change',function(){var f=this.files[0];$('feed-file-name').textContent=f?f.name:'Video máximo 60 segundos · 100 MB';});
-  $('feed-refresh').addEventListener('click',function(){loadFeed().catch(function(e){toast(errMsg(e),true);});});
-  $('feed-list').addEventListener('click',function(e){handleFeedClick(e).catch(function(err){toast(errMsg(err),true);});});
-  $('feed-list').addEventListener('submit',function(e){handleFeedSubmit(e).catch(function(err){toast(errMsg(err),true);});});
 /* ---------- Evolución muscular ---------- */
 function evoDateLabel(d){return d ? new Date(d+'T12:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'}) : '';}
 async function cargarEvolucion(){
@@ -4121,6 +3814,314 @@ async function guardarEvoFoto(e){
   }catch(err){toast(errMsg(err),true);}finally{if(button)button.disabled=false;}
 }
 
+
+function eventos(){
+
+  /* VIPER TRAIN */
+  $('vt-date').value=limaToday();
+  $('vt-report-share').addEventListener('click',function(){
+    if(!VT_WEEKLY_STATS)return;
+    var st=VT_WEEKLY_STATS;
+    shareViper('Mi semana en VIPER: '+st.sessions+' sesiones, '+st.sets+' series y '+fmt(st.volume)+' kg de volumen registrado. ¡Seguimos avanzando!');
+  });
+  $('vt-live-form').addEventListener('submit',vtSaveLive);
+  $('vt-add-exercise').addEventListener('click',function(){
+    var name=$('vt-add-name').value.trim();
+    if(!name){toast('Escribe el nombre del ejercicio.',true);$('vt-add-name').focus();return;}
+    var before=VT_LIVE.length;vtAddExercise(name,$('vt-add-muscle').value);
+    if(VT_LIVE.length>before)$('vt-add-name').value='';
+  });
+  $('vt-repeat-last').addEventListener('click',function(){
+    if(VT_LIVE.length&&!window.confirm('¿Reemplazar la sesión actual por tu última rutina guardada?'))return;
+    var b=this;b.disabled=true;
+    vtRepeatLast().catch(function(e){toast(errMsg(e),true);}).finally(function(){b.disabled=false;});
+  });
+  $('vt-live-list').addEventListener('click',function(e){
+    var card=e.target.closest('[data-vt-ex]');if(!card)return;
+    var index=Number(card.dataset.vtEx),ex=VT_LIVE[index];if(!ex)return;
+    if(e.target.closest('[data-vt-remove-ex]')){VT_LIVE.splice(index,1);vtRenderLive();return;}
+    if(e.target.closest('[data-vt-add-set]')){
+      if(ex.sets.length>=30){toast('Máximo 30 series por ejercicio.',true);return;}
+      var last=ex.sets[ex.sets.length-1]||{reps:10,weight_kg:0};
+      ex.sets.push({reps:last.reps,weight_kg:last.weight_kg});vtRenderLive();return;
+    }
+    if(e.target.closest('[data-vt-remove-set]')){
+      if(ex.sets.length<=1){toast('Cada ejercicio necesita al menos una serie.',true);return;}
+      var row=e.target.closest('[data-vt-set]');
+      if(row){ex.sets.splice(Number(row.dataset.vtSet),1);vtRenderLive();}
+    }
+  });
+  $('vt-live-list').addEventListener('input',function(e){
+    var card=e.target.closest('[data-vt-ex]'),row=e.target.closest('[data-vt-set]');
+    if(!card||!row)return;
+    var item=VT_LIVE[Number(card.dataset.vtEx)],set=item&&item.sets[Number(row.dataset.vtSet)];
+    if(!set)return;
+    if(e.target.matches('[data-vt-reps]'))set.reps=Number(e.target.value);
+    if(e.target.matches('[data-vt-weight]'))set.weight_kg=Number(e.target.value);
+    vtUpdateSummary();
+  });
+  document.querySelector('.vt-timer').addEventListener('click',function(e){
+    var b=e.target.closest('[data-vt-rest]');if(b)vtStartTimer(Number(b.dataset.vtRest));
+  });
+  $('vt-stop-rest').addEventListener('click',vtStopTimer);
+  /* VIPER NUTRI: manual entries are explicitly excluded from XP */
+  $('vn-goals-form').addEventListener('submit',vnSaveGoals);
+  $('vn-food-form').addEventListener('submit',vnSaveFood);
+  $('vn-manual-list').addEventListener('click',function(e){
+    var b=e.target.closest('[data-vn-remove]');if(!b)return;
+    b.disabled=true;
+    vnRemoveFood(b.dataset.vnRemove).catch(function(err){toast(errMsg(err),true);})
+      .finally(function(){if(b.isConnected)b.disabled=false;});
+  });
+  /* Editable AI plan, backed by current user-owned table */
+  $('vt-ai-edit').addEventListener('click',function(){
+    if(!VT_AI_HAS_PLAN)return;
+    $('vt-ai-textarea').value=$('vip-ai-text').textContent;
+    $('vt-ai-editor').hidden=false;$('vt-ai-textarea').focus();
+  });
+  $('vt-ai-cancel').addEventListener('click',function(){$('vt-ai-editor').hidden=true;});
+  $('vt-ai-copy').addEventListener('click',async function(){
+    if(!VT_AI_HAS_PLAN)return;
+    try{
+      if(!navigator.clipboard||!navigator.clipboard.writeText)throw new Error('Portapapeles no disponible');
+      await navigator.clipboard.writeText($('vip-ai-text').textContent);
+      toast('Plan copiado.');
+    }catch(err){toast('No se pudo copiar automáticamente. Puedes seleccionarlo desde el plan.',true);}
+  });
+  $('vt-ai-save').addEventListener('click',async function(){
+    if(!user||!VT_AI_HAS_PLAN)return;
+    var textPlan=$('vt-ai-textarea').value.trim();
+    if(textPlan.length<20||textPlan.length>11900){toast('El plan debe tener entre 20 y 11.900 caracteres.',true);return;}
+    var b=this;b.disabled=true;
+    try{
+      var r=await sb.from('viper_ai_training_plans').update({plan_text:textPlan,updated_at:new Date().toISOString()}).eq('user_id',user.id).select('user_id').maybeSingle();
+      if(r.error)throw r.error;
+      if(!r.data)throw new Error('No se encontró un plan para actualizar.');
+      $('vip-ai-text').textContent=textPlan;$('vt-ai-editor').hidden=true;
+      $('vip-ai-status').textContent='Plan editado y guardado de forma privada.';
+      toast('Tu plan se actualizó correctamente.');
+    }catch(err){toast(errMsg(err),true);}
+    finally{b.disabled=false;}
+  });
+  $('logo-home').addEventListener('click',function(){ir('inicio');});
+  $('inbox-head-button').addEventListener('click',function(){ir('amigos');});
+  $('chat-peer-profile').addEventListener('click',function(){
+    if(!chatFriend)return;
+    var id=chatFriend.id;cerrarChat();abrirPerfilPublico(id);
+  });
+  $('chat-options').addEventListener('click',function(){toggleChatOptions($('chat-options-menu').hidden);});
+  $('chat-options-menu').addEventListener('click',function(e){
+    var option=e.target.closest('button[data-chat-option]');
+    if(!option || !chatFriend)return;
+    var action=option.dataset.chatOption;
+    toggleChatOptions(false);
+    if(action==='gallery')toggleChatGallery(true);
+    else if(action==='profile'){var id=chatFriend.id;cerrarChat();abrirPerfilPublico(id);}
+    else if(action==='block')bloquearDesdeChat().catch(function(err){toast(errMsg(err),true);});
+    else if(action==='report')reportarDesdeChat().catch(function(err){toast(errMsg(err),true);});
+  });
+  $('chat-gallery-back').addEventListener('click',function(){toggleChatGallery(false);$('chat-text').focus();});
+  $('chat-panel').addEventListener('click',function(e){if(e.target===$('chat-panel'))cerrarChat();});
+  document.addEventListener('click',function(e){
+    if(!$('chat-options-menu').hidden && !e.target.closest('.chat-menu-holder'))toggleChatOptions(false);
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape'||$('chat-panel').hidden)return;
+    e.preventDefault();
+    if(!$('chat-options-menu').hidden)toggleChatOptions(false);
+    else if(!$('chat-gallery').hidden)toggleChatGallery(false);
+    else cerrarChat();
+  });
+  $('landing-share').addEventListener('click',function(){
+    shareViper('¡Descubre VIPER! Entrena con IA, compite en retos y comparte tus avances.');
+  });
+  $('vip-daily-cta').addEventListener('click',function(){
+    ir(this.dataset.vipDailyDestination==='feed'?'feed':'hoy');
+  });
+  $('vip-daily-plan').addEventListener('click',function(){
+    var el=$('vip-ai-create');
+    el.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});
+    el.focus({preventScroll:true});
+  });
+  $('vip-badges-share').addEventListener('click',function(){
+    if(!P)return;
+    shareViper('¡Estoy en VIPER! Mi rango: '+LV[idxOf(Number(P.xp_total)||0)].label+' · '+fmt(Number(P.xp_total)||0)+' XP. ¿Entrenamos?');
+  });
+  $('landing-signup').addEventListener('click',function(){
+    if(authMode!=='signup')$('auth-toggle').click();
+    $('auth-email').focus();
+  });
+  $('vip-ai-create').addEventListener('click',generateVipAiPlan);
+  $('vip-ranking-link').addEventListener('click',function(){ir('ranking');});
+  $('vip-challenge-list').addEventListener('click',function(e){
+    var b=e.target.closest('[data-vip-challenge]');if(!b||b.disabled)return;
+    b.disabled=true;
+    joinVipChallenge(b.dataset.vipChallenge).catch(function(err){toast(errMsg(err),true);b.disabled=false;});
+  });
+  $('entrar').addEventListener('click', async function(){
+    $('login-msg').textContent = '';
+    var r = await sb.auth.signInWithOAuth({provider: 'google', options: {redirectTo: location.origin + location.pathname + location.search}});
+    if (r.error) $('login-msg').textContent = errMsg(r.error);
+  });
+  $('auth-password-toggle').addEventListener('click', function(){
+    var field = $('auth-password');
+    var showing = field.type === 'password';
+    field.type = showing ? 'text' : 'password';
+    this.textContent = showing ? 'Ocultar' : 'Mostrar';
+    this.setAttribute('aria-label', showing ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    this.setAttribute('aria-pressed', showing ? 'true' : 'false');
+  });
+  $('forgot-password').addEventListener('click', async function(){
+    var email=$('auth-email').value.trim().toLowerCase();
+    var cloud=$('password-mail-cloud');
+    cloud.hidden=true;cloud.classList.remove('show');
+    $('login-msg').textContent='';
+    if(!email){$('login-msg').textContent='Escribe tu correo electrónico para enviarte el enlace.';$('auth-email').focus();return;}
+    var captchaToken=window.viperTurnstileToken;
+    if(!captchaToken){$('login-msg').textContent='Completa la verificación CAPTCHA antes de continuar.';return;}
+    this.disabled=true;
+    try{
+      var result=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname+location.search,captchaToken:captchaToken});
+      if(result.error)throw result.error;
+      $('login-msg').textContent='';
+      cloud.hidden=false;
+      requestAnimationFrame(function(){cloud.classList.add('show');});
+      if(window.viperRecoveryNoticeTimer)clearTimeout(window.viperRecoveryNoticeTimer);
+      window.viperRecoveryNoticeTimer=setTimeout(function(){
+        cloud.classList.remove('show');
+        setTimeout(function(){cloud.hidden=true;},300);
+      },9000);
+    }catch(err){
+      cloud.hidden=true;cloud.classList.remove('show');
+      $('login-msg').textContent=errMsg(err);
+    }finally{
+      window.viperTurnstileToken=null;
+      if(window.turnstile)window.turnstile.reset();
+      this.disabled=false;
+    }
+  });
+  $('password-recovery-form').addEventListener('submit',async function(e){
+    e.preventDefault();
+    var password=$('recovery-password').value;
+    var confirmPassword=$('recovery-password-confirm').value;
+    if(password.length<8){$('login-msg').textContent='La contraseña debe tener al menos 8 caracteres.';return;}
+    if(password!==confirmPassword){$('login-msg').textContent='Las contraseñas no coinciden.';return;}
+    var submit=$('recovery-submit');
+    submit.disabled=true;submit.textContent='Guardando…';
+    try{
+      var result=await sb.auth.updateUser({password:password});
+      if(result.error)throw result.error;
+      window.viperPasswordRecovery=false;
+      $('login-msg').textContent='Contraseña actualizada. Ya puedes iniciar sesión con tu nueva contraseña.';
+      $('password-recovery-form').reset();
+      $('password-recovery-panel').hidden=true;
+      $('auth-form').hidden=false;
+      $('forgot-password').hidden=false;
+      $('auth-toggle').hidden=false;
+      $('entrar').hidden=false;
+      await sb.auth.signOut();
+    }catch(err){
+      $('login-msg').textContent=errMsg(err);
+    }finally{
+      submit.disabled=false;submit.textContent='Guardar nueva contraseña';
+    }
+  });
+  $('auth-toggle').addEventListener('click', function(){
+    authMode = authMode === 'login' ? 'signup' : 'login';
+    $('auth-title').textContent = authMode === 'signup' ? 'Crear cuenta' : 'Iniciar sesión';
+    $('auth-submit').textContent = authMode === 'signup' ? 'Registrarme' : 'Iniciar sesión';
+    $('auth-password').autocomplete = authMode === 'signup' ? 'new-password' : 'current-password';
+    $('auth-toggle').textContent = authMode === 'signup' ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate';
+    $('signup-profile-fields').disabled = authMode !== 'signup';
+    $('signup-profile-fields').hidden = authMode !== 'signup';
+    $('forgot-password').hidden = authMode !== 'login';
+    $('signup-simple-note').hidden = authMode !== 'signup';
+    $('login-msg').textContent = '';
+  });
+  $('auth-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var email = $('auth-email').value.trim().toLowerCase();
+    var password = $('auth-password').value;
+    var submit = $('auth-submit');
+    $('login-msg').textContent = '';
+    if (password.length < 8){
+      $('login-msg').textContent = 'La contraseña debe tener al menos 8 caracteres.';
+      return;
+    }
+    var captchaToken = window.viperTurnstileToken;
+    if (!captchaToken){
+      $('login-msg').textContent = 'Completa la verificación CAPTCHA antes de continuar.';
+      return;
+    }
+    submit.disabled = true;
+    submit.textContent = authMode === 'signup' ? 'Creando cuenta…' : 'Ingresando…';
+    try {
+      var result;
+      if (authMode === 'signup'){
+        var athleteData = {
+          country: $('ob-country').value.trim(), age: Number($('ob-age').value),
+          goal: $('ob-goal').value, experience: $('ob-experience').value,
+          training_days: Number($('ob-days').value) || 3, training_type: $('ob-type').value || 'mixed',
+          height_cm: $('ob-height').value ? Number($('ob-height').value) : null,
+          weight_kg: $('ob-weight').value ? Number($('ob-weight').value) : null,
+          priority_muscle: $('ob-muscle').value || null
+        };
+        result = await sb.auth.signUp({
+          email: email, password: password,
+          options: { emailRedirectTo: location.origin + location.pathname, data: athleteData, captchaToken: captchaToken }
+        });
+        if (result.error) throw result.error;
+        if (result.data.session) {
+          $('login-msg').textContent = 'Cuenta creada. Entrando a VIPER…';
+        } else {
+          $('login-msg').innerHTML = '<div class="auth-success-notice" role="alert" aria-live="assertive"><strong>📩 ¡Revisa tu correo para activar tu cuenta!</strong><p>Enviamos un enlace de confirmación a:</p><p class="auth-mail">'+esc(email)+'</p><p>Abre ese correo y pulsa <b>Confirmar correo</b> para activar tu cuenta. Después podrás iniciar sesión en VIPER.</p><p>Si no lo encuentras, revisa la carpeta de spam o correo no deseado.</p></div>';
+        }
+      } else {
+        result = await sb.auth.signInWithPassword({email: email, password: password, options: {captchaToken: captchaToken}});
+        if (result.error) throw result.error;
+      }
+    } catch (err) {
+      $('login-msg').textContent = authMode === 'login'
+        ? 'Correo o contraseña incorrectos. Verifica tus datos e inténtalo de nuevo.'
+        : errMsg(err);
+    } finally {
+      window.viperTurnstileToken = null;
+      if (window.turnstile) window.turnstile.reset();
+      submit.disabled = false;
+      submit.textContent = authMode === 'signup' ? 'Registrarme' : 'Iniciar sesión';
+    }
+  });
+  $('salir').addEventListener('click', async function(){ await sb.auth.signOut(); });
+  $('security-password-form').addEventListener('submit',changeVipPassword);
+  $('security-global-signout').addEventListener('click',signOutAllVipSessions);
+  $('security-delete-confirm').addEventListener('input',function(){
+    $('security-delete-account').disabled=!user || this.value.trim()!=='ELIMINAR';
+  });
+  $('security-delete-account').addEventListener('click',deleteViperAccount);
+  $('security-activity-refresh').addEventListener('click',function(){loadAccountActivity().catch(function(e){toast(errMsg(e),true);});});
+  $('error-report-form').addEventListener('submit',reportVipError);
+  $('notify-bell').addEventListener('click',function(){ir('notificaciones');});
+  $('notify-read-all').addEventListener('click',function(){markAllNotificationsRead().catch(function(e){toast(errMsg(e),true);});});
+  $('reminder-settings-form').addEventListener('submit',function(e){saveReminderSettings(e).catch(function(err){toast(errMsg(err),true);});});
+  $('notify-list').addEventListener('click',function(e){var b=e.target.closest('[data-notify-id]');if(!b)return;markNotificationRead(b.dataset.notifyId).catch(function(err){toast(errMsg(err),true);});});
+  $('v-inicio').addEventListener('click',function(e){var b=e.target.closest('[data-home-nav]');if(b)ir(b.dataset.homeNav);});
+  $('my-videos-refresh').addEventListener('click',function(){loadMyVideos();});
+  $('home-activity-refresh').addEventListener('click',function(){loadHomeActivity();});
+  $('nav-toggle').addEventListener('click', function(){
+    if (window.matchMedia('(max-width:700px)').matches){ $('app').classList.toggle('sidebar-open'); $('nav-toggle').setAttribute('aria-expanded', $('app').classList.contains('sidebar-open') ? 'true' : 'false'); }
+    else { $('app').classList.toggle('nav-collapsed'); }
+  });
+  document.querySelectorAll('[data-mobile-nav]').forEach(function(b){
+    b.addEventListener('click',function(){ir(b.dataset.mobileNav);});
+  });
+  document.querySelectorAll('[data-nav]').forEach(function(b){
+    b.addEventListener('click', function(){ ir(b.dataset.nav); });
+  });
+  $('feed-composer').addEventListener('submit',publishFeed);
+  $('feed-file').addEventListener('change',function(){var f=this.files[0];$('feed-file-name').textContent=f?f.name:'Video máximo 60 segundos · 100 MB';});
+  $('feed-refresh').addEventListener('click',function(){loadFeed().catch(function(e){toast(errMsg(e),true);});});
+  $('feed-list').addEventListener('click',function(e){handleFeedClick(e).catch(function(err){toast(errMsg(err),true);});});
+  $('feed-list').addEventListener('submit',function(e){handleFeedSubmit(e).catch(function(err){toast(errMsg(err),true);});});
   $('evo-measure-date').value = limaToday();
   $('evo-session-date').value = limaToday();
   for(var evoInitialSet=0;evoInitialSet<3;evoInitialSet++)evoAddSetRow(10,0);
