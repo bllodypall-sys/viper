@@ -2772,7 +2772,7 @@ function ir(v){
   $('app').classList.remove('sidebar-open');
   $('nav-toggle').setAttribute('aria-expanded','false');
   if (v === 'inicio'){renderInicio();loadVipAiPlan().catch(function(e){$('vip-ai-status').textContent='No se pudo cargar tu plan: '+errMsg(e);});vtLoadWeeklyReport().catch(function(e){console.warn('VIPER Report',e);});}
-  if (v === 'hoy')vnLoad().catch(function(e){console.warn('VIPER Nutri',e);});
+  if (v === 'hoy')vnLoad().catch(function(e){console.warn('VIPER Nutri',e);vqReportError('nutrition',e);});
   if (v === 'evolucion') cargarEvolucion();
   if (v === 'temporada') cargarTemporada();
   if (v === 'ranking') cargarRanking();
@@ -3028,7 +3028,7 @@ async function start(){
     await signPhoto();
     renderAll();
     vtRestoreDraft();
-    vnLoad().catch(function(e){console.warn('VIPER Nutri',e);});
+    vnLoad().catch(function(e){console.warn('VIPER Nutri',e);vqReportError('nutrition',e);});
     loadHomeActivity();
     loadAccountActivity().catch(function(e){console.warn('No se pudo cargar el historial de seguridad',e);});
     await loadNotifications();
@@ -3725,7 +3725,7 @@ function vtRestoreDraft(){
          !VT_MUSCLES.includes(ex.muscle)||!Array.isArray(ex.sets)||
          ex.sets.length<1||ex.sets.length>30)throw new Error('Ejercicio de borrador inválido');
       return {name:ex.name,muscle:ex.muscle,sets:ex.sets.map(function(row){
-        if(!row||!Number.isInteger(row.reps)||row.reps<1||row.reps>300||
+        if(!row||!Number.isInteger(row.reps)||row.reps<0||row.reps>300||
            !Number.isFinite(row.weight_kg)||row.weight_kg<0||row.weight_kg>1500)
           throw new Error('Serie de borrador inválida');
         return {reps:row.reps,weight_kg:row.weight_kg};
@@ -3911,7 +3911,7 @@ async function vtLoadWeeklyReport(){
       [fmt(Math.round(volume))+' kg','Volumen registrado'],[result[1].data.length,'Comidas con IA'],[result[2].data.length,'Comidas manuales']
     ];
     root.innerHTML=cells.map(function(x){return '<div class="vt-report-card"><strong>'+esc(x[0])+'</strong><span>'+esc(x[1])+'</span></div>';}).join('');
-  }catch(err){root.innerHTML='<p class="note">No se pudo cargar el informe semanal. Inténtalo al volver a Inicio.</p>';console.warn('VIPER Report',err);}
+  }catch(err){root.innerHTML='<p class="note">No se pudo cargar el informe semanal. Inténtalo al volver a Inicio.</p>';console.warn('VIPER Report',err);vqReportError('report',err);}
 }
 
 function evoAddSetRow(reps,weight){
