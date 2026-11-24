@@ -319,7 +319,7 @@ assert.match(qualitySql,/create unique index if not exists viper_workout_session
 assert.match(qualitySql,/create or replace function public\.viper_save_workout_v2/);
 assert.match(qualitySql,/language plpgsql volatile security invoker/);
 assert.match(qualitySql,/on conflict \(user_id,client_request_id\)/);
-assert.match(qualitySql,/on public\.viper_workout_sets/);
+assert.match(qualitySql,/insert into public\.viper_workout_sets/);
 assert.match(qualitySql,/insert into public\.viper_workout_sets/);
 assert.match(qualitySql,/revoke all on function public\.viper_save_workout_v2\(uuid,date,text,jsonb\) from public,anon/);
 assert.match(qualitySql,/grant execute on function public\.viper_save_workout_v2\(uuid,date,text,jsonb\) to authenticated/);
