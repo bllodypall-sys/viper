@@ -636,6 +636,7 @@ main{padding-block:12px 40px}
 .vn-manual-row>span{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}.vn-manual-row small{font-size:.75rem;color:var(--muted)}
 @media(max-width:680px){.vn-goals-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:390px){.vn-progress{grid-template-columns:1fr}}
+.vt-lib-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto}.vt-lib-actions .btn{flex:1 1 145px;min-height:40px}
 </style>
 </head>
 <body>
@@ -760,6 +761,8 @@ main{padding-block:12px 40px}
       <section class="viper-engagement vt-weekly" aria-label="Informe semanal VIPER">
         <div class="viper-engagement-head"><span class="viper-feature-tag">📊 VIPER REPORT</span><span id="vt-report-week" class="note">Esta semana</span></div>
         <h2>Tu progreso de la semana</h2><div id="vt-report-summary" class="vt-report-stats" aria-live="polite"><p class="note">Cargando tu actividad semanal…</p></div>
+        <button type="button" id="vt-report-share" class="btn sm" disabled>↗ Compartir mi semana</button>
+        <p class="note">Solo se comparte si pulsas el botón, nunca automáticamente.</p>
         <p class="note">Resumen de registros guardados; no concede XP adicional.</p>
       </section>
       <div class="home-section-title"><h2>Accesos rápidos</h2><span class="note">Todo VIPER en un toque</span></div>
@@ -778,6 +781,7 @@ main{padding-block:12px 40px}
         <pre id="vip-ai-text" class="viper-ai-plan" aria-live="polite">Crea tu primer plan desde aquí.</pre>
         <div class="vt-ai-edit-actions"><button id="vt-ai-edit" type="button" class="btn sm" disabled>✎ Editar mi plan</button><button id="vt-ai-copy" type="button" class="btn sm" disabled>Copiar plan</button></div>
         <div id="vt-ai-editor" hidden><label class="lbl" for="vt-ai-textarea">Ajusta tu plan personal</label><textarea id="vt-ai-textarea" rows="9" maxlength="11900"></textarea><div class="vt-quick-actions"><button id="vt-ai-save" type="button" class="btn primary sm">Guardar cambios</button><button id="vt-ai-cancel" type="button" class="btn sm">Cancelar</button></div></div>
+        <p class="note">Al generar o actualizar tu plan, VIPER Coach recibirá un resumen de tus sesiones de los últimos 28 días, si tienes registros disponibles. Revisa las recomendaciones antes de aplicarlas.</p>
         <p class="note">Orientación general: adapta las cargas a tu capacidad y consulta con un profesional ante lesiones o limitaciones médicas.</p>
       </section>
       <div class="home-section-title"><h2>Tu actividad reciente</h2><button class="btn sm" id="home-activity-refresh" type="button">Actualizar</button></div>
@@ -3660,7 +3664,7 @@ function renderEvoMuscleLibrary(){
  var filtered=items.filter(function(x){return (equipment==='all'||x[1]===equipment)&&(level==='all'||x[2]===level);});
  $('evo-exercise-count').textContent=filtered.length+' ejercicios disponibles · selecciona uno para registrarlo';
  var eqLabels={none:'Sin equipo',weights:'Pesas',machines:'Máquinas',bands:'Bandas'};
- $('evo-exercise-list').innerHTML=filtered.length?filtered.map(function(x){return '<article class="evo-exercise-card"><div class="evo-exercise-visual">'+evoExerciseVisual(x[1])+'</div><h4>'+esc(x[0])+'</h4><p>'+esc(x[3])+'</p><div class="evo-exercise-tags"><span>'+eqLabels[x[1]]+'</span><span>'+esc(x[2])+'</span><span>Secundarios: '+esc(x[4])+'</span></div><button type="button" class="btn primary sm" data-evo-record="'+esc(x[0])+'" data-evo-muscle="'+EVO.muscle+'">Registrar</button></article>';}).join(''):'<p class="note">No hay ejercicios con esos filtros. Prueba otra combinación.</p>';
+ $('evo-exercise-list').innerHTML=filtered.length?filtered.map(function(x){return '<article class="evo-exercise-card"><div class="evo-exercise-visual">'+evoExerciseVisual(x[1])+'</div><h4>'+esc(x[0])+'</h4><p>'+esc(x[3])+'</p><div class="evo-exercise-tags"><span>'+eqLabels[x[1]]+'</span><span>'+esc(x[2])+'</span><span>Secundarios: '+esc(x[4])+'</span></div><div class="vt-lib-actions"><button type="button" class="btn primary sm" data-vt-add-library="'+esc(x[0])+'" data-vt-muscle="'+esc(EVO.muscle)+'">＋ A mi sesión</button><button type="button" class="btn sm" data-evo-record="'+esc(x[0])+'" data-evo-muscle="'+EVO.muscle+'">Registro rápido</button></div></article>';}).join(''):'<p class="note">No hay ejercicios con esos filtros. Prueba otra combinación.</p>';
 }
 var EVO3D={ready:false,loading:false,scene:null,camera:null,renderer:null,controls:null,group:null,parts:[],back:false,frame:0};
 var EVO_MUSCLE_MODEL_IDS={
