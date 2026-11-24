@@ -2443,7 +2443,7 @@ async function guardarDatosAtleta(e){
   try{
     var r=await sb.from('viper_onboarding_profiles').upsert(payload,{onConflict:'user_id'});
     if(r.error)throw r.error;
-    ATHLETE=payload;renderPerfil();toast('Datos de atleta actualizados.');
+    ATHLETE=payload;renderPerfil();vsgRenderStart();toast('Datos de atleta actualizados.');
   }catch(err){toast(errMsg(err),true);}
   finally{if(btn)btn.disabled=false;}
 }
@@ -2863,7 +2863,7 @@ function ir(v){
   window.scrollTo(0, 0);
   $('app').classList.remove('sidebar-open');
   $('nav-toggle').setAttribute('aria-expanded','false');
-  if (v === 'inicio'){renderInicio();loadVipAiPlan().catch(function(e){$('vip-ai-status').textContent='No se pudo cargar tu plan: '+errMsg(e);});vtLoadWeeklyReport().catch(function(e){console.warn('VIPER Report',e);});}
+  if (v === 'inicio'){renderInicio();vsgRenderStart();loadVipAiPlan().catch(function(e){$('vip-ai-status').textContent='No se pudo cargar tu plan: '+errMsg(e);});vtLoadWeeklyReport().catch(function(e){console.warn('VIPER Report',e);});}
   if (v === 'hoy')vnLoad().catch(function(e){console.warn('VIPER Nutri',e);vqReportError('nutrition',e);});
   if (v === 'evolucion') cargarEvolucion();
   if (v === 'temporada') cargarTemporada();
@@ -3145,6 +3145,8 @@ async function start(){
     }
     await cargarDatosAtleta();
     renderPerfil();
+    vsgRenderStart();
+    if(!ATHLETE||!ATHLETE.goal)vsgOpenConfig(true);
     showWelcome();
   } catch (e) {
     iniciado = false;
@@ -3877,6 +3879,7 @@ function vtFormatTimer(seconds){
 function vtStopTimer(){
   if(VT_TIMER){clearInterval(VT_TIMER);VT_TIMER=null;}
   VT_TIMER_END=0;$('vt-timer-display').textContent=vtFormatTimer(VT_TIMER_DURATION);
+  $('vsg-focus-clock').textContent=vtFormatTimer(VT_TIMER_DURATION);
 }
 function vtStartTimer(seconds){
   VT_TIMER_DURATION=seconds;
@@ -3885,9 +3888,11 @@ function vtStartTimer(seconds){
   function tick(){
     var remaining=Math.ceil((VT_TIMER_END-Date.now())/1000);
     $('vt-timer-display').textContent=vtFormatTimer(remaining);
+    $('vsg-focus-clock').textContent=vtFormatTimer(remaining);
     if(remaining<=0){
       clearInterval(VT_TIMER);VT_TIMER=null;VT_TIMER_END=0;
       $('vt-timer-display').textContent='¡Listo!';
+      $('vsg-focus-clock').textContent='¡Listo!';
     }
   }
   tick();VT_TIMER=setInterval(tick,250);
@@ -4223,6 +4228,55 @@ function eventos(){
 
   /* VIPER TRAIN */
   $('vt-date').value=limaToday();
+  /* VIPER START + FOCUS */
+  $('vsg-start-button').addEventListener('click',vsgStartWorkout);
+  $('vsg-open-current').addEventListener('click',vsgOpenFocus);
+  $('vsg-config-toggle').addEventListener('click',function(){vsgOpenConfig($('vsg-config').hidden);});
+  $('vsg-config').addEventListener('submit',vsgSaveProfile);
+  ['vsg-goal','vsg-experience','vsg-days','vsg-type'].forEach(function(id){
+    $(id).addEventListener('change',vsgRenderStart);
+  });
+  $('vsg-focus-open').addEventListener('click',vsgOpenFocus);
+  $('vsg-focus-close').addEventListener('click',function(){vsgCloseFocus();});
+  $('vsg-prev').addEventListener('click',function(){VSG_FOCUS_INDEX--;vsgRenderFocus();});
+  $('vsg-next').addEventListener('click',function(){VSG_FOCUS_INDEX++;vsgRenderFocus();});
+  $('vsg-save').addEventListener('click',function(){vsgFinish().catch(function(e){toast(errMsg(e),true);vsgRenderFocus();});});
+  $('vsg-rest-stop').addEventListener('click',vtStopTimer);
+  $('vsg-focus').addEventListener('click',function(event){
+    var timer=event.target.closest('[data-vsg-rest]');
+    if(timer){vtStartTimer(Number(timer.dataset.vsgRest));return;}
+    if(event.target.id==='vsg-add-set'&&!VT_PENDING_SAVE&&!VT_SAVING){
+      var ex=VT_LIVE[VSG_FOCUS_INDEX];
+      if(ex&&ex.sets.length<30){
+        var last=ex.sets[ex.sets.length-1]||{reps:10,weight_kg:0};
+        ex.sets.push({reps:last.reps,weight_kg:last.weight_kg});
+        vtRenderLive();vsgRenderFocus();
+      }
+    }
+  });
+  $('vsg-focus-content').addEventListener('input',function(event){
+    if(VT_PENDING_SAVE||VT_SAVING)return;
+    var target=event.target,holder=target.closest('[data-vsg-set]');
+    if(!holder)return;
+    var current=VT_LIVE[VSG_FOCUS_INDEX],row=current&&current.sets[Number(holder.dataset.vsgSet)];
+    if(!row)return;
+    if(target.matches('[data-vsg-reps]'))row.reps=target.value===''?0:Number(target.value);
+    if(target.matches('[data-vsg-weight]'))row.weight_kg=target.value===''?0:Number(target.value);
+    vtRenderLive();
+    var volume=VT_LIVE.reduce(function(total,ex){return total+ex.sets.reduce(function(sum,set){
+      return sum+Number(set.reps||0)*Number(set.weight_kg||0);
+    },0);},0);
+    $('vsg-focus-volume').textContent=Math.round(volume)+' kg de volumen';
+  });
+  $('vsg-focus').addEventListener('keydown',function(event){
+    if(event.key==='Escape'){event.preventDefault();vsgCloseFocus();}
+    if(event.key!=='Tab')return;
+    var nodes=Array.from($('vsg-focus').querySelectorAll('button:not([disabled]),input:not([disabled])')).filter(function(x){return !x.closest('[hidden]');});
+    if(!nodes.length)return;
+    var first=nodes[0],last=nodes[nodes.length-1];
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+  });
   $('vt-discard-draft').addEventListener('click',vtDiscardDraft);
   ['vt-date','vt-notes','vt-add-name','vt-add-muscle'].forEach(function(id){$(id).addEventListener('input',vtPersistDraft);$(id).addEventListener('change',vtPersistDraft);});
   window.addEventListener('pagehide',vtPersistDraft);
@@ -4774,7 +4828,7 @@ async function boot(){
       notificationChannel=null; NOTIFICATIONS=[];
       vtDropDraft(user&&user.id);
       chatChannel=null; chatFriend=null; user = null; P = null; T = null; iniciado = false;
-      VT_LIVE=[];VT_PENDING_SAVE=null;VT_SAVING=false;vtStopTimer();VN_TARGETS=null;VN_MANUAL=[];VN_DAY=null;VT_AI_HAS_PLAN=false;VT_WEEKLY_STATS=null;$('vt-report-share').disabled=true;vtSetDraftUI();
+      VT_LIVE=[];VT_PENDING_SAVE=null;VT_SAVING=false;vtStopTimer();VN_TARGETS=null;VN_MANUAL=[];VN_DAY=null;VT_AI_HAS_PLAN=false;VT_WEEKLY_STATS=null;$('vt-report-share').disabled=true;VSG_START_READY=false;vsgCloseFocus(true);vtSetDraftUI();
       pantalla('login');
     } else if (ev === 'PASSWORD_RECOVERY' && session && session.user){
       window.viperPasswordRecovery=true;
