@@ -1704,6 +1704,108 @@ function renderRank(){
   $('fill').style.width = (nx ? (t - cur.x) / (nx.x - cur.x) * 100 : 100).toFixed(1) + '%';
   $('faltan').textContent = nx ? 'Faltan ' + fmt(nx.x - t) + ' XP para ' + nx.label : 'Rango máximo alcanzado';
 }
+/* ---------- VIPER NUTRI: private manual entries; no XP granted ---------- */
+var VN_TARGETS=null,VN_MANUAL=[],VN_DAY=null;
+function vnTotals(){
+  var metrics={calories:0,protein_g:0,carbs_g:0,fat_g:0},entries=[];
+  if(T && T.mealEntries)entries=entries.concat(T.mealEntries.filter(function(m){return m.source==='ai'&&m.status==='approved';}));
+  entries=entries.concat(VN_MANUAL);
+  entries.forEach(function(m){
+    metrics.calories+=Math.max(0,Number(m.calories)||0);
+    metrics.protein_g+=Math.max(0,Number(m.protein_g)||0);
+    metrics.carbs_g+=Math.max(0,Number(m.carbs_g)||0);
+    metrics.fat_g+=Math.max(0,Number(m.fat_g)||0);
+  });
+  return metrics;
+}
+function vnRender(){
+  if(!T)return;
+  var totals=vnTotals(),goals=VN_TARGETS;
+  var defs=[
+    {label:'Calorías',key:'calories',target:'calories_target',unit:'kcal'},
+    {label:'Proteínas',key:'protein_g',target:'protein_target_g',unit:'g'},
+    {label:'Carbohidratos',key:'carbs_g',target:'carbs_target_g',unit:'g'},
+    {label:'Grasas',key:'fat_g',target:'fat_target_g',unit:'g'}
+  ];
+  $('vn-day').textContent='Día '+T.hoy+' · Incluye fotografías aprobadas y registros manuales sin XP.';
+  $('vn-progress').innerHTML=defs.map(function(x){
+    var current=Math.round(totals[x.key]),target=goals?Math.max(0,Number(goals[x.target])||0):0;
+    var right=goals?(' / '+target+' '+x.unit):' · sin objetivo configurado';
+    var meter=goals&&target>0?'<meter min="0" max="'+target+'" value="'+Math.min(target,Math.max(0,current))+'" aria-label="Progreso de '+x.label+'"></meter>':'';
+    return '<div class="vn-nutrient"><small>'+x.label+'</small><strong>'+current+' '+x.unit+'</strong><small>'+right+'</small>'+meter+'</div>';
+  }).join('');
+  $('vn-manual-list').innerHTML=VN_MANUAL.length?VN_MANUAL.map(function(x){
+    return '<div class="vn-manual-row"><span><strong>'+esc(x.food_name)+'</strong><small>'+
+      Math.round(Number(x.calories))+' kcal · P '+Math.round(Number(x.protein_g))+' g · C '+Math.round(Number(x.carbs_g))+' g · G '+Math.round(Number(x.fat_g))+' g</small></span>'+
+      '<button type="button" class="btn sm" data-vn-remove="'+esc(x.id)+'" aria-label="Eliminar '+esc(x.food_name)+'">Eliminar</button></div>';
+  }).join(''):'<p class="note">Todavía no añadiste comidas manuales hoy.</p>';
+}
+async function vnLoad(){
+  if(!user||!T)return;
+  var uid=user.id,day=T.hoy;
+  var r=await Promise.all([
+    sb.from('viper_nutrition_targets').select('calories_target,protein_target_g,carbs_target_g,fat_target_g').eq('user_id',uid).maybeSingle(),
+    sb.from('viper_manual_foods').select('id,food_name,calories,protein_g,carbs_g,fat_g').eq('user_id',uid).eq('meal_date',day).order('created_at',{ascending:false}).limit(100)
+  ]);
+  r.forEach(function(x){if(x.error)throw x.error;});
+  if(!user||user.id!==uid||!T||T.hoy!==day)return;
+  VN_TARGETS=r[0].data||null;VN_MANUAL=r[1].data||[];VN_DAY=day;
+  if(VN_TARGETS){
+    [['vn-target-calories','calories_target'],['vn-target-protein','protein_target_g'],['vn-target-carbs','carbs_target_g'],['vn-target-fat','fat_target_g']].forEach(function(pair){
+      if(document.activeElement!==$(pair[0]))$(pair[0]).value=VN_TARGETS[pair[1]];
+    });
+  }
+  vnRender();
+}
+async function vnSaveGoals(e){
+  e.preventDefault();if(!user)return;
+  var payload={
+    user_id:user.id,calories_target:Number($('vn-target-calories').value),
+    protein_target_g:Number($('vn-target-protein').value),
+    carbs_target_g:Number($('vn-target-carbs').value),fat_target_g:Number($('vn-target-fat').value),
+    updated_at:new Date().toISOString()
+  };
+  var rules=[['calories_target',1200,6000],['protein_target_g',0,350],['carbs_target_g',0,800],['fat_target_g',0,250]];
+  if(rules.some(function(x){return !Number.isInteger(payload[x[0]])||payload[x[0]]<x[1]||payload[x[0]]>x[2];})){
+    toast('Comprueba los objetivos y los límites indicados.',true);return;
+  }
+  var btn=e.submitter;if(btn)btn.disabled=true;
+  try{
+    var r=await sb.from('viper_nutrition_targets').upsert(payload,{onConflict:'user_id'});
+    if(r.error)throw r.error;
+    VN_TARGETS=payload;vnRender();toast('Objetivos personales guardados.');
+  }catch(err){toast(errMsg(err),true);}
+  finally{if(btn)btn.disabled=false;}
+}
+async function vnSaveFood(e){
+  e.preventDefault();if(!user||!T)return;
+  var name=$('vn-food-name').value.trim(),items=[
+    ['vn-food-calories','calories',3000],
+    ['vn-food-protein','protein_g',350],
+    ['vn-food-carbs','carbs_g',800],
+    ['vn-food-fat','fat_g',250]
+  ];
+  var payload={user_id:user.id,meal_date:T.hoy,food_name:name};
+  items.forEach(function(pair){payload[pair[1]]=Number($(pair[0]).value);});
+  if(name.length<2||name.length>100||items.some(function(x){return $(x[0]).value===''||!Number.isFinite(payload[x[1]])||payload[x[1]]<0||payload[x[1]]>x[2];})||!Number.isInteger(payload.calories)){
+    toast('Revisa el alimento, calorías y macronutrientes.',true);return;
+  }
+  var btn=e.submitter;if(btn)btn.disabled=true;
+  try{
+    var r=await sb.from('viper_manual_foods').insert(payload);
+    if(r.error)throw r.error;
+    $('vn-food-form').reset();await vnLoad();
+    toast('Comida manual guardada. No se suman XP.');
+  }catch(err){toast(errMsg(err),true);}
+  finally{if(btn)btn.disabled=false;}
+}
+async function vnRemoveFood(id){
+  if(!user||!id||!window.confirm('¿Eliminar este alimento del registro de hoy?'))return;
+  var r=await sb.from('viper_manual_foods').delete().eq('id',id).eq('user_id',user.id);
+  if(r.error)throw r.error;
+  await vnLoad();toast('Alimento eliminado.');
+}
+
 function renderMeals(){
   var list = $('meal-list');
   if (!list || !T) return;
