@@ -578,6 +578,30 @@ main{padding-block:12px 40px}
 #f-board .friend-chat-chevron{flex:0 0 auto;font-size:1.6rem;color:#67d88f;line-height:1}
 #f-board .friend-chat-self{min-height:65px;padding:13px 16px}
 @media(prefers-reduced-motion:reduce){#f-board .friend-chat-row{transition:none}}
+
+/* VIPER DIRECT 2.0 — inbox, unread counters and search */
+.nav-friend-unread[hidden]{display:none!important}
+.nav-friend-unread{margin-left:auto;min-width:20px;height:20px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;border-radius:99px;background:#46e27c;color:#092316;font:800 .75rem/1 var(--body)}
+.friend-dm-search-wrap{display:flex;align-items:center;gap:9px;padding:0 12px;min-height:48px;background:var(--surface);border:1px solid #395641;border-radius:14px}
+.friend-dm-search-wrap:focus-within{border-color:#50df81;box-shadow:0 0 0 2px rgba(80,223,129,.12)}
+.friend-dm-search-wrap>span{color:#88d4a2;font-size:1.55rem}
+.friend-dm-search-wrap input{width:100%;flex:1;min-width:0;min-height:45px;padding:10px 2px;border:0;outline:0;background:transparent;color:var(--fg);font:inherit;font-size:16px}
+.friend-dm-list{display:grid;grid-template-columns:1fr;gap:8px}
+.friend-dm-contact{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:12px;min-height:73px;padding:12px 14px}
+.friend-dm-contact.is-unread{border-color:#51dc83;background:linear-gradient(110deg,#193c29,#192920)}
+.friend-dm-copy strong{font-size:.96rem}
+.friend-dm-copy small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;line-height:1.36;white-space:normal}
+.friend-dm-contact.is-unread .friend-dm-copy small{color:#d3f7dc;font-weight:650}
+.friend-dm-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:8px;min-width:55px;align-self:stretch}
+.friend-dm-time{color:#a5bcae;font-size:.71rem;white-space:nowrap}
+.friend-dm-unread{display:grid;place-items:center;min-width:23px;height:23px;padding:0 6px;border-radius:99px;background:#49e083;color:#062013;font-size:.74rem;font-weight:900}
+.friend-dm-right .friend-dm-arrow{font-size:1.3rem}
+@media(max-width:420px){.friend-dm-contact{gap:9px;padding:11px 10px}.friend-dm-right{min-width:45px}.friend-dm-time{font-size:.65rem}}
+
+/* Mensajería accesible incluso con menú lateral cerrado */
+.inbox-head-button{display:grid;place-items:center;font-size:1.22rem}
+.inbox-head-button:hover,.inbox-head-button:focus-visible{border-color:#52d982}
+@media(max-width:420px){.notify-head{gap:5px}.inbox-head-button{width:38px;height:38px}}
 </style>
 </head>
 <body>
@@ -648,7 +672,7 @@ main{padding-block:12px 40px}
 <div id="app" hidden>
   <header class="top">
     <div style="display:flex;align-items:center;gap:12px"><button class="nav-toggle" id="nav-toggle" type="button" aria-label="Abrir menú" aria-expanded="true">☰</button><button id="logo-home" class="logo logo-home" type="button" title="Ir al Inicio" aria-label="VIPER: ir a la página principal">VIPER</button><span id="current-section" class="current-section" aria-live="polite">Estás en Inicio</span></div>
-    <div class="notify-head"><button type="button" class="notify-bell" id="notify-bell" aria-label="Abrir notificaciones" title="Notificaciones">🔔<span class="notify-count" id="notify-count" hidden>0</span></button><span class="who" id="who"></span></div>
+    <div class="notify-head"><button type="button" class="notify-bell inbox-head-button" id="inbox-head-button" aria-label="Abrir mensajes" title="Mensajes">💬<span class="notify-count" id="inbox-head-count" hidden>0</span></button><button type="button" class="notify-bell" id="notify-bell" aria-label="Abrir notificaciones" title="Notificaciones">🔔<span class="notify-count" id="notify-count" hidden>0</span></button><span class="who" id="who"></span></div>
   </header>
   <div class="app-layout">
   <nav class="nav" id="sidebar" aria-label="Secciones">
@@ -658,7 +682,7 @@ main{padding-block:12px 40px}
     <button type="button" data-nav="evolucion"><span class="nav-icon">💪</span><span class="nav-label">Evolución muscular</span></button>
     <button type="button" data-nav="temporada"><span class="nav-icon">⚡</span><span class="nav-label">Temporada</span></button>
     <button type="button" data-nav="ranking"><span class="nav-icon">🏆</span><span class="nav-label">Ranking</span></button>
-    <button type="button" data-nav="amigos"><span class="nav-icon">♧</span><span class="nav-label">Amigos</span></button>
+    <button type="button" data-nav="amigos"><span class="nav-icon">♧</span><span class="nav-label">Amigos</span><span id="nav-friend-unread" class="nav-friend-unread" hidden aria-label="Mensajes sin leer">0</span></button>
     <button type="button" data-nav="feed"><span class="nav-icon">▶</span><span class="nav-label">VIPER Feed</span></button>
     <button type="button" data-nav="notificaciones"><span class="nav-icon">🔔</span><span class="nav-label">Notificaciones</span><span class="notify-count nav-notify-count" id="nav-notify-count" hidden>0</span></button>
     <button type="button" data-nav="perfil"><span class="nav-icon">◉</span><span class="nav-label">Perfil</span></button>
@@ -1056,7 +1080,9 @@ main{padding-block:12px 40px}
         <button class="btn primary" type="submit">Enviar solicitud</button>
       </form>
       <div id="f-reqs" class="view"></div>
-      <div class="sec-head"><h2>Mensajes</h2><span>Conversaciones privadas con tus amigos</span></div>
+      <div class="sec-head"><h2>Mensajes</h2><span id="friend-dm-total" class="note">Tus conversaciones privadas</span></div>
+      <label class="vh" for="friend-dm-search">Buscar conversaciones</label>
+      <div class="friend-dm-search-wrap"><span aria-hidden="true">⌕</span><input id="friend-dm-search" type="search" maxlength="80" placeholder="Buscar amigos o mensajes…" autocomplete="off"></div>
       <div id="friend-dm-list" class="friend-dm-list" aria-label="Chats con amigos"><p class="note">Selecciona un amigo para conversar.</p></div>
       <div class="sec-head"><h2>Ranking de amigos</h2></div>
       <ol class="board" id="f-board"></ol>
@@ -1331,7 +1357,7 @@ function addDays(iso, n){
   return d.toISOString().slice(0, 10);
 }
 
-var sb = null, user = null, P = null, T = null, F = [], U = {}, iniciado = false, toastT = null, welcomeT = null, welcomeHideT = null, authMode = 'login', chatFriend = null, chatChannel = null;
+var sb = null, user = null, P = null, T = null, F = [], U = {}, iniciado = false, toastT = null, welcomeT = null, welcomeHideT = null, authMode = 'login', chatFriend = null, chatChannel = null, inboxChannel = null, DM_INBOX = [];
 var ATHLETE = null;
 var IDLE_TIMEOUT_MS = 60 * 60 * 1000, idleTimer = null, lastActivityAt = 0, lastActivitySavedAt = 0, idleStorageKey = null;
 var EVO = {muscle:'pectoral_superior',sessions:[],exercises:[],sets:[],measurements:[],photos:[],goals:[]};
@@ -1929,6 +1955,7 @@ async function cargarAmigos(){
     var avatars=await sb.from('profiles').select('id,avatar_path').in('id',Object.keys(ids));
     if(!avatars.error)(avatars.data||[]).forEach(function(x){if(U[x.id])U[x.id].avatar_path=x.avatar_path;});
     renderAmigos();
+    refreshVipInbox().catch(function(err){console.warn('VIPER Direct: no se pudo actualizar la bandeja',err);});
   } catch (e) {
     toast(errMsg(e), true);
   }
@@ -1970,17 +1997,99 @@ function renderAmigos(){
       details+'<span class="friend-chat-chevron" aria-hidden="true">›</span></button></li>';
   }).join('') : '<li class="empty">Aún no hay amigos aceptados.</li>';
   $('f-vacio').hidden = ok.length > 0;
-  var dmFriends=Object.keys(fid).map(function(id){return U[id];}).filter(Boolean)
-    .sort(function(a,b){return String(a.username||'').localeCompare(String(b.username||''));});
-  $('friend-dm-list').innerHTML=dmFriends.length?dmFriends.map(function(r){
-    var avatar=r.avatar_path
-      ? '<img alt="" loading="lazy" src="'+esc(sb.storage.from('avatars').getPublicUrl(r.avatar_path).data.publicUrl)+'">'
-      : esc((r.username||'V').slice(0,1).toUpperCase());
-    return '<button type="button" class="friend-dm-contact" data-chat-user="'+esc(r.id)+'" aria-label="Abrir conversación con '+esc(r.username||'Atleta')+'">'+
+  renderVipInbox();
+}
+
+/* ---------- VIPER Direct 2.0: inbox, unread and search ---------- */
+var DM_REFRESH_SEQ=0;
+function vipInboxTime(value){
+  if(!value)return '';
+  var d=new Date(value),n=new Date();
+  if(!Number.isFinite(d.getTime()))return '';
+  var opts={timeZone:'America/Lima'};
+  var today=n.toLocaleDateString('es-PE',opts),day=d.toLocaleDateString('es-PE',opts);
+  if(day===today)return d.toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit'});
+  var yesterday=new Date(n.getTime()-86400000).toLocaleDateString('es-PE',opts);
+  if(day===yesterday)return 'Ayer';
+  return d.toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'short'});
+}
+function renderVipInbox(){
+  var box=$('friend-dm-list'),count=$('friend-dm-total');
+  if(!user||!box)return;
+  var me=user.id,peers={};
+  F.forEach(function(f){
+    if(f.estado!=='aceptada')return;
+    var id=f.solicitante===me?f.destinatario:f.destinatario===me?f.solicitante:null;
+    if(id)peers[id]=true;
+  });
+  var inboxById={};
+  DM_INBOX.forEach(function(item){inboxById[item.peer_id]=item;});
+  var query=($('friend-dm-search').value||'').trim().toLocaleLowerCase('es');
+  var friends=Object.keys(peers).map(function(id){return U[id];}).filter(Boolean).map(function(profile){
+    return {profile:profile,info:inboxById[profile.id]||{}};
+  });
+  friends.sort(function(a,b){
+    var at=a.info.last_message_at?new Date(a.info.last_message_at).getTime():0;
+    var bt=b.info.last_message_at?new Date(b.info.last_message_at).getTime():0;
+    return bt-at||String(a.profile.username||'').localeCompare(String(b.profile.username||''));
+  });
+  if(query)friends=friends.filter(function(item){
+    return (String(item.profile.username||'')+' '+String(item.info.last_preview||'')).toLocaleLowerCase('es').includes(query);
+  });
+  if(count)count.textContent=query?friends.length+' resultado'+(friends.length===1?'':'s'):'Tus conversaciones privadas';
+  if(!friends.length){
+    box.innerHTML='<p class="note">'+(query?'No encontramos conversaciones con esa búsqueda.':'Agrega amigos para empezar una conversación.')+'</p>';
+    return;
+  }
+  box.innerHTML=friends.map(function(item){
+    var p=item.profile,info=item.info,unread=Math.max(0,Number(info.unread_count)||0);
+    var avatar=p.avatar_path
+      ? '<img alt="" loading="lazy" src="'+esc(sb.storage.from('avatars').getPublicUrl(p.avatar_path).data.publicUrl)+'">'
+      : esc((p.username||'V').slice(0,1).toUpperCase());
+    var message=info.last_message_at?(info.last_sender_id===me?'Tú: ':'')+String(info.last_preview||'Mensaje'):'Empieza la conversación';
+    var timestamp=vipInboxTime(info.last_message_at);
+    return '<button type="button" class="friend-dm-contact'+(unread?' is-unread':'')+'" data-chat-user="'+esc(p.id)+'" aria-label="Abrir conversación con '+esc(p.username||'Atleta')+(unread?', '+unread+' mensajes sin leer':'')+'">'+
       '<span class="friend-dm-avatar">'+avatar+'</span>'+
-      '<span class="friend-dm-copy"><strong>'+esc(r.username||'Atleta')+'</strong><small>Enviar mensaje privado</small></span>'+
-      '<span class="friend-dm-arrow" aria-hidden="true">›</span></button>';
-  }).join(''):'<p class="note">Agrega amigos para comenzar a chatear con ellos.</p>';
+      '<span class="friend-dm-copy"><strong>'+esc(p.username||'Atleta')+'</strong><small>'+esc(message)+'</small></span>'+
+      '<span class="friend-dm-right"><span class="friend-dm-time">'+esc(timestamp)+'</span>'+
+      (unread?'<span class="friend-dm-unread" aria-label="'+unread+' sin leer">'+(unread>99?'99+':unread)+'</span>':'<span class="friend-dm-arrow" aria-hidden="true">›</span>')+
+      '</span></button>';
+  }).join('');
+}
+async function refreshVipInbox(){
+  if(!user)return;
+  var id=user.id,seq=++DM_REFRESH_SEQ;
+  var r=await sb.rpc('viper_chat_inbox');
+  if(!user||user.id!==id||seq!==DM_REFRESH_SEQ)return;
+  if(r.error)throw r.error;
+  DM_INBOX=r.data||[];
+  var total=DM_INBOX.reduce(function(sum,item){return sum+Math.max(0,Number(item.unread_count)||0);},0);
+  var badge=$('nav-friend-unread');
+  badge.hidden=total===0;
+  badge.textContent=total>99?'99+':String(total);
+  badge.setAttribute('aria-label',total+' mensajes sin leer');
+  var headerBadge=$('inbox-head-count');
+  headerBadge.hidden=total===0;
+  headerBadge.textContent=total>99?'99+':String(total);
+  $('inbox-head-button').setAttribute('aria-label',total>0?'Abrir mensajes: '+total+' sin leer':'Abrir mensajes');
+  renderVipInbox();
+}
+async function markVipChatRead(peer){
+  if(!user||!peer)return;
+  var id=user.id;
+  var r=await sb.rpc('viper_mark_chat_read',{p_peer:peer});
+  if(r.error)throw r.error;
+  if(user&&user.id===id)await refreshVipInbox();
+}
+function subscribeVipInbox(){
+  if(!user)return;
+  if(inboxChannel){sb.removeChannel(inboxChannel);inboxChannel=null;}
+  inboxChannel=sb.channel('viper-direct-inbox-'+user.id)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},function(payload){
+      var m=payload.new;
+      if(!user||!m||(m.sender_id!==user.id&&m.recipient_id!==user.id))return;
+      refreshVipInbox().catch(function(e){console.warn('VIPER inbox',e);});
+    }).subscribe();
 }
 
 /* ---------- Perfil ---------- */
@@ -2521,12 +2630,17 @@ async function abrirChat(id){
   loadChatPeerAvatar(id);
   await cargarMensajes();
   if(!chatFriend||chatFriend.id!==id)return;
+  // Mark only the messages this user is authorized to view.
+  markVipChatRead(id).catch(function(err){console.warn('VIPER Direct: no se pudo marcar como leído',err);});
   chatChannel=sb.channel('viper-chat-'+[user.id,id].sort().join('-'))
     .on('postgres_changes',{event:'*',schema:'public',table:'messages'},function(payload){
       var m=payload.new||payload.old;
       if(m && (m.sender_id===user.id || m.recipient_id===user.id)
            && (m.sender_id===id || m.recipient_id===id) && chatFriend && chatFriend.id===id){
-        cargarMensajes().catch(function(err){toast(errMsg(err),true);});
+        cargarMensajes().then(function(){
+          if(chatFriend&&chatFriend.id===id&&m.sender_id===id&&m.recipient_id===user.id)
+            return markVipChatRead(id);
+        }).catch(function(err){toast(errMsg(err),true);});
       }
     }).subscribe();
 }
@@ -2706,6 +2820,8 @@ async function start(){
     loadAccountActivity().catch(function(e){console.warn('No se pudo cargar el historial de seguridad',e);});
     await loadNotifications();
     subscribeNotifications();
+    subscribeVipInbox();
+    refreshVipInbox().catch(function(err){console.warn('VIPER Direct: no se pudo cargar el contador',err);});
     ir('inicio');
     var sharedProfile=new URLSearchParams(location.search).get('profile');
     if(sharedProfile) await abrirPerfilPublico(sharedProfile);
@@ -2866,6 +2982,7 @@ async function shareViper(text){
 
 function eventos(){
   $('logo-home').addEventListener('click',function(){ir('inicio');});
+  $('inbox-head-button').addEventListener('click',function(){ir('amigos');});
   $('chat-peer-profile').addEventListener('click',function(){
     if(!chatFriend)return;
     var id=chatFriend.id;cerrarChat();abrirPerfilPublico(id);
@@ -3641,6 +3758,10 @@ async function guardarEvoFoto(e){
     button.querySelector('span').textContent=expanded?'🏆 Ver todos los rangos':'🏆 Ocultar rangos';
   });
   $('blocked-users').addEventListener('click',function(e){var b=e.target.closest('[data-unblock-user]');if(!b)return;b.disabled=true;desbloquearUsuario(b.dataset.unblockUser).finally(function(){b.disabled=false;});});
+  $('friend-dm-search').addEventListener('input',renderVipInbox);
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden&&user)refreshVipInbox().catch(function(err){console.warn('VIPER Direct',err);});
+  });
   $('v-amigos').addEventListener('click', async function(e){
     var direct=e.target.closest('button[data-chat-user]');
     if(direct){abrirChat(direct.dataset.chatUser).catch(function(err){toast(errMsg(err),true);});return;}
@@ -3667,7 +3788,7 @@ async function guardarEvoFoto(e){
     if (!chatFriend) return;
     var value = $('chat-text').value.trim(); if (!value) return;
     var b = e.submitter; if (b) b.disabled = true;
-    try { var r = await sb.from('messages').insert({sender_id:user.id,recipient_id:chatFriend.id,kind:'text',content:value}); if (r.error) throw r.error; $('chat-text').value=''; await cargarMensajes(); }
+    try { var r = await sb.from('messages').insert({sender_id:user.id,recipient_id:chatFriend.id,kind:'text',content:value}); if (r.error) throw r.error; $('chat-text').value=''; await cargarMensajes(); refreshVipInbox().catch(function(e){console.warn('VIPER Direct',e);}); }
     catch(err){ toast(errMsg(err),true); } finally { if (b) b.disabled=false; }
   });
   $('chat-image').addEventListener('change', async function(e){
@@ -3677,12 +3798,13 @@ async function guardarEvoFoto(e){
       var up=await sb.storage.from('chat-images').upload(path,blob,{contentType:'image/jpeg',upsert:false}); if(up.error) throw up.error;
       var r=await sb.from('messages').insert({sender_id:user.id,recipient_id:chatFriend.id,kind:'image',media_path:path}); if(r.error) throw r.error;
       await cargarMensajes();
+      refreshVipInbox().catch(function(e){console.warn('VIPER Direct',e);});
     } catch(err){ toast(errMsg(err),true); }
   });
   $('share-progress').addEventListener('click', async function(){
     if(!chatFriend) return;
     var li=LV[idxOf(P.xp_total)];
-    try { var r=await sb.from('messages').insert({sender_id:user.id,recipient_id:chatFriend.id,kind:'progress',content:'Mi progreso en VIPER',progress_xp:P.xp_total,progress_rank:li.label}); if(r.error) throw r.error; await cargarMensajes(); }
+    try { var r=await sb.from('messages').insert({sender_id:user.id,recipient_id:chatFriend.id,kind:'progress',content:'Mi progreso en VIPER',progress_xp:P.xp_total,progress_rank:li.label}); if(r.error) throw r.error; await cargarMensajes(); refreshVipInbox().catch(function(e){console.warn('VIPER Direct',e);}); }
     catch(err){ toast(errMsg(err),true); }
   });
   $('avatar-input').addEventListener('change', async function(e){
@@ -3742,6 +3864,11 @@ async function boot(){
       stopIdleSession();
       if(chatChannel) sb.removeChannel(chatChannel);
       if(notificationChannel) sb.removeChannel(notificationChannel);
+      if(inboxChannel) sb.removeChannel(inboxChannel);
+      inboxChannel=null;DM_INBOX=[];DM_REFRESH_SEQ++;
+      $('nav-friend-unread').hidden=true;
+      $('inbox-head-count').hidden=true;
+      $('inbox-head-button').setAttribute('aria-label','Abrir mensajes');
       notificationChannel=null; NOTIFICATIONS=[];
       chatChannel=null; chatFriend=null; user = null; P = null; T = null; iniciado = false;
       pantalla('login');
