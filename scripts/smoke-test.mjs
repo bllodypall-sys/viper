@@ -299,7 +299,7 @@ assert.ok(mainAppScript,"Application boot script missing");
 const scopeProbe = mainAppScript.replace(
   /boot\(\);\s*(?=if \('serviceWorker' in navigator\))/,
   "window.__viperScopeCheck__={"+
-  ["vtLoadWeeklyReport","vtSaveLive","vtMacroFromAnatomy","vtAddExercise","cargarEvolucion","renderEvolucion","evoAddSetRow","guardarEvoEntrenamiento","consultarViperCoach","vtRecentTrainingContext","vnRender","vtSaveFood"].map((k)=>JSON.stringify(k)+":typeof "+k).join(",")+
+  ["vtLoadWeeklyReport","vtSaveLive","vtMacroFromAnatomy","vtAddExercise","cargarEvolucion","renderEvolucion","evoAddSetRow","guardarEvoEntrenamiento","consultarViperCoach","vtRecentTrainingContext","vnRender","vnSaveFood"].map((k)=>JSON.stringify(k)+":typeof "+k).join(",")+
   "};\n"
 );
 assert.notEqual(scopeProbe,mainAppScript,"Runtime scope probe injection failed");
