@@ -1994,6 +1994,94 @@ function renderAmigos(){
   renderVipInbox();
 }
 
+/* ---------- VIPER Direct 2.0: inbox, unread and search ---------- */
+var DM_REFRESH_SEQ=0;
+function vipInboxTime(value){
+  if(!value)return '';
+  var d=new Date(value),n=new Date();
+  if(!Number.isFinite(d.getTime()))return '';
+  var opts={timeZone:'America/Lima'};
+  var today=n.toLocaleDateString('es-PE',opts),day=d.toLocaleDateString('es-PE',opts);
+  if(day===today)return d.toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit'});
+  var yesterday=new Date(n.getTime()-86400000).toLocaleDateString('es-PE',opts);
+  if(day===yesterday)return 'Ayer';
+  return d.toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'short'});
+}
+function renderVipInbox(){
+  var box=$('friend-dm-list'),count=$('friend-dm-total');
+  if(!user||!box)return;
+  var me=user.id,peers={};
+  F.forEach(function(f){
+    if(f.estado!=='aceptada')return;
+    var id=f.solicitante===me?f.destinatario:f.destinatario===me?f.solicitante:null;
+    if(id)peers[id]=true;
+  });
+  var inboxById={};
+  DM_INBOX.forEach(function(item){inboxById[item.peer_id]=item;});
+  var query=($('friend-dm-search').value||'').trim().toLocaleLowerCase('es');
+  var friends=Object.keys(peers).map(function(id){return U[id];}).filter(Boolean).map(function(profile){
+    return {profile:profile,info:inboxById[profile.id]||{}};
+  });
+  friends.sort(function(a,b){
+    var at=a.info.last_message_at?new Date(a.info.last_message_at).getTime():0;
+    var bt=b.info.last_message_at?new Date(b.info.last_message_at).getTime():0;
+    return bt-at||String(a.profile.username||'').localeCompare(String(b.profile.username||''));
+  });
+  if(query)friends=friends.filter(function(item){
+    return (String(item.profile.username||'')+' '+String(item.info.last_preview||'')).toLocaleLowerCase('es').includes(query);
+  });
+  if(count)count.textContent=query?friends.length+' resultado'+(friends.length===1?'':'s'):'Tus conversaciones privadas';
+  if(!friends.length){
+    box.innerHTML='<p class="note">'+(query?'No encontramos conversaciones con esa búsqueda.':'Agrega amigos para empezar una conversación.')+'</p>';
+    return;
+  }
+  box.innerHTML=friends.map(function(item){
+    var p=item.profile,info=item.info,unread=Math.max(0,Number(info.unread_count)||0);
+    var avatar=p.avatar_path
+      ? '<img alt="" loading="lazy" src="'+esc(sb.storage.from('avatars').getPublicUrl(p.avatar_path).data.publicUrl)+'">'
+      : esc((p.username||'V').slice(0,1).toUpperCase());
+    var message=info.last_message_at?(info.last_sender_id===me?'Tú: ':'')+String(info.last_preview||'Mensaje'):'Empieza la conversación';
+    var timestamp=vipInboxTime(info.last_message_at);
+    return '<button type="button" class="friend-dm-contact'+(unread?' is-unread':'')+'" data-chat-user="'+esc(p.id)+'" aria-label="Abrir conversación con '+esc(p.username||'Atleta')+(unread?', '+unread+' mensajes sin leer':'')+'">'+
+      '<span class="friend-dm-avatar">'+avatar+'</span>'+
+      '<span class="friend-dm-copy"><strong>'+esc(p.username||'Atleta')+'</strong><small>'+esc(message)+'</small></span>'+
+      '<span class="friend-dm-right"><span class="friend-dm-time">'+esc(timestamp)+'</span>'+
+      (unread?'<span class="friend-dm-unread" aria-label="'+unread+' sin leer">'+(unread>99?'99+':unread)+'</span>':'<span class="friend-dm-arrow" aria-hidden="true">›</span>')+
+      '</span></button>';
+  }).join('');
+}
+async function refreshVipInbox(){
+  if(!user)return;
+  var id=user.id,seq=++DM_REFRESH_SEQ;
+  var r=await sb.rpc('viper_chat_inbox');
+  if(!user||user.id!==id||seq!==DM_REFRESH_SEQ)return;
+  if(r.error)throw r.error;
+  DM_INBOX=r.data||[];
+  var total=DM_INBOX.reduce(function(sum,item){return sum+Math.max(0,Number(item.unread_count)||0);},0);
+  var badge=$('nav-friend-unread');
+  badge.hidden=total===0;
+  badge.textContent=total>99?'99+':String(total);
+  badge.setAttribute('aria-label',total+' mensajes sin leer');
+  renderVipInbox();
+}
+async function markVipChatRead(peer){
+  if(!user||!peer)return;
+  var id=user.id;
+  var r=await sb.rpc('viper_mark_chat_read',{p_peer:peer});
+  if(r.error)throw r.error;
+  if(user&&user.id===id)await refreshVipInbox();
+}
+function subscribeVipInbox(){
+  if(!user)return;
+  if(inboxChannel){sb.removeChannel(inboxChannel);inboxChannel=null;}
+  inboxChannel=sb.channel('viper-direct-inbox-'+user.id)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},function(payload){
+      var m=payload.new;
+      if(!user||!m||(m.sender_id!==user.id&&m.recipient_id!==user.id))return;
+      refreshVipInbox().catch(function(e){console.warn('VIPER inbox',e);});
+    }).subscribe();
+}
+
 /* ---------- Perfil ---------- */
 function renderLevels(){
   var cur = idxOf(P.xp_total), g = 0;
