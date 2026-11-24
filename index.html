@@ -3190,6 +3190,11 @@ function eventos(){
 
   /* VIPER TRAIN */
   $('vt-date').value=limaToday();
+  $('vt-report-share').addEventListener('click',function(){
+    if(!VT_WEEKLY_STATS)return;
+    var st=VT_WEEKLY_STATS;
+    shareViper('Mi semana en VIPER: '+st.sessions+' sesiones, '+st.sets+' series y '+fmt(st.volume)+' kg de volumen registrado. ¡Seguimos avanzando!');
+  });
   $('vt-live-form').addEventListener('submit',vtSaveLive);
   $('vt-add-exercise').addEventListener('click',function(){
     var name=$('vt-add-name').value.trim();
@@ -3873,8 +3878,13 @@ async function consultarViperCoach(e){
  }
 }
 /* ---------- VIPER TRAIN: session recorder and recovery timer ---------- */
-var VT_LIVE=[],VT_TIMER=null,VT_TIMER_END=0,VT_TIMER_DURATION=60,VT_AI_HAS_PLAN=false;
+var VT_LIVE=[],VT_TIMER=null,VT_TIMER_END=0,VT_TIMER_DURATION=60,VT_AI_HAS_PLAN=false,VT_WEEKLY_STATS=null;
 var VT_MUSCLES=['pecho','espalda','hombros','biceps','triceps','antebrazos','abdomen','cuadriceps','isquiotibiales','gluteos','pantorrillas'];
+function vtMacroFromAnatomy(muscle){
+  if(VT_MUSCLES.includes(muscle))return muscle;
+  if(muscle==='aductores')return 'cuadriceps';
+  return (EVO_LEGACY_MUSCLES[muscle]||[]).find(function(k){return VT_MUSCLES.includes(k);})||'pecho';
+}
 function vtFormatTimer(seconds){
   seconds=Math.max(0,Math.floor(seconds));
   return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
@@ -3991,6 +4001,7 @@ async function vtLoadWeeklyReport(){
   var uid=user.id,w=vipWeek(),root=$('vt-report-summary');
   $('vt-report-week').textContent=w.start.split('-').reverse().join('/')+' — '+w.end.split('-').reverse().join('/');
   root.innerHTML='<p class="note">Actualizando informe…</p>';
+  VT_WEEKLY_STATS=null;$('vt-report-share').disabled=true;
   try{
     var result=await Promise.all([
       sb.from('viper_workout_sessions').select('id').eq('user_id',uid).gte('session_date',w.start).lte('session_date',w.end).limit(150),
@@ -4010,6 +4021,8 @@ async function vtLoadWeeklyReport(){
     }
     if(!user||user.id!==uid)return;
     var volume=sets.reduce(function(n,x){return n+Number(x.reps||0)*Number(x.weight_kg||0);},0);
+    VT_WEEKLY_STATS={sessions:ids.length,exercises:ex.length,sets:sets.length,volume:Math.round(volume),aiMeals:result[1].data.length,manualMeals:result[2].data.length};
+    $('vt-report-share').disabled=false;
     var cells=[
       [ids.length,'Sesiones guardadas'],[ex.length,'Ejercicios registrados'],[sets.length,'Series completadas'],
       [fmt(Math.round(volume))+' kg','Volumen registrado'],[result[1].data.length,'Comidas con IA'],[result[2].data.length,'Comidas manuales']
@@ -4036,9 +4049,7 @@ async function guardarEvoEntrenamiento(e){
  try{
   var session=await sb.from('viper_workout_sessions').insert({user_id:user.id,session_date:date,notes:notes}).select('id').single();
   if(session.error)throw session.error;sessionId=session.data.id;
-  var compatibleGroup=VT_MUSCLES.includes(EVO.muscle)?EVO.muscle:
-    (EVO.muscle==='aductores'?'cuadriceps':
-    (EVO_LEGACY_MUSCLES[EVO.muscle]||[]).find(function(x){return VT_MUSCLES.includes(x);})||'pecho');
+  var compatibleGroup=vtMacroFromAnatomy(EVO.muscle);
   var exercise=await sb.from('viper_workout_exercises').insert({session_id:sessionId,muscle_group:compatibleGroup,exercise_name:name}).select('id').single();
   if(exercise.error)throw exercise.error;exerciseId=exercise.data.id;
   var saved=await sb.from('viper_workout_sets').insert(rows.map(function(x){return {exercise_id:exerciseId,set_number:x.set_number,reps:x.reps,weight_kg:x.weight_kg};}));
@@ -4116,6 +4127,16 @@ async function guardarEvoFoto(e){
   $('evo-equipment-filter').addEventListener('change',renderEvoMuscleLibrary);
   $('evo-level-filter').addEventListener('change',renderEvoMuscleLibrary);
   $('evo-exercise-list').addEventListener('click',function(e){
+    var add=e.target.closest('[data-vt-add-library]');
+    if(add){
+      var before=VT_LIVE.length;
+      vtAddExercise(add.dataset.vtAddLibrary,vtMacroFromAnatomy(add.dataset.vtMuscle));
+      if(VT_LIVE.length>before){
+        $('vt-live-form').scrollIntoView({behavior:'smooth',block:'center'});
+        toast('Ejercicio añadido a tu sesión guiada.');
+      }
+      return;
+    }
     var b=e.target.closest('[data-evo-record]');if(!b)return;
     EVO.muscle=b.dataset.evoMuscle;renderEvolucion();$('evo-exercise').value=b.dataset.evoRecord;
     $('evo-workout-form').scrollIntoView({behavior:'smooth',block:'center'});$('evo-exercise').focus({preventScroll:true});
@@ -4308,7 +4329,7 @@ async function boot(){
       $('inbox-head-button').setAttribute('aria-label','Abrir mensajes');
       notificationChannel=null; NOTIFICATIONS=[];
       chatChannel=null; chatFriend=null; user = null; P = null; T = null; iniciado = false;
-      VT_LIVE=[];vtStopTimer();VN_TARGETS=null;VN_MANUAL=[];VN_DAY=null;VT_AI_HAS_PLAN=false;
+      VT_LIVE=[];vtStopTimer();VN_TARGETS=null;VN_MANUAL=[];VN_DAY=null;VT_AI_HAS_PLAN=false;VT_WEEKLY_STATS=null;$('vt-report-share').disabled=true;
       pantalla('login');
     } else if (ev === 'PASSWORD_RECOVERY' && session && session.user){
       window.viperPasswordRecovery=true;
