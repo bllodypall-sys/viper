@@ -30,7 +30,7 @@ for (const id of [
   "chat-options", "chat-options-menu", "chat-gallery", "chat-gallery-back",
   "chat-gallery-grid", "chat-view", "chat-messages", "chat-image", "chat-close",
   "friend-dm-search", "friend-dm-total", "nav-friend-unread", "inbox-head-button", "inbox-head-count",
-  "vt-live-form", "vt-date", "vt-notes", "vt-add-name", "vt-add-muscle",
+  "vt-live-form", "vt-date", "vt-notes", "vt-add-name", "vt-add-muscle", "vt-report-share",
   "vt-add-exercise", "vt-repeat-last", "vt-live-list", "vt-timer-display",
   "vt-stop-rest", "vt-live-summary", "vt-save", "vt-report-week", "vt-report-summary",
   "vt-ai-edit", "vt-ai-copy", "vt-ai-editor", "vt-ai-textarea", "vt-ai-save", "vt-ai-cancel",
@@ -263,4 +263,34 @@ assert.equal(macros.protein_g,35);
 assert.equal(macros.carbs_g,70);
 assert.equal(macros.fat_g,15);
 
-console.log("VIPER smoke checks passed: workout, rest timer, private nutrition, weekly report, AI plans, social and security.");
+
+/* VIPER integrated library and adaptive AI plan. */
+assert.ok(html.includes('data-vt-add-library="'+ "'+esc(x[0])"),"Exercise library must offer direct add to live session");
+assert.ok(html.includes("vtMacroFromAnatomy(add.dataset.vtMuscle)"),"Library muscle group must map to supported DB groups");
+assert.ok(html.includes("function vtMacroFromAnatomy(muscle)"),"Macro group translator missing");
+assert.ok(html.includes("async function vtRecentTrainingContext()"),"AI must consult recent sessions");
+assert.ok(html.includes("history.slice(0,950)"),"AI context should be truncated");
+assert.ok(html.includes("Actualizar plan con mi progreso"),"AI update action missing");
+assert.ok(html.includes("VT_WEEKLY_STATS={sessions:"),"Shareable report must reflect saved records");
+assert.ok(html.includes("shareViper('Mi semana en VIPER:"),"Weekly report share is user initiated");
+trCtx.EVO_LEGACY_MUSCLES={pectoral_superior:['pecho','pectoral_mayor'],biceps_cabeza_larga:['biceps']};
+assert.equal(trCtx.vtMacroFromAnatomy('pectoral_superior'),'pecho');
+assert.equal(trCtx.vtMacroFromAnatomy('biceps_cabeza_larga'),'biceps');
+assert.equal(trCtx.vtMacroFromAnatomy('aductores'),'cuadriceps');
+const hStart=html.indexOf("async function vtRecentTrainingContext(){");
+const hEnd=html.indexOf("async function generateVipAiPlan(){",hStart);
+assert.ok(hStart>=0&&hEnd>hStart);
+const mockHistory={
+ user:{id:'self'},
+ limaToday:()=> '2026-11-23',
+ addDays:()=> '2026-10-27',
+ sb:{from:(name)=>{
+   assert.equal(name,'viper_workout_sessions');
+   return {select:()=>({eq:()=>({gte:()=>({order:()=>({limit:async()=>({data:[],error:null})})})})})};
+ }},
+ console
+};
+new Script(html.slice(hStart,hEnd)).runInNewContext(mockHistory);
+assert.match(await mockHistory.vtRecentTrainingContext(),/Sin sesiones registradas/);
+
+console.log("VIPER smoke checks passed: training, nutrition, report, share, adaptive AI and security.");
