@@ -7,6 +7,7 @@ const sql = readFileSync(new URL("../supabase/migrations/20261123090000_protect_
 const deletion = readFileSync(new URL("../supabase/functions/delete-account/index.ts", import.meta.url), "utf8");
 const engagement = readFileSync(new URL("../supabase/migrations/20261123183000_viper_ai_community_and_security.sql", import.meta.url), "utf8");
 const dmSql = readFileSync(new URL("../supabase/migrations/20261124011000_viper_direct_inbox_unread.sql", import.meta.url), "utf8");
+const nutritionSql = readFileSync(new URL("../supabase/migrations/20261124033000_viper_train_nutri.sql", import.meta.url), "utf8");
 const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
   .map((match) => match[1]).filter((body) => body.trim());
 assert.ok(scripts.length >= 2, "Expected inline setup + application scripts");
@@ -28,7 +29,14 @@ for (const id of [
   "chat-title", "chat-subtitle", "chat-peer-avatar", "chat-peer-profile",
   "chat-options", "chat-options-menu", "chat-gallery", "chat-gallery-back",
   "chat-gallery-grid", "chat-view", "chat-messages", "chat-image", "chat-close",
-  "friend-dm-search", "friend-dm-total", "nav-friend-unread", "inbox-head-button", "inbox-head-count"
+  "friend-dm-search", "friend-dm-total", "nav-friend-unread", "inbox-head-button", "inbox-head-count",
+  "vt-live-form", "vt-date", "vt-notes", "vt-add-name", "vt-add-muscle",
+  "vt-add-exercise", "vt-repeat-last", "vt-live-list", "vt-timer-display",
+  "vt-stop-rest", "vt-live-summary", "vt-save", "vt-report-week", "vt-report-summary",
+  "vt-ai-edit", "vt-ai-copy", "vt-ai-editor", "vt-ai-textarea", "vt-ai-save", "vt-ai-cancel",
+  "vn-goals-form", "vn-progress", "vn-target-calories", "vn-target-protein",
+  "vn-target-carbs", "vn-target-fat", "vn-food-form", "vn-food-name",
+  "vn-food-calories", "vn-food-protein", "vn-food-carbs", "vn-food-fat", "vn-manual-list"
 ]) requireId(id);
 for (const tab of ["inicio", "hoy", "feed", "evolucion", "perfil"])
   assert.equal(count('data-mobile-nav="' + tab + '"'), 1, "Missing tab " + tab);
@@ -193,4 +201,66 @@ await dmContext.refreshVipInbox();
 assert.equal(dmGet("nav-friend-unread").hidden,true);
 assert.equal(dmGet("inbox-head-count").hidden,true);
 
-console.log("VIPER smoke checks passed: direct inbox, unread, search, chat navigation, AI and security.");
+
+/* VIPER TRAIN/NUTRI regression and ownership checks */
+assert.match(nutritionSql,/create table if not exists public\.viper_nutrition_targets/);
+assert.match(nutritionSql,/create table if not exists public\.viper_manual_foods/);
+assert.match(nutritionSql,/alter table public\.viper_manual_foods enable row level security/);
+assert.match(nutritionSql,/alter table public\.viper_nutrition_targets enable row level security/);
+assert.match(nutritionSql,/create policy viper_nutrition_targets_owner/);
+assert.match(nutritionSql,/create policy viper_manual_foods_owner/);
+assert.ok(nutritionSql.includes("using ((select auth.uid())=user_id)"));
+assert.doesNotMatch(nutritionSql,/grant .* to anon/i);
+assert.doesNotMatch(nutritionSql,/xp_total|registrar_dia/i);
+assert.ok(html.includes("async function vtSaveLive(event)"));
+assert.ok(html.includes("async function vtRepeatLast()"));
+assert.ok(html.includes("function vtStartTimer(seconds)"));
+assert.ok(html.includes("async function vtLoadWeeklyReport()"));
+assert.ok(html.includes("async function vnSaveGoals(e)"));
+assert.ok(html.includes("async function vnSaveFood(e)"));
+assert.ok(html.includes("async function vnRemoveFood(id)"));
+assert.ok(html.includes("function vnTotals()"));
+assert.ok(html.includes("muscle_group:compatibleGroup"),"Legacy logger must use accepted muscle group");
+assert.ok(html.includes("vt-ai-save').addEventListener"),"AI plans must be editable");
+assert.ok(html.includes("VN_TARGETS=null;VN_MANUAL=[]"),"Nutrition state must be reset on sign out");
+
+const trStart=html.indexOf("/* ---------- VIPER TRAIN: session recorder and recovery timer ---------- */");
+const trEnd=html.indexOf("function evoAddSetRow(reps,weight){",trStart);
+assert.ok(trStart>=0&&trEnd>trStart,"Training logic missing");
+const trNodes={};
+const trCtx={
+  $:id=>trNodes[id]||=(id==="vt-live-list"?{innerHTML:""}:{textContent:""}),
+  esc:String,fmt:String,toast:()=>{},console
+};
+new Script(html.slice(trStart,trEnd)).runInNewContext(trCtx);
+assert.equal(trCtx.vtFormatTimer(90),"01:30");
+assert.equal(trCtx.vtFormatTimer(0),"00:00");
+trCtx.vtAddExercise("Sentadilla","cuadriceps",[{reps:8,weight_kg:70}]);
+assert.match(trNodes["vt-live-list"].innerHTML,/Sentadilla/);
+assert.equal(trCtx.vtValidateDraft(),true);
+assert.match(trNodes["vt-live-summary"].textContent,/560 kg/);
+trCtx.VT_LIVE[0].sets[0].reps=0;
+assert.equal(trCtx.vtValidateDraft(),false,"Zero reps must be rejected");
+trCtx.VT_LIVE[0].sets[0].reps=8;
+trCtx.VT_LIVE[0].muscle="no_valido";
+assert.equal(trCtx.vtValidateDraft(),false,"Unknown muscle must be rejected");
+
+const nStart=html.indexOf("/* ---------- VIPER NUTRI: private manual entries; no XP granted ---------- */");
+const nEnd=html.indexOf("function renderMeals(){",nStart);
+assert.ok(nStart>=0&&nEnd>nStart);
+const nCtx={
+  T:{hoy:"2026-11-23",mealEntries:[
+    {source:"ai",status:"approved",calories:400,protein_g:30,carbs_g:50,fat_g:10},
+    {source:"ai",status:"rejected",calories:9999,protein_g:0,carbs_g:0,fat_g:0}
+  ]},
+  $:()=>({}),esc:String,toast:()=>{},console
+};
+new Script(html.slice(nStart,nEnd)).runInNewContext(nCtx);
+nCtx.VN_MANUAL=[{calories:150,protein_g:5,carbs_g:20,fat_g:5}];
+const macros=nCtx.vnTotals();
+assert.equal(macros.calories,550,"Only approved AI meals and manual entries count toward nutrition totals");
+assert.equal(macros.protein_g,35);
+assert.equal(macros.carbs_g,70);
+assert.equal(macros.fat_g,15);
+
+console.log("VIPER smoke checks passed: workout, rest timer, private nutrition, weekly report, AI plans, social and security.");
