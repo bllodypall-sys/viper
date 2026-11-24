@@ -597,6 +597,11 @@ main{padding-block:12px 40px}
 .friend-dm-unread{display:grid;place-items:center;min-width:23px;height:23px;padding:0 6px;border-radius:99px;background:#49e083;color:#062013;font-size:.74rem;font-weight:900}
 .friend-dm-right .friend-dm-arrow{font-size:1.3rem}
 @media(max-width:420px){.friend-dm-contact{gap:9px;padding:11px 10px}.friend-dm-right{min-width:45px}.friend-dm-time{font-size:.65rem}}
+
+/* Mensajería accesible incluso con menú lateral cerrado */
+.inbox-head-button{display:grid;place-items:center;font-size:1.22rem}
+.inbox-head-button:hover,.inbox-head-button:focus-visible{border-color:#52d982}
+@media(max-width:420px){.notify-head{gap:5px}.inbox-head-button{width:38px;height:38px}}
 </style>
 </head>
 <body>
@@ -667,7 +672,7 @@ main{padding-block:12px 40px}
 <div id="app" hidden>
   <header class="top">
     <div style="display:flex;align-items:center;gap:12px"><button class="nav-toggle" id="nav-toggle" type="button" aria-label="Abrir menú" aria-expanded="true">☰</button><button id="logo-home" class="logo logo-home" type="button" title="Ir al Inicio" aria-label="VIPER: ir a la página principal">VIPER</button><span id="current-section" class="current-section" aria-live="polite">Estás en Inicio</span></div>
-    <div class="notify-head"><button type="button" class="notify-bell" id="notify-bell" aria-label="Abrir notificaciones" title="Notificaciones">🔔<span class="notify-count" id="notify-count" hidden>0</span></button><span class="who" id="who"></span></div>
+    <div class="notify-head"><button type="button" class="notify-bell inbox-head-button" id="inbox-head-button" aria-label="Abrir mensajes" title="Mensajes">💬<span class="notify-count" id="inbox-head-count" hidden>0</span></button><button type="button" class="notify-bell" id="notify-bell" aria-label="Abrir notificaciones" title="Notificaciones">🔔<span class="notify-count" id="notify-count" hidden>0</span></button><span class="who" id="who"></span></div>
   </header>
   <div class="app-layout">
   <nav class="nav" id="sidebar" aria-label="Secciones">
@@ -2063,6 +2068,10 @@ async function refreshVipInbox(){
   badge.hidden=total===0;
   badge.textContent=total>99?'99+':String(total);
   badge.setAttribute('aria-label',total+' mensajes sin leer');
+  var headerBadge=$('inbox-head-count');
+  headerBadge.hidden=total===0;
+  headerBadge.textContent=total>99?'99+':String(total);
+  $('inbox-head-button').setAttribute('aria-label',total>0?'Abrir mensajes: '+total+' sin leer':'Abrir mensajes');
   renderVipInbox();
 }
 async function markVipChatRead(peer){
@@ -2973,6 +2982,7 @@ async function shareViper(text){
 
 function eventos(){
   $('logo-home').addEventListener('click',function(){ir('inicio');});
+  $('inbox-head-button').addEventListener('click',function(){ir('amigos');});
   $('chat-peer-profile').addEventListener('click',function(){
     if(!chatFriend)return;
     var id=chatFriend.id;cerrarChat();abrirPerfilPublico(id);
@@ -3857,6 +3867,8 @@ async function boot(){
       if(inboxChannel) sb.removeChannel(inboxChannel);
       inboxChannel=null;DM_INBOX=[];DM_REFRESH_SEQ++;
       $('nav-friend-unread').hidden=true;
+      $('inbox-head-count').hidden=true;
+      $('inbox-head-button').setAttribute('aria-label','Abrir mensajes');
       notificationChannel=null; NOTIFICATIONS=[];
       chatChannel=null; chatFriend=null; user = null; P = null; T = null; iniciado = false;
       pantalla('login');
