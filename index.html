@@ -3778,7 +3778,7 @@ async function guardarEvoFoto(e){
     if (!chatFriend) return;
     var value = $('chat-text').value.trim(); if (!value) return;
     var b = e.submitter; if (b) b.disabled = true;
-    try { var r = await sb.from('messages').insert({sender_id:user.id,recipient_id:chatFriend.id,kind:'text',content:value}); if (r.error) throw r.error; $('chat-text').value=''; await cargarMensajes(); }
+    try { var r = await sb.from('messages').insert({sender_id:user.id,recipient_id:chatFriend.id,kind:'text',content:value}); if (r.error) throw r.error; $('chat-text').value=''; await cargarMensajes(); refreshVipInbox().catch(function(e){console.warn('VIPER Direct',e);}); }
     catch(err){ toast(errMsg(err),true); } finally { if (b) b.disabled=false; }
   });
   $('chat-image').addEventListener('change', async function(e){
@@ -3788,12 +3788,13 @@ async function guardarEvoFoto(e){
       var up=await sb.storage.from('chat-images').upload(path,blob,{contentType:'image/jpeg',upsert:false}); if(up.error) throw up.error;
       var r=await sb.from('messages').insert({sender_id:user.id,recipient_id:chatFriend.id,kind:'image',media_path:path}); if(r.error) throw r.error;
       await cargarMensajes();
+      refreshVipInbox().catch(function(e){console.warn('VIPER Direct',e);});
     } catch(err){ toast(errMsg(err),true); }
   });
   $('share-progress').addEventListener('click', async function(){
     if(!chatFriend) return;
     var li=LV[idxOf(P.xp_total)];
-    try { var r=await sb.from('messages').insert({sender_id:user.id,recipient_id:chatFriend.id,kind:'progress',content:'Mi progreso en VIPER',progress_xp:P.xp_total,progress_rank:li.label}); if(r.error) throw r.error; await cargarMensajes(); }
+    try { var r=await sb.from('messages').insert({sender_id:user.id,recipient_id:chatFriend.id,kind:'progress',content:'Mi progreso en VIPER',progress_xp:P.xp_total,progress_rank:li.label}); if(r.error) throw r.error; await cargarMensajes(); refreshVipInbox().catch(function(e){console.warn('VIPER Direct',e);}); }
     catch(err){ toast(errMsg(err),true); }
   });
   $('avatar-input').addEventListener('change', async function(e){
