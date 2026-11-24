@@ -230,6 +230,7 @@ const trEnd=html.indexOf("function evoAddSetRow(reps,weight){",trStart);
 assert.ok(trStart>=0&&trEnd>trStart,"Training logic missing");
 const trNodes={};
 const trCtx={
+  user:null,
   $:id=>trNodes[id]||=(id==="vt-live-list"?{innerHTML:""}:{textContent:""}),
   esc:String,fmt:String,toast:()=>{},console
 };
