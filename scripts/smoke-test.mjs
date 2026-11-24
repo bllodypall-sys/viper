@@ -18,7 +18,11 @@ for (const id of [
   "security-delete-confirm", "security-delete-account", "security-delete-status",
   "nav-toggle", "sidebar",
   "landing-signup", "vip-ai-create", "vip-ai-text", "vip-ai-status",
-  "vip-challenge-list", "vip-challenge-week", "vip-ranking-link", "vip-badges-list"
+  "vip-challenge-list", "vip-challenge-week", "vip-ranking-link", "vip-badges-list",
+  "vip-daily-counter", "vip-daily-title", "vip-daily-subtitle", "vip-daily-progress",
+  "vip-daily-fill", "vip-daily-gym", "vip-daily-food", "vip-daily-gym-desc",
+  "vip-daily-food-desc", "vip-daily-cta", "vip-daily-plan", "vip-badges-count",
+  "vip-badges-next", "vip-badges-share", "landing-share"
 ]) requireId(id);
 for (const tab of ["inicio", "hoy", "feed", "evolucion", "perfil"])
   assert.equal(count('data-mobile-nav="' + tab + '"'), 1, "Missing tab " + tab);
@@ -39,4 +43,46 @@ assert.ok(engagement.includes("alter table public.viper_weekly_challenge_entries
 assert.match(engagement, /security_invoker = true/);
 assert.ok(engagement.includes("revoke execute on function public.crear_perfil"));
 assert.doesNotMatch(engagement, /grant.*to anon/i);
-console.log("VIPER smoke checks passed: inline JS, navigation, security, AI plans, community challenges and deletion.");
+
+assert.ok(html.includes('<meta property="og:image"'), "Share preview image missing");
+assert.ok(html.includes('<link rel="canonical"'), "Canonical URL missing");
+assert.ok(html.includes("function renderVipDaily()"), "Daily dashboard code missing");
+assert.ok(html.includes("function vipBadgeDefinitions()"), "Badge catalog missing");
+// Daily UX is driven by confirmed database checkins and approved food,
+// never by optimistic, uncommitted XP previews.
+assert.ok(html.includes("fmt(Number(T.saved && T.saved.xp)||0)"), "Today's displayed XP must be verified");
+assert.ok(html.includes("Boolean(T.saved && T.saved.foto_path)"), "Daily gym progress must require a saved checkin");
+const dailyStart = html.indexOf("function renderVipDaily(){");
+const dailyEnd = html.indexOf("async function shareViper(", dailyStart);
+assert.ok(dailyStart > 0 && dailyEnd > dailyStart);
+const dailyCode = html.slice(dailyStart, dailyEnd);
+const mockElements = {};
+const mockElement = (id) => mockElements[id] ||= {
+  textContent: "", style: {}, dataset: {}, classList: { toggle() {} },
+  setAttribute(key, value) { this[key] = value; },
+  querySelector() {return { textContent: "" }; }
+};
+const dailyContext = {
+  T: { saved: null }, P: {xp_total: 0}, mealsN: () => 0,
+  $: mockElement
+};
+new Script(dailyCode).runInNewContext(dailyContext);
+dailyContext.renderVipDaily();
+assert.equal(mockElement("vip-daily-progress")["aria-valuenow"], "0");
+assert.equal(mockElement("vip-daily-cta").dataset.vipDailyDestination, "hoy");
+dailyContext.T.saved = {foto_path: "test/gym.jpg", xp: 50};
+dailyContext.mealsN = () => 1;
+dailyContext.renderVipDaily();
+assert.equal(mockElement("vip-daily-progress")["aria-valuenow"], "2");
+assert.equal(mockElement("vip-daily-cta").dataset.vipDailyDestination, "feed");
+const badgeStart = html.indexOf("function vipBadgeDefinitions(){");
+const badgeEnd = html.indexOf("function renderVipDaily(){", badgeStart);
+assert.ok(badgeStart>0 && badgeEnd>badgeStart);
+const badgeContext = { P: {xp_total: 125, racha: 0}, $, fmt: String, esc: String };
+function $(id) { return mockElement(id); }
+new Script(html.slice(badgeStart, badgeEnd)).runInNewContext(badgeContext);
+assert.equal(badgeContext.vipBadgeDefinitions().length, 12, "Expect 12 badges");
+badgeContext.renderVipBadges();
+assert.match(mockElement("vip-badges-count").textContent, /1 de 12/);
+
+console.log("VIPER smoke checks passed: syntax, daily verified progress, badges, social SEO and original security checks.");
