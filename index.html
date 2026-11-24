@@ -2387,6 +2387,9 @@ async function handleFeedSubmit(e){
 
 function ir(v){
   if (v === 'boxeo'){ location.href = 'boxeo.html'; return; }
+  if(v !== 'amigos' && chatFriend) cerrarChat();
+  var sectionLabels={inicio:'Inicio',hoy:'Mi día',evolucion:'Evolución muscular',temporada:'Temporada',ranking:'Ranking',amigos:'Amigos',feed:'Comunidad',perfil:'Mi perfil','public-profile':'Perfil de atleta',notificaciones:'Notificaciones',seguridad:'Seguridad'};
+  $('current-section').textContent='Estás en '+(sectionLabels[v]||'VIPER');
   ['inicio', 'hoy', 'evolucion', 'temporada', 'ranking', 'amigos', 'feed', 'perfil', 'public-profile', 'notificaciones', 'seguridad'].forEach(function(n){
     $('v-' + n).hidden = n !== v;
     var b = document.querySelector('[data-nav="' + n + '"]');
@@ -2413,45 +2416,149 @@ function ir(v){
   if (v === 'seguridad') loadAccountActivity().catch(function(e){toast(errMsg(e),true);});
 }
 
-/* ---------- Chat privado entre amigos ---------- */
+/* ---------- VIPER Direct: conversaciones privadas entre amigos ---------- */
+var CHAT_MEDIA=[], CHAT_LAST_TRIGGER=null;
+function toggleChatOptions(open){
+  var state=Boolean(open && chatFriend);
+  $('chat-options-menu').hidden=!state;
+  $('chat-options').setAttribute('aria-expanded',state?'true':'false');
+}
+function toggleChatGallery(open){
+  var state=Boolean(open && chatFriend);
+  $('chat-gallery').hidden=!state;
+  $('chat-view').hidden=state;
+  if(state)renderChatGallery();
+}
+function renderChatGallery(){
+  var box=$('chat-gallery-grid');
+  if(!CHAT_MEDIA.length){
+    box.innerHTML='<p class="chat-gallery-empty">Todavía no hay imágenes compartidas en los últimos mensajes de este chat.</p>';
+    return;
+  }
+  box.innerHTML=CHAT_MEDIA.map(function(m){
+    return '<a href="'+esc(m.url)+'" target="_blank" rel="noopener noreferrer" title="Abrir imagen compartida" aria-label="Ver foto compartida">'+
+      '<img loading="lazy" alt="Foto compartida en la conversación" src="'+esc(m.url)+'"></a>';
+  }).join('');
+}
+async function loadChatPeerAvatar(id){
+  var circle=$('chat-peer-avatar');
+  if(!chatFriend || chatFriend.id!==id)return;
+  circle.textContent=(chatFriend.username||'V').slice(0,1).toUpperCase();
+  try{
+    var r=await sb.from('profiles').select('avatar_path').eq('id',id).maybeSingle();
+    if(r.error || !r.data || !r.data.avatar_path || !chatFriend || chatFriend.id!==id)return;
+    var url=sb.storage.from('avatars').getPublicUrl(r.data.avatar_path).data.publicUrl;
+    var img=document.createElement('img');img.src=url;img.alt='';
+    circle.replaceChildren(img);
+  }catch(e){ /* El chat funciona incluso sin foto de perfil. */ }
+}
 async function abrirChat(id){
-  var friend=U[id]; if(!friend) return;
-  var accepted=F.some(function(f){ return f.estado==='aceptada' && (f.solicitante===id && f.destinatario===user.id || f.destinatario===id && f.solicitante===user.id); });
-  if(!accepted){ toast('Solo puedes chatear con amigos aceptados.',true); return; }
+  var friend=U[id];if(!friend)return;
+  var accepted=F.some(function(f){
+    return f.estado==='aceptada' &&
+      ((f.solicitante===id && f.destinatario===user.id) || (f.destinatario===id && f.solicitante===user.id));
+  });
+  if(!accepted){toast('Solo puedes conversar con amigos aceptados.',true);return;}
+  if(chatChannel){sb.removeChannel(chatChannel);chatChannel=null;}
+  CHAT_LAST_TRIGGER=document.activeElement;
   chatFriend={id:id,username:friend.username};
-  $('chat-panel').hidden=false; $('chat-title').textContent='Chat con '+friend.username; $('chat-subtitle').textContent=LV[idxOf(friend.xp_total)].label+' · '+fmt(friend.xp_total)+' XP';
+  CHAT_MEDIA=[];
+  toggleChatOptions(false);
+  toggleChatGallery(false);
+  $('chat-title').textContent=friend.username||'Atleta';
+  $('chat-subtitle').textContent=LV[idxOf(friend.xp_total)].label+' · '+fmt(friend.xp_total)+' XP · Amigo';
+  $('chat-peer-avatar').textContent=(friend.username||'V').slice(0,1).toUpperCase();
+  $('chat-messages').innerHTML='<p class="empty">Cargando conversación…</p>';
+  $('chat-panel').hidden=false;
+  $('chat-text').focus();
+  loadChatPeerAvatar(id);
   await cargarMensajes();
-  if(chatChannel) sb.removeChannel(chatChannel);
-  chatChannel=sb.channel('viper-chat-'+[user.id,id].sort().join('-')).on('postgres_changes',{event:'*',schema:'public',table:'messages'},function(payload){
-    var m=payload.new||payload.old;
-    if(m && (m.sender_id===user.id || m.recipient_id===user.id) && (m.sender_id===id || m.recipient_id===id)) cargarMensajes();
-  }).subscribe();
+  if(!chatFriend||chatFriend.id!==id)return;
+  chatChannel=sb.channel('viper-chat-'+[user.id,id].sort().join('-'))
+    .on('postgres_changes',{event:'*',schema:'public',table:'messages'},function(payload){
+      var m=payload.new||payload.old;
+      if(m && (m.sender_id===user.id || m.recipient_id===user.id)
+           && (m.sender_id===id || m.recipient_id===id) && chatFriend && chatFriend.id===id){
+        cargarMensajes().catch(function(err){toast(errMsg(err),true);});
+      }
+    }).subscribe();
 }
 function cerrarChat(){
-  $('chat-panel').hidden=true; chatFriend=null;
-  if(chatChannel){ sb.removeChannel(chatChannel); chatChannel=null; }
+  $('chat-panel').hidden=true;
+  toggleChatOptions(false);
+  toggleChatGallery(false);
+  chatFriend=null;CHAT_MEDIA=[];
+  if(chatChannel){sb.removeChannel(chatChannel);chatChannel=null;}
+  if(CHAT_LAST_TRIGGER && CHAT_LAST_TRIGGER.isConnected)CHAT_LAST_TRIGGER.focus();
+  CHAT_LAST_TRIGGER=null;
 }
 async function cargarMensajes(){
-  if(!chatFriend) return;
-  var id=chatFriend.id, box=$('chat-messages');
+  if(!chatFriend)return;
+  var id=chatFriend.id,box=$('chat-messages');
   var filter='and(sender_id.eq.'+user.id+',recipient_id.eq.'+id+'),and(sender_id.eq.'+id+',recipient_id.eq.'+user.id+')';
-  var r=await sb.from('messages').select('id,sender_id,recipient_id,kind,content,media_path,progress_xp,progress_rank,created_at').or(filter).order('created_at',{ascending:true}).limit(100);
-  if(r.error){ box.innerHTML='<p class="empty">No se pudo cargar el chat. Comprueba la configuración SQL.</p>'; return; }
-  if(!r.data.length){ box.innerHTML='<p class="empty">Aún no hay mensajes. ¡Saluda a tu amigo!</p>'; return; }
-  var html=[];
-  for(var i=0;i<r.data.length;i++){
-    var m=r.data[i], mine=m.sender_id===user.id, body='';
+  var r=await sb.from('messages')
+    .select('id,sender_id,recipient_id,kind,content,media_path,progress_xp,progress_rank,created_at')
+    .or(filter).order('created_at',{ascending:false}).limit(100);
+  if(!chatFriend||chatFriend.id!==id)return;
+  if(r.error){box.innerHTML='<p class="empty">No se pudo cargar esta conversación.</p>';return;}
+  var rows=(r.data||[]).slice().reverse();
+  if(!rows.length){
+    CHAT_MEDIA=[];
+    box.innerHTML='<p class="empty">Todavía no hay mensajes con este amigo. ¡Empieza la conversación!</p>';
+    if(!$('chat-gallery').hidden)renderChatGallery();
+    return;
+  }
+  var html=[],media=[];
+  for(var i=0;i<rows.length;i++){
+    var m=rows[i],mine=m.sender_id===user.id,body='';
     if(m.kind==='image' && m.media_path){
       var signed=await sb.storage.from('chat-images').createSignedUrl(m.media_path,3600);
-      body=signed.data ? '<img class="chat-img" alt="Imagen compartida" src="'+esc(signed.data.signedUrl)+'">' : '<span>Imagen no disponible</span>';
-    } else if(m.kind==='progress'){
+      if(!chatFriend||chatFriend.id!==id)return;
+      if(signed.data && signed.data.signedUrl){
+        var url=signed.data.signedUrl;
+        body='<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" aria-label="Abrir imagen compartida">'+
+          '<img class="chat-img" alt="Imagen compartida" src="'+esc(url)+'"></a>';
+        media.push({url:url});
+      }else{body='<span>Imagen no disponible</span>';}
+    }else if(m.kind==='progress'){
       body='<b>🏆 '+esc(m.progress_rank||'Progreso')+'</b><br>'+fmt(m.progress_xp||0)+' XP<br><span>'+esc(m.content||'Progreso compartido')+'</span>';
-    } else body=esc(m.content||'');
+    }else{body=esc(m.content||'');}
     var date=new Date(m.created_at).toLocaleString('es-PE',{dateStyle:'short',timeStyle:'short'});
-    html.push('<article class="chat-msg'+(mine?' mine':'')+'">'+body+'<small>'+date+'</small></article>');
+    html.push('<article class="chat-msg'+(mine?' mine':'')+'">'+body+'<small>'+esc(date)+'</small></article>');
   }
+  if(!chatFriend||chatFriend.id!==id)return;
+  CHAT_MEDIA=media;
   box.innerHTML=html.join('');
   box.scrollTop=box.scrollHeight;
+  if(!$('chat-gallery').hidden)renderChatGallery();
+}
+async function bloquearDesdeChat(){
+  if(!chatFriend||!user)return;
+  var id=chatFriend.id,name=chatFriend.username||'este usuario';
+  if(!window.confirm('¿Bloquear a '+name+'? Se eliminará la amistad y no podrán enviarse mensajes.'))return;
+  var r=await sb.from('user_blocks').insert({blocker_id:user.id,blocked_id:id});
+  if(r.error && r.error.code!=='23505')throw r.error;
+  var friends=F.filter(function(f){
+    return (f.solicitante===user.id&&f.destinatario===id)||(f.destinatario===user.id&&f.solicitante===id);
+  });
+  for(var i=0;i<friends.length;i++){
+    var deletion=await sb.from('friendships').delete().eq('id',friends[i].id);
+    if(deletion.error)throw deletion.error;
+  }
+  cerrarChat();
+  toast('Usuario bloqueado. Puedes desbloquearlo desde Seguridad.');
+  await cargarAmigos();
+}
+async function reportarDesdeChat(){
+  if(!chatFriend||!user)return;
+  var id=chatFriend.id;
+  var reason=window.prompt('Motivo del reporte (de 3 a 500 caracteres):');
+  if(reason===null)return;
+  reason=reason.trim();
+  if(reason.length<3||reason.length>500){toast('Escribe un motivo entre 3 y 500 caracteres.',true);return;}
+  var r=await sb.from('content_reports').insert({reporter_id:user.id,reported_user_id:id,content_type:'user',reason:reason});
+  if(r.error)throw r.error;
+  toast('Reporte enviado. Gracias por ayudar a proteger VIPER.');
 }
 
 /* ---------- Centro de seguridad ---------- */
@@ -2711,6 +2818,34 @@ async function shareViper(text){
 }
 
 function eventos(){
+  $('logo-home').addEventListener('click',function(){ir('inicio');});
+  $('chat-peer-profile').addEventListener('click',function(){
+    if(!chatFriend)return;
+    var id=chatFriend.id;cerrarChat();abrirPerfilPublico(id);
+  });
+  $('chat-options').addEventListener('click',function(){toggleChatOptions($('chat-options-menu').hidden);});
+  $('chat-options-menu').addEventListener('click',function(e){
+    var option=e.target.closest('button[data-chat-option]');
+    if(!option || !chatFriend)return;
+    var action=option.dataset.chatOption;
+    toggleChatOptions(false);
+    if(action==='gallery')toggleChatGallery(true);
+    else if(action==='profile'){var id=chatFriend.id;cerrarChat();abrirPerfilPublico(id);}
+    else if(action==='block')bloquearDesdeChat().catch(function(err){toast(errMsg(err),true);});
+    else if(action==='report')reportarDesdeChat().catch(function(err){toast(errMsg(err),true);});
+  });
+  $('chat-gallery-back').addEventListener('click',function(){toggleChatGallery(false);$('chat-text').focus();});
+  $('chat-panel').addEventListener('click',function(e){if(e.target===$('chat-panel'))cerrarChat();});
+  document.addEventListener('click',function(e){
+    if(!$('chat-options-menu').hidden && !e.target.closest('.chat-menu-holder'))toggleChatOptions(false);
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape'||$('chat-panel').hidden)return;
+    e.preventDefault();
+    if(!$('chat-options-menu').hidden)toggleChatOptions(false);
+    else if(!$('chat-gallery').hidden)toggleChatGallery(false);
+    else cerrarChat();
+  });
   $('landing-share').addEventListener('click',function(){
     shareViper('¡Descubre VIPER! Entrena con IA, compite en retos y comparte tus avances.');
   });
