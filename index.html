@@ -637,6 +637,11 @@ main{padding-block:12px 40px}
 @media(max-width:680px){.vn-goals-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:390px){.vn-progress{grid-template-columns:1fr}}
 .vt-lib-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto}.vt-lib-actions .btn{flex:1 1 145px;min-height:40px}
+/* VIPER QUALITY: draft recovery, safe retry, discard control */
+.vt-draft-banner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px;border:1px solid #468358;border-radius:10px;background:color-mix(in srgb,var(--surface) 83%,#3cae68 17%)}
+.vt-draft-banner[hidden]{display:none!important}
+.vt-draft-banner span{color:var(--fg);font-size:.84rem;flex:1 1 220px}
+.vt-draft-banner.is-pending{border-color:#d6a839;background:color-mix(in srgb,var(--surface) 89%,#f0c04f 11%)}
 </style>
 </head>
 <body>
@@ -1081,6 +1086,11 @@ main{padding-block:12px 40px}
             <div class="vt-timer-actions"><button type="button" class="btn sm" data-vt-rest="30">30 s</button><button type="button" class="btn sm" data-vt-rest="60">60 s</button><button type="button" class="btn sm" data-vt-rest="90">90 s</button><button type="button" class="btn sm" id="vt-stop-rest">Detener</button></div>
           </div>
           <div class="vt-bottom"><span id="vt-live-summary" class="note">Sin series añadidas.</span><button id="vt-save" class="btn primary" type="submit">Guardar sesión completa</button></div>
+          <div id="vt-draft-banner" class="vt-draft-banner" role="status" aria-live="polite" hidden>
+            <span id="vt-draft-status">Tu borrador se guarda automáticamente en este dispositivo.</span>
+            <button type="button" class="btn sm" id="vt-discard-draft">Descartar borrador</button>
+          </div>
+          <p class="note">Guardado automático por cuenta en este navegador. Se recupera al regresar y se elimina al cerrar sesión o descartarlo.</p>
         </form>
         <p class="note">Comprueba los ejercicios y cargas antes de guardar. Las sesiones se almacenan de forma privada.</p>
       </div>
@@ -1297,6 +1307,7 @@ main{padding-block:12px 40px}
       <p class="note">Los datos privados y las fotos de check-in no se muestran aquí.</p>
     </section>
     <section id="v-seguridad" class="view" aria-label="Centro de seguridad" hidden>
+      <p class="note">VIPER QUALITY almacena categorías de errores técnicos asociadas a tu cuenta, sin incluir mensajes, entrenamientos, alimentos, ubicación ni contraseñas. Solo se utilizan para diagnosticar fallos.</p>
       <div class="sec-head"><h2>Centro de seguridad</h2><span class="note">Protege tu cuenta VIPER</span></div>
       <section class="season-card">
         <h3>Contraseña</h3>
