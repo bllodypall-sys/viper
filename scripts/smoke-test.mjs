@@ -22,7 +22,11 @@ for (const id of [
   "vip-daily-counter", "vip-daily-title", "vip-daily-subtitle", "vip-daily-progress",
   "vip-daily-fill", "vip-daily-gym", "vip-daily-food", "vip-daily-gym-desc",
   "vip-daily-food-desc", "vip-daily-cta", "vip-daily-plan", "vip-badges-count",
-  "vip-badges-next", "vip-badges-share", "landing-share"
+  "vip-badges-next", "vip-badges-share", "landing-share",
+  "logo-home", "current-section", "friend-dm-list", "chat-panel",
+  "chat-title", "chat-subtitle", "chat-peer-avatar", "chat-peer-profile",
+  "chat-options", "chat-options-menu", "chat-gallery", "chat-gallery-back",
+  "chat-gallery-grid", "chat-view", "chat-messages", "chat-image", "chat-close"
 ]) requireId(id);
 for (const tab of ["inicio", "hoy", "feed", "evolucion", "perfil"])
   assert.equal(count('data-mobile-nav="' + tab + '"'), 1, "Missing tab " + tab);
@@ -85,4 +89,20 @@ assert.equal(badgeContext.vipBadgeDefinitions().length, 12, "Expect 12 badges");
 badgeContext.renderVipBadges();
 assert.match(mockElement("vip-badges-count").textContent, /1 de 12/);
 
-console.log("VIPER smoke checks passed: syntax, daily verified progress, badges, social SEO and original security checks.");
+
+for (const option of ["profile", "gallery", "report", "block"])
+  assert.equal(count('data-chat-option="' + option + '"'), 1, "Missing chat option: " + option);
+assert.match(html, /id="chat-panel"[^>]*role="dialog"[^>]*aria-modal="true"/);
+assert.ok(html.includes("id=\"logo-home\""), "VIPER logo home control missing");
+assert.ok(html.includes("Estás en "), "Current section indicator missing");
+assert.ok(html.includes("function renderChatGallery()"), "Chat gallery renderer missing");
+assert.ok(html.includes("async function bloquearDesdeChat()"), "Block action missing");
+assert.ok(html.includes("async function reportarDesdeChat()"), "Report action missing");
+assert.ok(html.includes("async function loadChatPeerAvatar(id)"), "Friend avatar loader missing");
+assert.ok(html.includes("sb.from('user_blocks').insert("), "Block action must use existing table");
+assert.ok(html.includes("sb.from('content_reports').insert("), "Report action must use existing table");
+assert.ok(html.includes("data-chat-user"), "Direct message contact buttons missing");
+assert.ok(html.includes("createSignedUrl(m.media_path,3600)"), "Gallery media must use signed URLs");
+assert.ok(html.includes(".chat-panel[hidden]"), "Hidden modal override must be present");
+assert.match(html, /chatFriend\.id!==id\)return;/);
+console.log("VIPER smoke checks passed: syntax, navigation, private chat, media, reporting, badges and existing security checks.");
