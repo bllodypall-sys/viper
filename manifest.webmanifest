@@ -1,7 +1,7 @@
 {
-  "name": "Viper",
-  "short_name": "Viper",
-  "description": "Entrena, registra tu día y sube de rango.",
+  "name": "VIPER · Entrena, compite y evoluciona",
+  "short_name": "VIPER",
+  "description": "Entrena con VIPER AI, registra tu progreso y participa en retos con la comunidad fitness.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
