@@ -494,3 +494,7 @@ assert.ok(boxing.every(x=>x.sets.every(y=>y.weight_kg===0)),"Boxing warm-up pres
 assert.ok(html.includes("if(!VT_LIVE.length&&!VT_PENDING_SAVE){vsgCloseFocus(true);ir('evolucion');}"),"Close focus only after saved or confirmed");
 
 console.log("VIPER smoke checks passed: START, focus mode, scope, atomic saves, draft recovery, nutrition and security.");
+
+/* Shared invitation links must follow the active Vercel domain. */
+assert.ok(html.includes("var url=window.location.origin+'/';"), "VIPER share URL must follow the current domain");
+assert.ok(!html.includes("var url='https://viper-7n4z.vercel.app/';"), "Do not hardcode the old share URL");
