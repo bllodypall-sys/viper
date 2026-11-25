@@ -3310,7 +3310,7 @@ function renderVipDaily(){
   $('vip-daily-cta').dataset.vipDailyDestination=done===2?'feed':'hoy';
 }
 async function shareViper(text){
-  var url='https://viper-7n4z.vercel.app/';
+  var url=window.location.origin+'/';
   try{
     if(navigator.share){
       await navigator.share({title:'VIPER · Entrena, compite y evoluciona',text:text,url:url});
