@@ -498,3 +498,9 @@ console.log("VIPER smoke checks passed: START, focus mode, scope, atomic saves, 
 /* Shared invitation links must follow the active Vercel domain. */
 assert.ok(html.includes("var url=window.location.origin+'/';"), "VIPER share URL must follow the current domain");
 assert.ok(!html.includes("var url='https://viper-7n4z.vercel.app/';"), "Do not hardcode the old share URL");
+
+/* New public domain: ensure social metadata and canonical URLs match. */
+assert.ok(html.includes('<meta property="og:url" content="https://viperfitness.vercel.app/">'));
+assert.ok(html.includes('<meta property="og:image" content="https://viperfitness.vercel.app/icon-512.png">'));
+assert.ok(html.includes('<link rel="canonical" href="https://viperfitness.vercel.app/">'));
+assert.ok(!html.includes('https://viper-7n4z.vercel.app/'), "Avoid stale public metadata and links");
