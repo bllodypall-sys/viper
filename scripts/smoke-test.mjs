@@ -504,3 +504,14 @@ assert.ok(html.includes('<meta property="og:url" content="https://viperfitness.v
 assert.ok(html.includes('<meta property="og:image" content="https://viperfitness.vercel.app/icon-512.png">'));
 assert.ok(html.includes('<link rel="canonical" href="https://viperfitness.vercel.app/">'));
 assert.ok(!html.includes('https://viper-7n4z.vercel.app/'), "Avoid stale public metadata and links");
+
+/* A stale token must not lead to an anonymous meal data grant. */
+const mealFixStart=html.indexOf('  var mealQuery = function(){');
+const mealFixEnd=html.indexOf('  var mealRows = mr.data || [];',mealFixStart);
+assert.ok(mealFixStart>0 && mealFixEnd>mealFixStart,"Private meal loader recovery missing");
+const mealFix=html.slice(mealFixStart,mealFixEnd);
+assert.ok(mealFix.includes("sb.auth.getSession()"));
+assert.ok(mealFix.includes("sb.auth.refreshSession()"));
+assert.ok(mealFix.includes("mr = await mealQuery()"));
+assert.ok(mealFix.includes("mr.error.code === '42501'"));
+assert.ok(!mealFix.includes("grant select"));

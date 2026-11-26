@@ -1704,7 +1704,25 @@ async function loadToday(){
   if (r.error) throw r.error;
   var h = r.data.find(function(x){ return x.dia === hoy; }) || null;
   var a = r.data.find(function(x){ return x.dia === ayer; }) || null;
-  var mr = await sb.from('meal_entries').select('id,meal_slot,status,food_name,calories,protein_g,carbs_g,fat_g,confidence,ai_notes,photo_path,source').eq('meal_date', hoy).order('meal_slot');
+  var mealQuery = function(){
+    return sb.from('meal_entries').select('id,meal_slot,status,food_name,calories,protein_g,carbs_g,fat_g,confidence,ai_notes,photo_path,source').eq('meal_date', hoy).order('meal_slot');
+  };
+  var mr = await mealQuery();
+  if (mr.error && (mr.error.code === '42501' || /permission denied for table meal_entries/i.test(mr.error.message || ''))){
+    // This table is intentionally private. Recover an expired/missing JWT, never grant anon access.
+    var sessionResult = await sb.auth.getSession();
+    if (!sessionResult.data || !sessionResult.data.session || !sessionResult.data.session.refresh_token){
+      throw new Error('Tu sesión no está activa en este dominio. Cierra sesión y vuelve a ingresar a VIPER.');
+    }
+    var renewed = await sb.auth.refreshSession();
+    if (renewed.error || !renewed.data || !renewed.data.session){
+      throw new Error('No pudimos renovar tu sesión. Cierra sesión y vuelve a ingresar a VIPER.');
+    }
+    mr = await mealQuery();
+    if (mr.error && (mr.error.code === '42501' || /permission denied for table meal_entries/i.test(mr.error.message || ''))){
+      throw new Error('Tu sesión no tiene permiso para leer las comidas. Cierra sesión y vuelve a ingresar a VIPER.');
+    }
+  }
   if (mr.error) throw mr.error;
   var mealRows = mr.data || [];
   for (var mi=0; mi<mealRows.length; mi++){
