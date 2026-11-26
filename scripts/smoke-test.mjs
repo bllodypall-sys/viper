@@ -515,3 +515,12 @@ assert.ok(mealFix.includes("sb.auth.refreshSession()"));
 assert.ok(mealFix.includes("mr = await mealQuery()"));
 assert.ok(mealFix.includes("mr.error.code === '42501'"));
 assert.ok(!mealFix.includes("grant select"));
+
+/* A failed startup must have an actionable retry without weakening permissions. */
+requireId('app-start-error');
+requireId('app-start-error-message');
+requireId('app-retry');
+assert.ok(html.includes("if (iniciado || !user) return;"),'Never load private data before session initialization');
+assert.ok(html.includes("$('app-start-error').hidden = false;"),'Startup failures must be visible');
+assert.ok(html.includes("$('app-retry').addEventListener('click'"),'Startup error retry must be wired');
+assert.ok(html.includes("vqReportError('startup',e);"),'Startup failures must be categorized');
