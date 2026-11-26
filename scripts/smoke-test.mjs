@@ -524,3 +524,7 @@ assert.ok(html.includes("if (iniciado || !user) return;"),'Never load private da
 assert.ok(html.includes("$('app-start-error').hidden = false;"),'Startup failures must be visible');
 assert.ok(html.includes("$('app-retry').addEventListener('click'"),'Startup error retry must be wired');
 assert.ok(html.includes("vqReportError('startup',e);"),'Startup failures must be categorized');
+
+/* The installable build must include the SVG icon referenced by the manifest. */
+const prepareSource=readFileSync(new URL('./prepare-web.mjs',import.meta.url),'utf8');
+assert.ok(prepareSource.includes("'favicon.svg'"),"PWA build must include the favicon declared in the manifest");
