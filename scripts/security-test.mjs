@@ -54,7 +54,7 @@ console.log('VIPER security QA passed: auth redirects, private meal writes, doma
 assert.ok(html.includes("$('auth-password').minLength = authMode === 'signup' ? 12 : 8;"));
 assert.ok(html.includes("password.length < (authMode === 'signup' ? 12 : 8)"));
 assert.ok(html.includes("if(password.length<12||password.length>72)"));
-assert.ok(html.includes("if(password.length<12){$('login-msg').textContent="));
+assert.ok(html.includes("if(password.length<12||password.length>72){$('login-msg').textContent="));
 for (const id of ['recovery-password','recovery-password-confirm','security-new-password','security-confirm-password']) {
   assert.ok(new RegExp('id="'+id+'"[^>]*minlength="12"').test(html),'New password should be 12+ chars: '+id);
 }
