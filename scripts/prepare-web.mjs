@@ -10,6 +10,7 @@ const assets = [
   'terminos.html',
   'manifest.webmanifest',
   'sw.js',
+  'favicon.svg',
   'icon-180.png',
   'icon-192.png',
   'icon-512.png'
