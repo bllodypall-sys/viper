@@ -67,3 +67,13 @@ const chatBody=html.slice(chatBegin,chatEnd);
 assert.ok(chatBody.includes("if(r.error){"),'Chat reads must check errors');
 assert.ok(chatBody.includes("throw r.error; // Do not mark unread messages as read after a failed load."),'Do not swallow chat errors');
 assert.ok(html.includes("  await cargarMensajes();\n  if(!chatFriend||chatFriend.id!==id)return;\n  // Mark only the messages"),'Chat must load before marking read');
+
+/* Recovery token must not initialize the authenticated dashboard before a new password. */
+assert.ok(html.includes("if (iniciado || !user || window.viperPasswordRecovery) return;"));
+assert.ok(html.includes("if(user && !iniciado && !window.viperPasswordRecovery) start();"));
+assert.ok(html.includes("if (s.data && s.data.session && !window.viperPasswordRecovery){"));
+assert.ok(html.includes("if(password.length<12||password.length>72){$('login-msg').textContent="));
+for (const id of ['recovery-password','recovery-password-confirm']) {
+  assert.ok(new RegExp('id="'+id+'"[^>]*maxlength="72"').test(html), 'Recovery password upper bound: '+id);
+}
+assert.ok(html.includes("await sb.auth.signOut();"), 'After recovery the temporary session must end');
