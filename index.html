@@ -2983,7 +2983,10 @@ async function cargarMensajes(){
     .select('id,sender_id,recipient_id,kind,content,media_path,progress_xp,progress_rank,created_at')
     .or(filter).order('created_at',{ascending:false}).limit(100);
   if(!chatFriend||chatFriend.id!==id)return;
-  if(r.error){box.innerHTML='<p class="empty">No se pudo cargar esta conversación.</p>';return;}
+  if(r.error){
+    box.innerHTML='<p class="empty">No se pudo cargar esta conversación. Comprueba tu conexión e inténtalo de nuevo.</p>';
+    throw r.error; // Do not mark unread messages as read after a failed load.
+  }
   var rows=(r.data||[]).slice().reverse();
   if(!rows.length){
     CHAT_MEDIA=[];
