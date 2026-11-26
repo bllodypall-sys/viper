@@ -528,3 +528,8 @@ assert.ok(html.includes("vqReportError('startup',e);"),'Startup failures must be
 /* The installable build must include the SVG icon referenced by the manifest. */
 const prepareSource=readFileSync(new URL('./prepare-web.mjs',import.meta.url),'utf8');
 assert.ok(prepareSource.includes("'favicon.svg'"),"PWA build must include the favicon declared in the manifest");
+
+/* Hidden status must not be overridden by inline display declaration. */
+const startupAlert=html.match(/<div[^>]*id="app-start-error"[^>]*>/)?.[0];
+assert.ok(startupAlert && startupAlert.includes(' hidden '), "Startup error begins hidden");
+assert.ok(!/style="[^"]*display\s*:/.test(startupAlert), "Do not override [hidden] with inline display");
