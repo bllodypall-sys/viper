@@ -520,7 +520,7 @@ assert.ok(!mealFix.includes("grant select"));
 requireId('app-start-error');
 requireId('app-start-error-message');
 requireId('app-retry');
-assert.ok(html.includes("if (iniciado || !user) return;"),'Never load private data before session initialization');
+assert.ok(html.includes("if (iniciado || !user || window.viperPasswordRecovery) return;"),'Never load private data during password recovery');
 assert.ok(html.includes("$('app-start-error').hidden = false;"),'Startup failures must be visible');
 assert.ok(html.includes("$('app-retry').addEventListener('click'"),'Startup error retry must be wired');
 assert.ok(html.includes("vqReportError('startup',e);"),'Startup failures must be categorized');
