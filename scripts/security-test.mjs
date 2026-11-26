@@ -59,3 +59,11 @@ for (const id of ['recovery-password','recovery-password-confirm','security-new-
   assert.ok(new RegExp('id="'+id+'"[^>]*minlength="12"').test(html),'New password should be 12+ chars: '+id);
 }
 assert.ok(html.includes('id="auth-password" type="password" autocomplete="current-password" minlength="8"'), 'Existing account login must still support its original password length');
+
+/* Failed chat reads must stop execution before markVipChatRead. */
+const chatBegin=html.indexOf('async function cargarMensajes(){');
+const chatEnd=html.indexOf('function ',chatBegin+30);
+const chatBody=html.slice(chatBegin,chatEnd);
+assert.ok(chatBody.includes("if(r.error){"),'Chat reads must check errors');
+assert.ok(chatBody.includes("throw r.error; // Do not mark unread messages as read after a failed load."),'Do not swallow chat errors');
+assert.ok(html.includes("  await cargarMensajes();\n  if(!chatFriend||chatFriend.id!==id)return;\n  // Mark only the messages"),'Chat must load before marking read');
