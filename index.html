@@ -738,6 +738,7 @@ main{padding-block:12px 40px}
 </section>
 
 <div id="app" hidden>
+  <div id="app-start-error" class="aviso" role="alert" hidden style="margin-block:12px;display:flex;align-items:center;flex-wrap:wrap;gap:12px"><span id="app-start-error-message" style="flex:1 1 240px">No pudimos cargar tus datos.</span><button id="app-retry" class="btn" type="button">Reintentar carga</button></div>
   <header class="top">
     <div style="display:flex;align-items:center;gap:12px"><button class="nav-toggle" id="nav-toggle" type="button" aria-label="Abrir menú" aria-expanded="true">☰</button><button id="logo-home" class="logo logo-home" type="button" title="Ir al Inicio" aria-label="VIPER: ir a la página principal">VIPER</button><span id="current-section" class="current-section" aria-live="polite">Estás en Inicio</span></div>
     <div class="notify-head"><button type="button" class="notify-bell inbox-head-button" id="inbox-head-button" aria-label="Abrir mensajes" title="Mensajes">💬<span class="notify-count" id="inbox-head-count" hidden>0</span></button><button type="button" class="notify-bell" id="notify-bell" aria-label="Abrir notificaciones" title="Notificaciones">🔔<span class="notify-count" id="notify-count" hidden>0</span></button><span class="who" id="who"></span></div>
@@ -3129,8 +3130,9 @@ async function signOutAllVipSessions(){
 
 /* ---------- Arranque ---------- */
 async function start(){
-  if (iniciado) return;
+  if (iniciado || !user) return;
   iniciado = true;
+  $('app-start-error').hidden = true;
   startIdleSession();
   pantalla('app');
   try {
@@ -3168,7 +3170,11 @@ async function start(){
     showWelcome();
   } catch (e) {
     iniciado = false;
-    toast(errMsg(e), true);
+    var message = errMsg(e);
+    $('app-start-error-message').textContent = 'No pudimos cargar tu cuenta: ' + message;
+    $('app-start-error').hidden = false;
+    vqReportError('startup',e);
+    toast(message, true);
   }
 }
 
@@ -4384,6 +4390,7 @@ function eventos(){
     }catch(err){toast(errMsg(err),true);}
     finally{b.disabled=false;}
   });
+  $('app-retry').addEventListener('click',function(){start().catch(function(e){toast(errMsg(e),true);});});
   $('logo-home').addEventListener('click',function(){ir('inicio');});
   $('inbox-head-button').addEventListener('click',function(){ir('amigos');});
   $('chat-peer-profile').addEventListener('click',function(){
@@ -4835,6 +4842,7 @@ async function boot(){
   setupIdleActivityListeners();
   sb.auth.onAuthStateChange(function(ev, session){
     if (ev === 'SIGNED_OUT'){
+      $('app-start-error').hidden = true;
       stopIdleSession();
       if(chatChannel) sb.removeChannel(chatChannel);
       if(notificationChannel) sb.removeChannel(notificationChannel);
