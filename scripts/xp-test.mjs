@@ -86,7 +86,7 @@ console.log('VIPER nutrition XP scenarios passed: manual, pending, approved, pro
     loadToday:async()=>{run.T.saved={comidas:1,proteina:false,xp:10};},
     console, URL:{revokeObjectURL:()=>{}}
   };
-  new Script(script+'\\n'+html.slice(saveStart,saveEnd),{filename:'viper-guarded-save.js'}).runInNewContext(run);
+  new Script(script+'\n'+html.slice(saveStart,saveEnd),{filename:'viper-guarded-save.js'}).runInNewContext(run);
   const first=run.guardar();
   const second=run.guardar();
   assert.equal(calls,1,'A concurrent second click must not submit another RPC');
