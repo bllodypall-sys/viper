@@ -1380,7 +1380,7 @@ main{padding-block:12px 40px}
       <div class="sec-head"><h2>Centro de seguridad</h2><span class="note">Protege tu cuenta VIPER</span></div>
       <section class="season-card">
         <h3>Contraseña</h3>
-        <p class="note">Crea una contraseña segura de al menos 8 caracteres. Si entras con Google, también puedes configurar una contraseña para VIPER.</p>
+        <p class="note">Crea una contraseña nueva de al menos 12 caracteres. Si entras con Google, también puedes configurar una contraseña para VIPER.</p>
         <form id="security-password-form" class="stack">
           <label class="lbl" for="security-new-password">Nueva contraseña</label>
           <input id="security-new-password" type="password" minlength="12" maxlength="72" autocomplete="new-password" required>
@@ -2101,8 +2101,8 @@ function renderHoy(){
   var d = dirty();
   $('sucio').textContent = d ? 'Hay cambios sin guardar.' : (T.saved ? 'Guardado: ' + T.saved.xp + ' XP.' : '');
   var g = $('guardar');
-  g.disabled = !d;
-  g.textContent = 'Guardar día';
+  g.disabled = !d || VIPER_DAY_SAVING;
+  g.textContent = VIPER_DAY_SAVING ? 'Guardando…' : 'Guardar día';
 }
 function aviso(msg){
   var a = $('aviso');
@@ -2122,8 +2122,10 @@ async function comprimir(file){
   if (file.size <= 5242880 && /^image\/(jpeg|png|webp)$/.test(file.type)) return file;
   throw new Error('No se pudo leer la foto. Prueba con otra.');
 }
+var VIPER_DAY_SAVING = false;
 async function guardar(){
-  if (!dirty()) return;
+  if (VIPER_DAY_SAVING || !dirty()) return;
+  VIPER_DAY_SAVING = true;
   var btn = $('guardar');
   btn.disabled = true;
   btn.textContent = 'Guardando…';
@@ -2153,6 +2155,8 @@ async function guardar(){
       catch(cleanupError){console.error('VIPER: error limpiando foto de gimnasio',cleanupError);}
     }
     toast(errMsg(e), true);
+  } finally {
+    VIPER_DAY_SAVING = false;
     renderHoy();
   }
 }

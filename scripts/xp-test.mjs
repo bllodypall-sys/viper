@@ -59,3 +59,47 @@ assert.ok(html.includes("sb.rpc('registrar_dia'"));
 assert.ok(!/sb\.from\(['"]checkins['"]\)\s*\.(?:insert|update|upsert|delete)\(/.test(html));
 assert.ok(!/sb\.from\(['"]profiles['"]\)\s*\.update\(\s*\{\s*xp_total/.test(html));
 console.log('VIPER nutrition XP scenarios passed: manual, pending, approved, protein, streak, cap, dirty and no client XP writes.');
+
+
+/* Regression: two concurrent save requests must produce only one check-in RPC. */
+{
+  const saveStart=html.indexOf('var VIPER_DAY_SAVING = false;');
+  const saveEnd=html.indexOf('/* ---------- Ranking ---------- */',saveStart);
+  assert.ok(saveStart>0&&saveEnd>saveStart, 'Daily submission guard required');
+  assert.ok(html.includes('g.disabled = !d || VIPER_DAY_SAVING;'), 'While saving, UI must keep its button disabled');
+  assert.ok(html.includes("g.textContent = VIPER_DAY_SAVING ? 'Guardando…' : 'Guardar día';"));
+
+  const nodes=new Map();
+  const getNode=id=>{
+    if(!nodes.has(id))nodes.set(id,{disabled:false,textContent:'',hidden:false});
+    return nodes.get(id);
+  };
+  let releaseRpc, calls=0;
+  const toasts=[];
+  const pending=new Promise(resolve=>{releaseRpc=resolve;});
+  const run={
+    T:{mealEntries:[{source:'ai',status:'approved'}],rachaAyer:0,saved:null,blob:null,blobUrl:null,prot:false,fotoPath:null,hoy:'2026-11-26'},
+    P:{xp_total:0},user:{id:'test-user'},$ : getNode,
+    sb:{rpc:async()=>{calls++;await pending;return {error:null};}},
+    idxOf:()=>0, LV:[{label:'Novato'}],
+    toast:(message)=>{toasts.push(String(message));},errMsg:e=>e.message,aviso:()=>{},renderHoy:()=>{},renderAll:()=>{},signPhoto:async()=>{},
+    loadProfile:async()=>{run.P.xp_total=10;},
+    loadToday:async()=>{run.T.saved={comidas:1,proteina:false,xp:10};},
+    console, URL:{revokeObjectURL:()=>{}}
+  };
+  new Script(script+'\n'+html.slice(saveStart,saveEnd),{filename:'viper-guarded-save.js'}).runInNewContext(run);
+  assert.equal(run.mealsN(),1,'A verified AI meal must be present in the mock');
+  assert.equal(run.dirty(),true,'An unsaved approved meal must require saving');
+  assert.equal(run.VIPER_DAY_SAVING,false,'Save guard starts unlocked');
+  const first=run.guardar();
+  const second=run.guardar();
+  assert.equal(calls,1,'A concurrent second click must not submit another RPC; messages: '+toasts.join('; '));
+  assert.equal(run.VIPER_DAY_SAVING,true,'Guard remains active until save finishes');
+  releaseRpc();
+  await Promise.all([first,second]);
+  assert.equal(run.VIPER_DAY_SAVING,false,'Guard must always reset');
+  await run.guardar();
+  assert.equal(calls,1,'No repeat save when today is already synchronized');
+}
+
+assert.ok(html.includes('Crea una contraseña nueva de al menos 12 caracteres.'),'Password help must match current policy');
