@@ -88,6 +88,9 @@ console.log('VIPER nutrition XP scenarios passed: manual, pending, approved, pro
     console, URL:{revokeObjectURL:()=>{}}
   };
   new Script(script+'\n'+html.slice(saveStart,saveEnd),{filename:'viper-guarded-save.js'}).runInNewContext(run);
+  assert.equal(run.mealsN(),1,'A verified AI meal must be present in the mock');
+  assert.equal(run.dirty(),true,'An unsaved approved meal must require saving');
+  assert.equal(run.VIPER_DAY_SAVING,false,'Save guard starts unlocked');
   const first=run.guardar();
   const second=run.guardar();
   assert.equal(calls,1,'A concurrent second click must not submit another RPC; messages: '+toasts.join('; '));
