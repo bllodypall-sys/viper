@@ -75,13 +75,14 @@ console.log('VIPER nutrition XP scenarios passed: manual, pending, approved, pro
     return nodes.get(id);
   };
   let releaseRpc, calls=0;
+  const toasts=[];
   const pending=new Promise(resolve=>{releaseRpc=resolve;});
   const run={
     T:{mealEntries:[{source:'ai',status:'approved'}],rachaAyer:0,saved:null,blob:null,blobUrl:null,prot:false,fotoPath:null,hoy:'2026-11-26'},
     P:{xp_total:0},user:{id:'test-user'},$ : getNode,
     sb:{rpc:async()=>{calls++;await pending;return {error:null};}},
     idxOf:()=>0, LV:[{label:'Novato'}],
-    toast:()=>{},renderHoy:()=>{},renderAll:()=>{},signPhoto:async()=>{},
+    toast:(message)=>{toasts.push(String(message));},errMsg:e=>e.message,renderHoy:()=>{},renderAll:()=>{},signPhoto:async()=>{},
     loadProfile:async()=>{run.P.xp_total=10;},
     loadToday:async()=>{run.T.saved={comidas:1,proteina:false,xp:10};},
     console, URL:{revokeObjectURL:()=>{}}
@@ -89,7 +90,7 @@ console.log('VIPER nutrition XP scenarios passed: manual, pending, approved, pro
   new Script(script+'\n'+html.slice(saveStart,saveEnd),{filename:'viper-guarded-save.js'}).runInNewContext(run);
   const first=run.guardar();
   const second=run.guardar();
-  assert.equal(calls,1,'A concurrent second click must not submit another RPC');
+  assert.equal(calls,1,'A concurrent second click must not submit another RPC; messages: '+toasts.join('; '));
   assert.equal(run.VIPER_DAY_SAVING,true,'Guard remains active until save finishes');
   releaseRpc();
   await Promise.all([first,second]);
