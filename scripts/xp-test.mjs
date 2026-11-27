@@ -82,7 +82,7 @@ console.log('VIPER nutrition XP scenarios passed: manual, pending, approved, pro
     P:{xp_total:0},user:{id:'test-user'},$ : getNode,
     sb:{rpc:async()=>{calls++;await pending;return {error:null};}},
     idxOf:()=>0, LV:[{label:'Novato'}],
-    toast:(message)=>{toasts.push(String(message));},errMsg:e=>e.message,renderHoy:()=>{},renderAll:()=>{},signPhoto:async()=>{},
+    toast:(message)=>{toasts.push(String(message));},errMsg:e=>e.message,aviso:()=>{},renderHoy:()=>{},renderAll:()=>{},signPhoto:async()=>{},
     loadProfile:async()=>{run.P.xp_total=10;},
     loadToday:async()=>{run.T.saved={comidas:1,proteina:false,xp:10};},
     console, URL:{revokeObjectURL:()=>{}}
